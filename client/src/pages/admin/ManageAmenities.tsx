@@ -1,34 +1,34 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react"
-
-interface Amenity {
-  id: number;
-  name: string;
-  description: string;
-}
-
-const sampleAmenities: Amenity[] = [
-  { id: 1, name: "WiFi", description: "High-speed internet access" },
-  { id: 2, name: "TV", description: "Smart TV with multiple channels" },
-  { id: 3, name: "Mini Bar", description: "Complimentary snacks and drinks" },
-  { id: 4, name: "Air Conditioning", description: "Efficient cooling system" },
-  { id: 5, name: "Room Service", description: "24/7 room service available" },
-]
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAmenities } from "../../services/Amenity";
+import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
+import Error from "../_ErrorBoundary";
 
 const ManageAmenities = () => {
-  const [search, setSearch] = useState<string>('');
-  const [filter, setFilter] = useState<string>('All');
+  const [search, setSearch] = useState<string>("");
+  const [filter, setFilter] = useState<string>("All");
 
-  const filteredAmenities = sampleAmenities.filter((amenity: any) => {
-    return amenity.name.toLowerCase().includes(search.toLowerCase());
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["amenities"], 
+    queryFn: fetchAmenities
   });
 
+  if (isLoading) return <DashboardSkeleton />;
+  if (error) return <Error />;
+
+  const amenities = data?.data || [];
+
+  const filteredAmenities = amenities.filter((amenity: any) =>
+    amenity.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div className="p-6">
+    <div className="h-[calc(100vh-25px)] p-3 overflow-y-auto container mx-auto">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6">
         <h1 className="text-3xl font-semibold">Manage Amenities</h1>
-        <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+        <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition-colors duration-300">
           Add New Amenity
         </button>
       </div>
@@ -48,13 +48,12 @@ const ManageAmenities = () => {
           onChange={(e) => setFilter(e.target.value)}
         >
           <option value="all">All Amenities</option>
-          {/* If you later add a status field, you can expand these options */}
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
       </div>
 
-      {/* Main Content – Amenities Table */}
+      {/* Amenities Table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse table-fixed">
           <thead className="bg-gray-100">
@@ -65,11 +64,8 @@ const ManageAmenities = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredAmenities.map((amenity) => (
-              <tr
-                key={amenity.id}
-                className="hover:bg-gray-50"
-              >
+            {filteredAmenities.map((amenity: any) => (
+              <tr key={amenity.id} className="hover:bg-gray-50">
                 <td className="border p-2">{amenity.name}</td>
                 <td className="border p-2">{amenity.description}</td>
                 <td className="border p-2 space-x-2">
@@ -97,7 +93,7 @@ const ManageAmenities = () => {
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ManageAmenities
+export default ManageAmenities;

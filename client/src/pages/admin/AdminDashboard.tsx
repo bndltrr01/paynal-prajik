@@ -20,7 +20,6 @@ const AdminDashboard = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['stats'],
     queryFn: fetchStats,
-    retry: 2
   });
 
   if (isLoading) return <DashboardSkeleton />;
@@ -66,7 +65,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="h-[calc(100vh-25px)] p-3 overflow-y-auto container mx-auto">
       <h1 className="text-3xl font-semibold mb-6">Admin Dashboard</h1>
 
       {/* Stat Cards */}

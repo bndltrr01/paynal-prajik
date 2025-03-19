@@ -138,10 +138,10 @@ const ReportsAnalytics = () => {
   };
 
   return (
-    <div className="max-h-[calc(100vh-25px)] overflow-y-auto">
-      <div className="p-3 bg-gray-100">
+    <div className="overflow-y-auto h-[calc(100vh-25px)]">
+      <div className="p-3 container mx-auto">
         <motion.h1
-          className="text-3xl font-bold text-gray-800 mb-6"
+          className="text-3xl font-semibold mb-5"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >

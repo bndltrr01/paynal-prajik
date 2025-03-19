@@ -5,7 +5,10 @@ import philosophy from "../assets/philosophy.jpg";
 const AboutUs = () => {
   return (
     <section className="py-12 px-6 bg-white">
-      <div data-aos="fade-left" className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center mb-12">
+      <div
+        data-aos="fade-left"
+        className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center mb-12"
+      >
         <div>
           <img
             src={aboutUs_bg}
@@ -23,8 +26,8 @@ const AboutUs = () => {
           <p className="text-gray-600 font-montserrat text-base sm:text-sm lg:text-lg leading-relaxed">
             Discover a place where elegance meets comfort. Azurea Hotel offers
             top-notch amenities, personalized services, and a welcoming
-            atmosphere that makes every stay unforgettable. Whether for
-            business or leisure, Azurea is your perfect destination.
+            atmosphere that makes every stay unforgettable. Whether for business
+            or leisure, Azurea is your perfect destination.
           </p>
           <button className="mt-4 inline-block font-montserrat bg-blue-800 text-white px-6 py-3 rounded-full shadow hover:bg-blue-700 transition-all">
             More about us &rarr;
@@ -32,7 +35,10 @@ const AboutUs = () => {
         </div>
       </div>
 
-      <div data-aos="fade-right" className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div
+        data-aos="fade-right"
+        className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
+      >
         <div className="space-y-4">
           <h3 className="text-blue-800 uppercase text-lg font-extralight font-montserrat tracking-widest flex items-center gap-2">
             <i className="fa fa-moon"></i> Our Philosophy

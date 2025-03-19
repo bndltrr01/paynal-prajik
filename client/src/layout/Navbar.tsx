@@ -1,25 +1,24 @@
-import { FC, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import hotelLogo from "../assets/hotel_logo.png";
-import LoginModal from "../components/LoginModal";
-import Modal from "../components/Modal";
-import Notification from "../components/Notification";
-import SignupModal from "../components/SignupModal";
-import { navLinks } from "../constants/Navbar";
-import { useUserContext } from "../contexts/AuthContext";
-import { logout } from "../services/Auth";
-import Dropdown from "../components/Dropdown";
-import { getGuestDetails } from "../services/Guest";
-import DefaultImg from "../assets/Default_pfp.jpg";
-import { useLocation } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCalendarCheck,
   faCircleUser,
   faRightToBracket,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FC, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import DefaultImg from "../assets/Default_pfp.jpg";
+import hotelLogo from "../assets/hotel_logo.png";
+import Dropdown from "../components/Dropdown";
+import LoginModal from "../components/LoginModal";
+import Modal from "../components/Modal";
+import Notification from "../components/Notification";
+import SignupModal from "../components/SignupModal";
+import { navLinks } from "../constants/Navbar";
+import { useUserContext } from "../contexts/AuthContext";
 import SlotNavButton from "../motions/CustomNavbar";
+import { logout } from "../services/Auth";
+import { getGuestDetails } from "../services/Guest";
 
 const Navbar: FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -130,11 +129,10 @@ const Navbar: FC = () => {
       )}
 
       <nav
-        className={`fixed top-0 left-0 w-full px-10 py-4 z-40 transition-all duration-75 ${
-          isScrolled || isAvailabilityPage || isMyBookingPage
-            ? "bg-gray-200 shadow-lg text-black"
-            : "bg-transparent text-white"
-        }`}
+        className={`fixed top-0 left-0 w-full px-10 py-4 z-40 transition-all duration-75 ${isScrolled || isAvailabilityPage || isMyBookingPage
+          ? "bg-gray-200 shadow-lg text-black"
+          : "bg-transparent text-white"
+          }`}
       >
         <div className="max-w-7xl mx-auto flex items-center">
           {/* Left Section */}
@@ -155,11 +153,10 @@ const Navbar: FC = () => {
                 <SlotNavButton
                   key={index}
                   to={link.link}
-                  className={`${
-                    isScrolled || isAvailabilityPage || isMyBookingPage
-                      ? "text-black hover:text-purple-600"
-                      : "bg-transparent text-white hover:text-purple-600"
-                  }`}
+                  className={`${isScrolled || isAvailabilityPage || isMyBookingPage
+                    ? "text-black hover:text-purple-600"
+                    : "bg-transparent text-white hover:text-purple-600"
+                    }`}
                 >
                   <i className={link.icon}></i> {link.text}
                 </SlotNavButton>
@@ -200,7 +197,7 @@ const Navbar: FC = () => {
                   },
                   {
                     label: "My Bookings",
-                    onClick: () => navigate("/booking"),
+                    onClick: () => navigate("/mybooking"),
                     icon: <FontAwesomeIcon icon={faCalendarCheck} />,
                   },
                   {
@@ -307,9 +304,8 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
-          loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         loading={loading}
         confirmText={
           loading ? (

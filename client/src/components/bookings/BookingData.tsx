@@ -48,6 +48,31 @@ const bookings = [
     price: 50000,
     status: "booked",
   },
+  // New bookings with different statuses
+  {
+    roomType: "Deluxe Double Room",
+    imageUrl: deluxe_double,
+    dates: "22 March - 25 March",
+    guests: 3,
+    price: 28000,
+    status: "reserved", // Using the new "reserved" status
+  },
+  {
+    roomType: "Presidential King Suite",
+    imageUrl: president_king,
+    dates: "1 May - 5 May",
+    guests: 4,
+    price: 65000,
+    status: "checkedIn",
+  },
+  {
+    roomType: "Executive King Room",
+    imageUrl: executive_king,
+    dates: "8 May - 10 May",
+    guests: 2,
+    price: 18000,
+    status: "noShow",
+  },
 ];
 
 const BookingData: React.FC = () => {

@@ -7,7 +7,7 @@ const MyBooking = () => {
     <>
       <div className="bg-gray-50">
         <Navbar />
-        <div className="w-full my-20">
+        <div className="w-full my-20 ">
           <BookingData />
         </div>
         <Footer />

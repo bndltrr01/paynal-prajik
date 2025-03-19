@@ -4,7 +4,7 @@ import { ImageUp } from "lucide-react";
 import { ChangeEvent, FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUserContext } from "../../contexts/AuthContext";
-import LoadingHydrate from "../../motions/LoadingHydrate";
+import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import Error from "../../pages/_ErrorBoundary";
 import { getGuestDetails, updateProfileImage } from "../../services/Guest";
 

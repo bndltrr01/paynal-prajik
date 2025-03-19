@@ -5,7 +5,7 @@ export const fetchBookings = async () => {
         const response = await booking.get('/bookings', {
             withCredentials: true
         });
-        return response.data;
+        return response.data.data;
     } catch (error) {
         console.error(`Failed to fetch bookings: ${error}`);
         throw error;

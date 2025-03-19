@@ -11,22 +11,7 @@ from django.core.cache import cache
 from .validation.validation import RegistrationForm
 from datetime import timedelta
 
-# Deleted later
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-def force_delete_account(request):
-    user_id = request.data.get('id')
-    if not user_id:
-        return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        user = CustomUsers.objects.get(id=user_id)
-        user.delete()
-        return Response({"success": f"User with user id {user_id} has been deleted."}, status=status.HTTP_200_OK)
-    except CustomUsers.DoesNotExist:
-        return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({"error": "An error occurred while deleting the account."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+# Create your views here.
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def auth_logout(request):
