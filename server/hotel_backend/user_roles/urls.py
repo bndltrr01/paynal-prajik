@@ -22,5 +22,5 @@ urlpatterns = [
     
     # For guest profile
     path('guest/change_image', views.change_profile_picture, name='change_profile_picture'),
-    path('guest', views.user_details, name='user_details'),
+    path('guest/<int:id>', views.user_details, name='user_details'),
 ]

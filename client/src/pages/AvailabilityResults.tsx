@@ -15,7 +15,6 @@ const AvailabilityResults = () => {
     navigate("/");
   }
 
-  // TanStack Query
   const { data, isLoading, error } = useQuery({
     queryKey: ["availability", arrival, departure],
     queryFn: () => fetchAvailability(arrival, departure),
