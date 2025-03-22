@@ -8,31 +8,30 @@ import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import { addNewRoom, deleteRoom, editRoom, fetchRooms } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
-interface AddRoomResponse {
-  data: any;
-}
-
 interface Room {
   id: number;
   room_name: string;
   room_image: string;
-  admission: "vip" | "regular";
   room_type: string;
-  room_number: string;
   status: "maintenance" | "occupied" | "available";
   room_price: number;
-  description?: string;
-  bed_size: string;
-  pax: number;
+  description: string;
+  capacity: string;
+  amenities: number[];
+}
+
+interface AddRoomResponse {
+  data: any;
 }
 
 const ManageRooms: FC = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editRoomData, setEditRoomData] = useState<IRoom | null>(null);
-  const [showModal, setShowModal] = useState<boolean>(false);
+  const [showModal, setShowModal] = useState(false);
   const [deleteRoomId, setDeleteRoomId] = useState<number | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [loaderText, setLoaderText] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [loaderText, setLoaderText] = useState("");
+
   const queryClient = useQueryClient();
 
   const { data: roomsData, isLoading, isError } = useQuery<{ data: Room[] }>({
@@ -92,20 +91,20 @@ const ManageRooms: FC = () => {
     },
   });
 
+  // Handler: Add new room
   const handleAddNew = () => {
-    setEditRoomData(null);
+    setEditRoomData(null); // No data => new room
     setShowFormModal(true);
   };
 
-  const handleEdit = (room: any) => {
+  // Handler: Edit existing room
+  const handleEdit = (room: Room) => {
+    // Convert from your API shape to IRoom shape
     setEditRoomData({
       id: room.id,
       roomName: room.room_name,
-      roomImage:
-        typeof room.room_image === "string" ? room.room_image : room.room_price,
-      roomAdmission: room.admission === "vip" ? "VIP" : "Regular",
+      roomImage: room.room_image,
       roomType: room.room_type,
-      roomNumber: room.room_number,
       status:
         room.status === "maintenance"
           ? "Maintenance"
@@ -114,64 +113,77 @@ const ManageRooms: FC = () => {
             : "Available",
       roomPrice: room.room_price,
       description: room.description,
-      bedSize: room.bed_size,
-      pax: room.pax,
+      // capacity is text-based, e.g. "2 Adults"
+      capacity: room.capacity,
+      // You may store amenity IDs or an empty array if you haven't implemented it
+      amenities: room.amenities ?? [],
     });
     setShowFormModal(true);
   };
 
+  // Handler: Delete room
   const handleDelete = (roomId: number) => {
     setDeleteRoomId(roomId);
     setShowModal(true);
   };
-
   const confirmDelete = () => {
-    if (deleteRoomId != null) {
+    if (deleteRoomId !== null) {
       deleteRoomMutation.mutate(deleteRoomId);
     }
   };
-
   const cancelDelete = () => {
     setDeleteRoomId(null);
     setShowModal(false);
   };
 
+  // Handler: Save (Add or Edit)
   const handleSave = async (roomData: IRoom): Promise<void> => {
+    // Convert from IRoom shape to FormData for your API
     const formData = new FormData();
     formData.append("room_name", roomData.roomName);
-    formData.append("admission", roomData.roomAdmission === "VIP" ? "vip" : "regular");
     formData.append("room_type", roomData.roomType);
     formData.append("status", roomData.status.toLowerCase() || "available");
     formData.append("room_price", String(roomData.roomPrice || 0));
     formData.append("description", roomData.description || "");
-    formData.append("bed_size", String(roomData.bedSize || ""));
-    formData.append("room_number", roomData.roomNumber || "");
-    formData.append("pax", String(roomData.pax || 1));
+    formData.append("capacity", roomData.capacity || "");
+
+    // For amenities, if your API expects an array of IDs, you might do something like:
+    // roomData.amenities.forEach((amenityId) => {
+    //   formData.append("amenities", String(amenityId));
+    // });
+
+    // If there's an image update
     if (roomData.roomImage instanceof File) {
       formData.append("room_image", roomData.roomImage);
     }
 
     if (!roomData.id) {
+      // Creating a new room
       await addRoomMutation.mutateAsync(formData);
     } else {
+      // Updating an existing room
       await editRoomMutation.mutateAsync({ roomId: roomData.id, formData });
     }
   };
 
+  // Loading states
   if (isLoading) return <DashboardSkeleton />;
   if (isError) return <Error />;
 
+  // Rooms array from API
   const rooms = roomsData?.data || [];
 
   return (
     <div className="overflow-y-auto h-[calc(100vh-25px)]">
       <div className="p-3 container mx-auto">
+        {/* Loader Overlay */}
         {loading && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
             <ManageRoomLoader size="80px" color="white" text={loaderText} />
           </div>
         )}
 
+        {/* Header */}
         <div className="flex flex-row items-center mb-5 justify-between">
           <h1 className="text-3xl font-semibold">Manage Rooms</h1>
           <button
@@ -182,9 +194,9 @@ const ManageRooms: FC = () => {
           </button>
         </div>
 
-        {/* Responsive Grid for Room Cards */}
+        {/* Grid of Room Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {rooms.map((room: any) => (
+          {rooms.map((room) => (
             <div
               key={room.id}
               className="bg-white shadow-md rounded-lg overflow-hidden"
@@ -198,39 +210,27 @@ const ManageRooms: FC = () => {
 
               {/* Card Content */}
               <div className="p-4 flex flex-col space-y-2">
-                {/* Title & Admission (right-aligned) */}
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold text-gray-900">
                     {room.room_name}
                   </h2>
+                  {/* You might display status or something else here */}
                   <span className="text-sm font-semibold text-blue-600 uppercase">
-                    {room.admission === "vip" ? "VIP" : "Regular"}
+                    {room.status}
                   </span>
                 </div>
 
-                {/* Room Type & Number */}
+                {/* Room Type & Capacity */}
                 <p className="text-gray-600 text-sm">
-                  {room.room_type} ( {room.room_number} )
+                  {room.room_type} | Capacity: {room.capacity}
                 </p>
 
-                {/* Room Description */}
+                {/* Description */}
                 <p className="text-gray-700 text-sm mb-2 line-clamp-2">
                   {room.description || "No description provided."}
                 </p>
 
-                {/* Bed Size & Pax */}
-                <div className="flex items-center gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <i className="fa fa-bed"></i>
-                    <span>{room.bed_size}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <i className="fa fa-user-friends"></i>
-                    <span>{room.pax} pax</span>
-                  </div>
-                </div>
-
-                {/* Price and Buttons */}
+                {/* Price and Action Buttons */}
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-gray-900">
                     ₱ {room.room_price?.toLocaleString()}
@@ -258,6 +258,8 @@ const ManageRooms: FC = () => {
         {/* Edit/Add Room Modal */}
         {showFormModal && (
           <EditRoomModal
+            // Pass in an empty array for now or fetch real amenities
+            availableAmenities={[]}
             isOpen={showFormModal}
             cancel={() => setShowFormModal(false)}
             onSave={handleSave}

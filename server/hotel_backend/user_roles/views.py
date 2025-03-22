@@ -155,8 +155,6 @@ def verify_otp(request):
         DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
         first_name = "Guest"
         last_name = ""
-        age = 0
-        gender = "male"
         
         if CustomUsers.objects.filter(email=email).exists():
             return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -167,8 +165,6 @@ def verify_otp(request):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            age=age,
-            gender=gender,
             is_admin=False,
             profile_image=DEFAULT_PROFILE_IMAGE
         )
@@ -416,8 +412,6 @@ def user_login(request):
             'username': auth_user.username,
             'first_name': auth_user.first_name,
             'last_name': auth_user.last_name,
-            'age': auth_user.age,
-            'guest_type': auth_user.guest_type,
             'role': role,
             'profile_image': auth_user.profile_image.url if auth_user.profile_image else "",
         }
@@ -466,7 +460,6 @@ def user_auth(request):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image': user.profile_image.url if user.profile_image else "",
-            'age': user.age
         }
     }, status=status.HTTP_200_OK)
 

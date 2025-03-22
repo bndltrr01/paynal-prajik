@@ -5,27 +5,24 @@ from cloudinary.utils import cloudinary_url # type: ignore
 class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Amenities
-        fields = '__all__'
+        fields = ['id', 'description']
 
 class RoomSerializer(serializers.ModelSerializer):
-    # room_image = serializers.ImageField()
+    amenities = serializers.PrimaryKeyRelatedField(queryset=Amenities.objects.all(), many=True, required=False)
     
     class Meta:
         model = Rooms
         fields = [
             'id',
-            'admission',
             'room_name',
-            'room_number',
             'room_type',
             'status',
             'room_price',
             'room_image',
             'description',
-            'bed_size',
-            'pax',
+            'capacity',
+            'amenities',
         ]
-        read_only_fields = ['room_number']
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)
