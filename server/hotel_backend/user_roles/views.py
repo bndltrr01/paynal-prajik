@@ -148,46 +148,18 @@ def verify_otp(request):
         if str(cached_otp) != str(received_otp):
             return Response({"error": "Incorrect OTP code. Please try again"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # OTP is valid: remove from cache.
         cache.delete(cache_key)
-        verified_key = f"{email}_verified"
-        cache.set(verified_key, True, timeout=600)
-        
-        return Response({
-            "message": "OTP verified successfully"
-        }, status=status.HTTP_200_OK)
-    except Exception as e:
-        print(f"OTP Error: {e}")
-        return Response({"error": "An error occurred during registration. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def complete_registration(request):
-    try:
-        email = request.data.get("email")
-        password = request.data.get("password")
-        first_name = request.data.get("first_name")
-        last_name = request.data.get("last_name")
-        age = request.data.get("age")
-        gender = request.data.get("gender")
-        
-        if not email or not password or not first_name or not last_name or not age or not gender:
-            return Response({
-                "error": "Please fill out the fields"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        verified_key = f"{email}_verified"
-        if not cache.get(verified_key):
-            return Response({
-                "error": "OTP not verified. Please complete OTP verification"
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # Create guest user with default values.
+        DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
+        first_name = "Guest"
+        last_name = ""
+        age = 0
+        gender = "male"
         
         if CustomUsers.objects.filter(email=email).exists():
-            return Response({
-                'error': 'Email already exists'
-            }, status=status.HTTP_400_BAD_REQUEST)
-            
-        
-        DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
+            return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
         
         user = CustomUsers.objects.create_user(
             username=email,
@@ -201,20 +173,19 @@ def complete_registration(request):
             profile_image=DEFAULT_PROFILE_IMAGE
         )
         user.save()
-        cache.delete(verified_key)
-        
+
+        # Authenticate and log in the new user.
         user_auth = authenticate(request, username=email, password=password)
         if user_auth is not None:
             login(request, user_auth)
             refresh = RefreshToken.for_user(user_auth)
-            response = {
-                "message": "User registered successfully",
+            response = Response({
+                "message": "OTP verified and user registered successfully",
                 "access_token": str(refresh.access_token),
                 "refresh_token": str(refresh),
                 "user": CustomUserSerializer(user_auth).data
-            }
-            response = Response(response, status=status.HTTP_200_OK)
-            
+            }, status=status.HTTP_200_OK)
+            # Set access and refresh token cookies.
             response.set_cookie(
                 key="access_token",
                 value=str(refresh.access_token),
@@ -223,24 +194,23 @@ def complete_registration(request):
                 samesite='Lax',
                 max_age=timedelta(days=1)
             )
-            
             response.set_cookie(
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite='Lax',
                 max_age=timedelta(days=7)
             )
-            
             return response
         else:
             return Response({
-                "error": "An error occurred while completing the registration. Please try again later."
+                "error": "An error occurred during authentication. Please try again later."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
+        print(f"OTP Error: {e}")
         return Response({
-            "error": "An error occurred while completing the registration. Please try again later."
+            "error": "An error occurred during registration. Please try again later."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])

@@ -11,7 +11,6 @@ urlpatterns = [
     path('auth/user', views.user_auth, name='user_auth'),
     path('auth/login', views.user_login, name='user_login'),
     path('auth/verify', views.verify_otp, name='verify_otp'),
-    path('auth/complete_reg', views.complete_registration, name='complete_register'),
     path('auth/resend_otp', views.resend_otp, name='resend_otp'),
     path('auth/register', views.send_register_otp, name='send_register_otp'),
     path('auth/logout', views.auth_logout, name='logout'),
