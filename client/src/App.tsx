@@ -63,7 +63,7 @@ const App = () => {
         />
 
         <Route element={<ProtectedRoute requiredRole="guest" />}>
-          <Route path="/guest" element={<GuestLayout />} >
+          <Route path="/guest" element={<GuestLayout />}>
             <Route index element={<GuestDashboard />} />
             <Route path="book-room" element={<Navigate to="/registration" />} />
           </Route>
