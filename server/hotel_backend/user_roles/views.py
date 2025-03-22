@@ -56,8 +56,6 @@ def change_password(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def send_register_otp(request):
     try:     
         email = request.data.get("email")
@@ -127,8 +125,6 @@ def send_register_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def verify_otp(request):
     try:
         email = request.data.get("email")
@@ -210,8 +206,6 @@ def verify_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def resend_otp(request):
     try:
         email = request.data.get("email")
@@ -243,8 +237,6 @@ def resend_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def forgot_password(request):
     try:
         email = request.data.get('email')
@@ -277,8 +269,6 @@ def forgot_password(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def verify_reset_otp(request):
     try:
         email = request.data.get('email')
@@ -314,8 +304,6 @@ def verify_reset_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def reset_password(request):
     try:
         email = request.data.get('email')
@@ -383,8 +371,6 @@ def reset_password(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def user_login(request):
     try:
         email = request.data.get('email')
@@ -449,14 +435,12 @@ def user_login(request):
 @permission_classes([IsAuthenticated])
 def user_auth(request):
     user = request.user
-    role = 'admin' if user.is_admin else 'guest'
     return Response({
         'isAuthenticated': True,
-        'role': role,
+        'role': 'admin' if user.is_admin else 'guest',
         'user': {
             'id': user.id,
             'email': user.email,
-            'role': role,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image': user.profile_image.url if user.profile_image else "",

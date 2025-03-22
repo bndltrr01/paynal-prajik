@@ -1,10 +1,7 @@
-import AOS from "aos";
-import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
-import useTokenHandler from "./hooks/useTokenHandler";
 import AdminLayout from "./layout/admin/AdminLayout";
 import NotFound from "./pages/_NotFound";
 import About from "./pages/About";
@@ -26,60 +23,63 @@ import Venue from "./pages/Venue";
 import RoomDetails from "./pages/RoomDetails";
 import AvailabilityResults from "./pages/AvailabilityResults";
 import GuestProfile from "./layout/guest/GuestProfile";
+import Navbar from "./layout/Navbar";
+import Footer from "./layout/Footer";
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
-  useTokenHandler();
+  const location = useLocation();
 
-  useEffect(() => {
-    AOS.init({
-      duration: 700,
-      easing: "ease-in-out",
-    });
-  }, []);
+  const isAdminRoute = 
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/guest");
 
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            role === "admin" ? (
-              <Navigate to="/admin" replace />
+    <>
+      {!isAdminRoute && <Navbar />}
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              role === "admin" ? (
+                <Navigate to="/admin" replace />
+              ) : (
+                <Homepage />
+              )
             ) : (
               <Homepage />
             )
-          ) : (
-            <Homepage />
-          )
-        }
-      />
+          }
+        />
 
-      <Route path="/registration" element={<RegistrationFlow />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/guest/:id" element={<GuestProfile />} />
-      <Route path="/venues" element={<Venue />} />
-      <Route path="/rooms" element={<Rooms />} />
-      <Route path="/rooms/:id" element={<RoomDetails />} />
-      <Route path="/availability" element={<AvailabilityResults />} />
-      <Route path="/mybooking" element={<MyBooking />} />
-      <Route path="forgot-password" element={<ForgotPassword />} />
-      {/* Protected admin routes */}
-      <Route element={<ProtectedRoute requiredRole="admin" />}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="bookings" element={<ManageBookings />} />
-          <Route path="reservations" element={<Reservations />} />
-          <Route path="areas" element={<ManageAreas />} />
-          <Route path="rooms" element={<ManageRooms />} />
-          <Route path="amenities" element={<ManageAmenities />} />
-          <Route path="users" element={<ManageUsers />} />
-          <Route path="comments" element={<Comments />} />
-          <Route path="reports" element={<Reports />} />
+        <Route path="/registration" element={<RegistrationFlow />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/guest/:id" element={<GuestProfile />} />
+        <Route path="/venues" element={<Venue />} />
+        <Route path="/rooms" element={<Rooms />} />
+        <Route path="/rooms/:id" element={<RoomDetails />} />
+        <Route path="/availability" element={<AvailabilityResults />} />
+        <Route path="/mybooking" element={<MyBooking />} />
+        <Route path="forgot-password" element={<ForgotPassword />} />
+        {/* Protected admin routes */}
+        <Route element={<ProtectedRoute requiredRole="admin" />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="bookings" element={<ManageBookings />} />
+            <Route path="reservations" element={<Reservations />} />
+            <Route path="areas" element={<ManageAreas />} />
+            <Route path="rooms" element={<ManageRooms />} />
+            <Route path="amenities" element={<ManageAmenities />} />
+            <Route path="users" element={<ManageUsers />} />
+            <Route path="comments" element={<Comments />} />
+            <Route path="reports" element={<Reports />} />
+          </Route>
         </Route>
-      </Route>
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      {!isAdminRoute && <Footer />}
+    </>
   );
 };
 

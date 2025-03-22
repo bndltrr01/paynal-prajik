@@ -3,7 +3,6 @@ import resort from "../assets/resort.jpg";
 const Promotion = () => {
   return (
     <div className="flex flex-col md:flex-row items-center p-8 bg-gray-50">
-      {/* Image - Fluid Scaling */}
       <div className="w-full md:w-[750px] md:h-[620px] flex justify-center">
         <img
           src={resort}

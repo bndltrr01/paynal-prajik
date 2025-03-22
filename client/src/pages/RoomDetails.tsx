@@ -1,19 +1,21 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchRoomDetail } from "../services/Room";
+import { lazy } from "react";
+
+const LoadingDashboard = lazy(() => import("../motions/skeletons/AdminDashboardSkeleton"));
+const Error = lazy(() => import("./_ErrorBoundary"));
 
 interface RoomDetail {
   id: number;
-  admission: string;
   room_name: string;
-  room_number: string;
   room_type: string;
   status: string;
   room_price: number;
   room_image: string;
   description: string;
-  bed_size: string;
-  pax: number;
+  capacity: string;
+  amenities: number[];
 }
 
 const RoomDetails = () => {
@@ -24,20 +26,10 @@ const RoomDetails = () => {
     queryKey: ["room", id],
     queryFn: () => fetchRoomDetail(id as string),
     enabled: !!id,
-  })
+  });
 
-  if (isLoading)
-    return (
-      <div className="flex justify-center items-center h-screen text-xl">
-        Loading...
-      </div>
-    );
-  if (error)
-    return (
-      <div className="text-center text-red-500 mt-4">
-        Failed to fetch room details.
-      </div>
-    );
+  if (isLoading) return <LoadingDashboard />
+  if (error) return <Error />
 
   const roomDetail: RoomDetail = data?.data;
 
@@ -81,18 +73,10 @@ const RoomDetails = () => {
               </div>
               <div>
                 <span className="block text-gray-600 font-medium">
-                  Admission
+                  Status
                 </span>
                 <span className="text-lg font-semibold">
-                  {roomDetail.admission.toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Bed Size
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomDetail.bed_size}
+                  {roomDetail.status.toUpperCase()}
                 </span>
               </div>
               <div>
@@ -100,9 +84,10 @@ const RoomDetails = () => {
                   Capacity
                 </span>
                 <span className="text-lg font-semibold">
-                  {roomDetail.pax} Pax
+                  {roomDetail.capacity}
                 </span>
               </div>
+              {/* You can add amenities here if needed */}
             </div>
             <div className="mt-auto">
               <p className="text-2xl font-bold mb-4">

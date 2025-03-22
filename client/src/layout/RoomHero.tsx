@@ -1,10 +1,8 @@
-import Navbar from "./Navbar";
 import room_bg from "../assets/room_bg.jpg";
 
 const RoomHero = () => {
   return (
     <>
-      <Navbar />
       <section
         className="h-screen bg-cover bg-center relative before:absolute before:inset-0 before:bg-black/60 before:z-0"
         style={{ backgroundImage: `url(${room_bg})` }}

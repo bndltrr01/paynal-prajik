@@ -106,7 +106,7 @@ const Navbar: FC = () => {
         setImageLoading(true);
         try {
           const data = await getGuestDetails(userDetails.id);
-          setProfileImage(data.user.profile_image);
+          setProfileImage(data.data.profile_image);
         } catch (err) {
           console.error(`Failed to fetch user profile for Navbar: ${err}`);
         } finally {

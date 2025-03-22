@@ -11,12 +11,11 @@ interface Room {
   room_name: string;
   room_image: string;
   room_type: string;
-  room_number: string;
-  admission: string;
+  status: string;
   description: string;
-  bed_size: string;
-  pax: number;
+  capacity: number;
   room_price: number;
+  amenities: string[];
 }
 
 interface RoomsResponse {
@@ -41,11 +40,12 @@ const RoomList: FC = () => {
       id: room.id,
       name: room.room_name,
       image: room.room_image,
-      title: `${room.room_type} (${room.room_number})`,
-      admission: room.admission,
-      bedType: room.bed_size,
-      capacity: room.pax,
+      title: room.room_type,
+      status: room.status,
+      description: room.description,
+      capacity: room.capacity,
       price: Number(room.room_price),
+      amenities: room.amenities
     };
   });
 
