@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ImageUp } from "lucide-react";
 import { ChangeEvent, FC } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUserContext } from "../../contexts/AuthContext";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import Error from "../../pages/_ErrorBoundary";
@@ -11,13 +11,14 @@ import { getGuestDetails, updateProfileImage } from "../../services/Guest";
 const GuestProfile: FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user, profileImage } = useUserContext();
-  const userId = user?.id;
+  const { id: paramId } = useParams<{ id: string }>();
+  const { userDetails, profileImage } = useUserContext();
+  const guestId = paramId || userDetails?.id;
 
   const { data: profile, isLoading, error } = useQuery({
-    queryKey: ["guest"],
-    queryFn: getGuestDetails,
-    enabled: !!userId,
+    queryKey: ["guest", guestId],
+    queryFn: () => getGuestDetails(guestId as string),
+    enabled: !!guestId,
   });
 
   const mutation = useMutation({
@@ -27,7 +28,7 @@ const GuestProfile: FC = () => {
       return updateProfileImage(formData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["guest"] });
+      queryClient.invalidateQueries({ queryKey: ["guest", guestId] });
     },
   });
 
@@ -39,8 +40,6 @@ const GuestProfile: FC = () => {
 
   if (isLoading) return <LoadingHydrate />;
   if (error) return <Error />;
-
-  console.log(user);
 
   return (
     <motion.div
@@ -60,7 +59,7 @@ const GuestProfile: FC = () => {
         <div className="flex flex-col items-center">
           <div className="relative group">
             <img
-              src={profile?.user?.profile_image || profileImage}
+              src={profile?.data?.profile_image || profileImage}
               alt="Profile"
               className="w-32 h-32 rounded-full object-cover border-4 border-gray-300 transition-transform group-hover:scale-105"
             />
@@ -80,19 +79,19 @@ const GuestProfile: FC = () => {
           </div>
 
           <h1 className="mt-4 text-2xl font-bold text-gray-800">
-            {profile?.user?.first_name} {profile?.user?.last_name}
+            {profile?.data?.first_name} {profile?.data?.last_name}
           </h1>
-          <p className="text-gray-600">{profile?.user?.email}</p>
+          <p className="text-gray-600">{profile?.data?.email}</p>
         </div>
 
         <div className="mt-6 space-y-4">
           <div className="flex justify-between items-center bg-gray-100 p-4 rounded-md">
             <span className="font-semibold text-gray-700">Age:</span>
-            <span className="text-gray-600">{profile?.user?.age}</span>
+            <span className="text-gray-600">{profile?.data?.age}</span>
           </div>
           <div className="flex justify-between items-center bg-gray-100 p-4 rounded-md">
             <span className="font-semibold text-gray-700">Guest Type:</span>
-            <span className="text-gray-600">{profile?.user?.guest_type?.toUpperCase()}</span>
+            <span className="text-gray-600">{profile?.data?.guest_type?.toUpperCase()}</span>
           </div>
         </div>
 

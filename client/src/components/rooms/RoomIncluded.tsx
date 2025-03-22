@@ -16,7 +16,7 @@ const RoomIncluded = () => {
     <section className="py-12 bg-gray-50">
       <div className="max-w-6xl mx-auto text-center px-4">
         <h2 className="uppercase text-blue-800 text-base md:text-lg tracking-wide mb-8">
-          Standard Room Amenities:
+          All hotels rooms come with:
         </h2>
         <div className="flex flex-wrap justify-center gap-4 md:gap-6 xl:gap-4 2xl:gap-3">
           {features.map((feature, index) => (

@@ -1,4 +1,4 @@
-import AboutUs from "../components/AboutUs";
+import AboutUs from "./AboutUs";
 import Promotion from "../components/Promotion";
 import Values from "../components/Values";
 import Footer from "../layout/Footer";

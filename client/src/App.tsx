@@ -63,7 +63,7 @@ const App = () => {
         />
 
         <Route element={<ProtectedRoute requiredRole="guest" />}>
-          <Route path="/guest" element={<GuestLayout />} >
+          <Route path="/guest" element={<GuestLayout />}>
             <Route index element={<GuestDashboard />} />
             <Route path="book-room" element={<Navigate to="/registration" />} />
           </Route>
@@ -71,7 +71,7 @@ const App = () => {
 
         <Route path="/registration" element={<RegistrationFlow />} />
         <Route path="/about" element={<About />} />
-        <Route path="/guest/:userId" element={<GuestProfile />} />
+        <Route path="/guest/:id" element={<GuestProfile />} />
         <Route path="/venues" element={<Venue />} />
         <Route path="/rooms" element={<Rooms />} />
         <Route path="/rooms/:id" element={<RoomDetails />} />

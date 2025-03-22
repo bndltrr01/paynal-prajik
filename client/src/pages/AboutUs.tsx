@@ -11,7 +11,7 @@ const AboutUs = () => {
           <img
             src={aboutUs_bg}
             alt="About Us"
-            className="w-[90%] sm:w-[90%] md:w-full lg:w-[85%] xl:w-[85%] h-full object-cover rounded-2xl shadow-lg transition-all duration-300"
+            className="w-[90%] sm:w-[90%] md:w-full lg:w-[90%] xl:w-[85%] h-full object-cover rounded-2xl shadow-lg transition-all duration-300"
           />
         </div>
         <div className="w-full md:w-1/2  flex-col justify-center space-y-6">
@@ -39,7 +39,7 @@ const AboutUs = () => {
           <img
             src={philosophy}
             alt="Our Philosophy"
-            className="w-[90%] sm:w-[80%] md:w-full lg:w-[90%] xl:w-[80%] h-full object-cover rounded-2xl shadow-lg transition-all duration-300"
+            className="w-[90%] sm:w-[90%] md:w-full lg:w-[90%] xl:w-[85%] h-full object-cover rounded-2xl shadow-lg transition-all duration-300"
           />
         </div>
         <div className="w-full md:w-1/2 flex flex-col justify-center space-y-6">

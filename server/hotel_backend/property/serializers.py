@@ -35,4 +35,17 @@ class RoomSerializer(serializers.ModelSerializer):
 class AreaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Areas
-        fields = '__all__'
+        fields = [
+            'id',
+            'area_name',
+            'description',
+            'area_image',
+            'status',
+            'capacity',
+            'price_per_hour',
+        ]
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['area_image'] = instance.area_image.url if instance.area_image else None
+        return representation
