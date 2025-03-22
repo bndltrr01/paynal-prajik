@@ -56,7 +56,7 @@ class Areas(models.Model):
         ('maintenance', 'Maintenance'),
     ]
     
-    name = models.CharField(max_length=100, unique=True)
+    area_name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
     capacity = models.IntegerField()
     price_per_hour = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -65,7 +65,7 @@ class Areas(models.Model):
         choices=AREA_STATUS_CHOICES,
         default='available',
     )
-    area_image = CloudinaryField('room_image', null=True, blank=True)
+    area_image = CloudinaryField('area_image', null=True, blank=True)
     
     class Meta:
         db_table = 'areas'

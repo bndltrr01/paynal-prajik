@@ -83,7 +83,9 @@ def fetch_rooms(request):
             "data": serializer.data
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -105,6 +107,20 @@ def add_new_room(request):
             return Response({
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def show_room_details(request, room_id):
+    try:
+        room = Rooms.objects.get(id=room_id)
+        serializer = RoomSerializer(room)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Rooms.DoesNotExist:
+        return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -164,35 +180,89 @@ def fetch_areas(request):
             "error": str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# def add_area(request):
-#     try:
-        
-#     except Exception as e:
-#         return Response({
-#             "error": str(e)
-#         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_new_area(request):
+    try:
+        serializer = AreaSerializer(data=request.data)
+        if serializer.is_valid():
+            instance = serializer.save()
+            data = AreaSerializer(instance).data
+            return Response({
+                "message": "Area added successfully",
+                "data": data
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                "error": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# @api_view(['PUT'])
-# @permission_classes([IsAuthenticated])
-# def edit_room(request):
-#     try:
-        
-#     except Exception as e:
-#         return Response({
-#             "error": str(e)
-#         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def show_area_details(request, area_id):
+    try:
+        area = Areas.objects.get(id=area_id)
+        serializer = AreaSerializer(area)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Areas.DoesNotExist:
+        return Response({
+            "error": "Area not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# @api_view(['DELETE'])
-# @permission_classes([IsAuthenticated])
-# def delete_area(request):
-#     try:
-        
-#     except Exception as e:
-#         return Response({
-#             "error": str(e)
-#         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def edit_area(request, area_id):
+    try:
+        area = Areas.objects.get(id=area_id)
+    except Areas.DoesNotExist:
+        return Response({
+            "error": "Area not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    try:
+        serializer = AreaSerializer(area, data=request.data, partial=True)
+        if serializer.is_valid():
+            instance = serializer.save()
+            data = AreaSerializer(instance).data
+            return Response({
+                "message": "Area updated successfully",
+                "data": data
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "error": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_area(request,area_id):
+    try:
+        area = Areas.objects.get(id=area_id)
+        area.delete()
+        return Response({
+            "message": "Area deleted successfully"
+        }, status=status.HTTP_200_OK)
+    except Areas.DoesNotExist:
+        return Response({
+            "error": "Area not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

@@ -3,6 +3,8 @@ import { FC } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllRooms } from "../../services/Room";
 import RoomCard from "./RoomCard";
+import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
+import Error from "../../pages/_ErrorBoundary";
 
 interface Room {
   id: number;
@@ -28,9 +30,9 @@ const RoomList: FC = () => {
     retry: 2
   });
 
-  if (isLoading) return <div className="p-6">Loading rooms...</div>;
+  if (isLoading) return <DashboardSkeleton />;
 
-  if (isError) return <div className="p-6 text-red-500">Error fetching rooms!</div>;
+  if (isError) return <Error />
 
   if (!data?.data) return <div className="p-6">No rooms available</div>;
 
@@ -39,8 +41,7 @@ const RoomList: FC = () => {
       id: room.id,
       name: room.room_name,
       image: room.room_image,
-      title: `${room.room_type} ( ${room.room_number} )`,
-      description: room.description,
+      title: `${room.room_type} (${room.room_number})`,
       admission: room.admission,
       bedType: room.bed_size,
       capacity: room.pax,

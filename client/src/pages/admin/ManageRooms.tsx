@@ -3,8 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FC, useState } from "react";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
 import Modal from "../../components/Modal";
-import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
+import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import { addNewRoom, deleteRoom, editRoom, fetchRooms } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
@@ -262,6 +262,7 @@ const ManageRooms: FC = () => {
             cancel={() => setShowFormModal(false)}
             onSave={handleSave}
             roomData={editRoomData}
+            loading={addRoomMutation.isPending || editRoomMutation.isPending}
           />
         )}
 

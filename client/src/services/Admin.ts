@@ -49,9 +49,10 @@ export const manageUsers = async () => {
   }
 };
 
+// CRUD Rooms
 export const fetchRooms = async () => {
   try {
-    const response = await ADMIN.get("/fetch_rooms", {
+    const response = await ADMIN.get("/rooms", {
       withCredentials: true,
     });
     return response.data;
@@ -75,6 +76,18 @@ export const addNewRoom = async (payload: FormData): Promise<{ data: any }> => {
     throw error;
   }
 };
+
+export const roomDetail = async (roomId: number) => {
+  try {
+    const response = await ADMIN.get(`/show_room/${roomId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch room detail: ${error}`);
+    throw error;
+  }
+}
 
 export const editRoom = async (
   roomId: number,
@@ -105,3 +118,70 @@ export const deleteRoom = async (roomId: number) => {
     throw error;
   }
 };
+
+// CRUD Areas
+export const fetchAreas = async () => {
+  try {
+    const response = await ADMIN.get("/areas", {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch areas: ${error}`);
+    throw error;
+  }
+}
+
+export const addNewArea = async (payload: FormData): Promise<{ data: any }> => {
+  try {
+    const response = await ADMIN.post("/add_area", payload, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to add area: ${error}`);
+    throw error;
+  }
+}
+
+export const areaDetail = async (areaId: number) => {
+  try {
+    const response = await ADMIN.get(`/show_area/${areaId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch area detail: ${error}`);
+    throw error;
+  }
+}
+
+export const editArea = async (areaId: number, payload: FormData): Promise<{ data: any }> => {
+  try {
+    const response = await ADMIN.put(`/edit_area/${areaId}`, payload, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to edit area: ${error}`);
+    throw error;
+  }
+}
+
+export const deleteArea = async (areaId: number) => {
+  try {
+    const response = await ADMIN.delete(`/delete_area/${areaId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to delete area: ${error}`);
+    throw error;
+  }
+}
