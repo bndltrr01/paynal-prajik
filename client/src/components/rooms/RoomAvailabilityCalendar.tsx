@@ -9,9 +9,20 @@ const RoomAvailabilityCalendar = () => {
   const [departureDate, setDepartureDate] = useState<Date | null>(null);
 
   const handleCheckAvailability = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set time to midnight for accurate comparison
+
     // Basic validation
     if (!arrivalDate || !departureDate) {
       alert("Please provide both arrival and departure dates.");
+      return;
+    }
+    if (arrivalDate < today) {
+      alert("Arrival date cannot be in the past.");
+      return;
+    }
+    if (departureDate < today) {
+      alert("Departure date cannot be in the past.");
       return;
     }
     if (departureDate <= arrivalDate) {
@@ -28,7 +39,7 @@ const RoomAvailabilityCalendar = () => {
   };
 
   return (
-    <div className="bg-[#ffffffe6] px-5 mb-10 sm:mb-15 w-full shadow-md drop-shadow-md inset-shadow-md">
+    <div className="bg-gray-100 px-5 mb-10 sm:mb-15 w-full shadow-md drop-shadow-sm inset-shadow-md">
       <div className="py-3 font-montserrat">
         <div className="flex flex-col justify-around gap-3">
           {/* Header - Hidden on small screens */}
@@ -43,10 +54,13 @@ const RoomAvailabilityCalendar = () => {
           </div>
 
           {/* Form Section */}
-          <div className="flex flex-wrap justify-center items-center gap-3 w-full">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full">
             {/* Arrival Date */}
-            <div className="flex flex-col min-w-[150px] flex-grow bg-white px-4 py-2">
-              <label htmlFor="arrival" className="text-xs tracking-tight mb-1">
+            <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow bg-white px-4 py-2">
+              <label
+                htmlFor="arrival"
+                className="text-sm font-medium tracking-tight mb-1"
+              >
                 Arrival Date
               </label>
               <DatePicker
@@ -54,14 +68,18 @@ const RoomAvailabilityCalendar = () => {
                 selected={arrivalDate}
                 onChange={(date) => setArrivalDate(date)}
                 dateFormat="yyyy-MM-dd"
-                className="border-b-2 outline-0 italic cursor-pointer"
+                className="border-b-2 outline-0 italic cursor-pointer text-sm"
                 placeholderText="Select arrival date"
+                minDate={new Date()} // Disable past dates
               />
             </div>
 
             {/* Departure Date */}
-            <div className="flex flex-col min-w-[150px] flex-grow bg-white px-4 py-2">
-              <label htmlFor="departure" className="text-xs tracking-tight mb-1">
+            <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow bg-white px-4 py-2">
+              <label
+                htmlFor="departure"
+                className="text-sm font-medium tracking-tight mb-1"
+              >
                 Departure Date
               </label>
               <DatePicker
@@ -69,16 +87,17 @@ const RoomAvailabilityCalendar = () => {
                 selected={departureDate}
                 onChange={(date) => setDepartureDate(date)}
                 dateFormat="yyyy-MM-dd"
-                className="border-b-2 outline-0 italic cursor-pointer"
+                className="border-b-2 outline-0 italic cursor-pointer text-sm"
                 placeholderText="Select departure date"
+                minDate={new Date()} // Disable past dates
               />
             </div>
 
             {/* Search Button */}
-            <div className="flex flex-col min-w-[150px] flex-grow">
+            <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow">
               <button
                 onClick={handleCheckAvailability}
-                className="p-3 py-5 flex-1 bg-blue-600 font-medium transition duration-300 cursor-pointer text-sm text-white w-full"
+                className="p-3 py-4 flex-1 bg-blue-600 font-medium transition duration-300 cursor-pointer text-sm text-white w-full hover:bg-blue-700"
               >
                 Check Availability
               </button>

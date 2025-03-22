@@ -131,7 +131,7 @@ const Navbar: FC = () => {
       <nav
         className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75  ${
           isScrolled || isAvailabilityPage || isMyBookingPage
-            ? "bg-gray-200 shadow-lg text-black"
+            ? "bg-gray-100 shadow-md text-black"
             : "bg-transparent text-white"
         }`}
       >
