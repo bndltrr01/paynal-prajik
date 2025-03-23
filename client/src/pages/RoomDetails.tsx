@@ -24,7 +24,7 @@ const RoomDetails = () => {
     queryKey: ["room", id],
     queryFn: () => fetchRoomDetail(id as string),
     enabled: !!id,
-  })
+  });
 
   if (isLoading)
     return (
@@ -42,23 +42,19 @@ const RoomDetails = () => {
   const roomDetail: RoomDetail = data?.data;
 
   if (!roomDetail)
-    return (
-      <div className="text-center mt-4">No room details available</div>
-    );
+    return <div className="text-center mt-4">No room details available</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Back Button */}
       <button
         onClick={() => navigate("/rooms")}
-        className="mb-4 text-blue-600 hover:text-blue-800 focus:outline-none"
+        className="text-2xl text-blue-600 hover:text-blue-800 focus:outline-none mb-10"
       >
         &larr; Back to Rooms
       </button>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Room Image */}
           <div className="h-64 md:h-auto">
             <img
               src={roomDetail.room_image}
@@ -66,7 +62,6 @@ const RoomDetails = () => {
               className="w-full h-full object-cover"
             />
           </div>
-          {/* Room Information */}
           <div className="p-6 flex flex-col">
             <h1 className="text-3xl font-bold mb-4">{roomDetail.room_name}</h1>
             <p className="text-gray-700 mb-6">{roomDetail.description}</p>
