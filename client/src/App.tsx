@@ -25,12 +25,13 @@ import AvailabilityResults from "./pages/AvailabilityResults";
 import GuestProfile from "./layout/guest/GuestProfile";
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
+import RoomImage from "./components/RoomImage";
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
   const location = useLocation();
 
-  const isAdminRoute = 
+  const isAdminRoute =
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/guest") ||
     location.pathname.startsWith("/registration");
@@ -54,16 +55,6 @@ const App = () => {
           }
         />
 
-<<<<<<< HEAD
-        <Route element={<ProtectedRoute requiredRole="guest" />}>
-          <Route path="/guest" element={<GuestLayout />}>
-            <Route index element={<GuestDashboard />} />
-            <Route path="book-room" element={<Navigate to="/registration" />} />
-          </Route>
-        </Route>
-
-=======
->>>>>>> 71f8f21c968efea5173506187f7d9c81015b2061
         <Route path="/registration" element={<RegistrationFlow />} />
         <Route path="/about" element={<About />} />
         <Route path="/guest/:id" element={<GuestProfile />} />

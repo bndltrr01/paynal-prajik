@@ -30,6 +30,7 @@ const Navbar: FC = () => {
   const location = useLocation();
   const isAvailabilityPage = location.pathname === "/availability";
   const isMyBookingPage = location.pathname === "/mybooking";
+  const isRoomDetailsPage = location.pathname.startsWith("/rooms/");
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -129,16 +130,14 @@ const Navbar: FC = () => {
       )}
 
       <nav
-<<<<<<< HEAD
-        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75  ${
-          isScrolled || isAvailabilityPage || isMyBookingPage
-            ? "bg-gray-100 shadow-md text-black"
-=======
-        className={`fixed top-0 left-0 w-full px-10 py-2 z-40 transition-all duration-75  ${isScrolled || isAvailabilityPage || isMyBookingPage
-            ? "bg-gray-200 shadow-lg text-black"
->>>>>>> 71f8f21c968efea5173506187f7d9c81015b2061
+        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75   ${
+          isScrolled ||
+          isAvailabilityPage ||
+          isMyBookingPage ||
+          isRoomDetailsPage
+            ? "bg-gray-200 shadow-md text-black"
             : "bg-transparent text-white"
-          }`}
+        }`}
       >
         <div className="max-w-7xl mx-auto flex items-center">
           {/* Left Section */}
@@ -159,10 +158,14 @@ const Navbar: FC = () => {
                 <SlotNavButton
                   key={index}
                   to={link.link}
-                  className={`${isScrolled || isAvailabilityPage || isMyBookingPage
-                      ? "text-black hover:text-purple-600"
+                  className={`${
+                    isScrolled ||
+                    isAvailabilityPage ||
+                    isMyBookingPage ||
+                    isRoomDetailsPage
+                      ? "text-black  hover:text-purple-600"
                       : "bg-transparent text-white hover:text-purple-600"
-                    }`}
+                  }`}
                 >
                   <i className={link.icon}></i> {link.text}
                 </SlotNavButton>
@@ -222,7 +225,7 @@ const Navbar: FC = () => {
                   <img
                     src={profileImage || DefaultImg}
                     alt="Profile"
-                    className="h-16 w-16 rounded-full object-cover cursor-pointer"
+                    className="h-14 w-14 rounded-full object-cover cursor-pointer"
                   />
                 )}
               </Dropdown>
@@ -310,8 +313,9 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
         loading={loading}
         confirmText={
           loading ? (
