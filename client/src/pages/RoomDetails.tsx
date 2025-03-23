@@ -39,11 +39,11 @@ const RoomDetails = () => {
     );
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container min-h-screen mx-auto px-4 pt-20 pb-8">
       {/* Back Button */}
       <button
         onClick={() => navigate("/rooms")}
-        className="mb-4 text-blue-600 hover:text-blue-800 focus:outline-none"
+        className="mb-4 text-blue-600 hover:text-blue-800 focus:outline-none cursor-pointer"
       >
         &larr; Back to Rooms
       </button>
@@ -91,7 +91,7 @@ const RoomDetails = () => {
             </div>
             <div className="mt-auto">
               <p className="text-2xl font-bold mb-4">
-                ₱{roomDetail.room_price.toLocaleString()}
+                ₱ {roomDetail.room_price.toLocaleString()}
               </p>
               <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
                 Reserve Now

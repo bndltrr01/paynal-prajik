@@ -1,12 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FC, useState } from "react";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
 import Modal from "../../components/Modal";
 import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
-import { addNewRoom, deleteRoom, editRoom, fetchRooms } from "../../services/Admin";
+import {
+  addNewRoom,
+  deleteRoom,
+  editRoom,
+  fetchRooms,
+  fetchAmenities,
+} from "../../services/Admin";
 import Error from "../_ErrorBoundary";
+
+/** 
+ * Amenity interface must include an 'id' field so you can map
+ * numeric IDs to descriptions.
+ */
+interface Amenity {
+  id: number;
+  description: string;
+}
 
 interface Room {
   id: number;
@@ -24,9 +39,132 @@ interface AddRoomResponse {
   data: any;
 }
 
+const ViewRoomModal: FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  roomData: Room | null;
+  allAmenities: Amenity[];
+}> = ({ isOpen, onClose, roomData, allAmenities }) => {
+  if (!isOpen || !roomData) return null;
+
+  // Helper: map each ID to its description
+  const getAmenityDescription = (id: number) => {
+    const found = allAmenities.find((a) => a.id === id);
+    return found ? found.description : `ID: ${id}`;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg relative max-h-[90vh] overflow-y-auto">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+        >
+          <i className="fas fa-times" />
+        </button>
+
+        {/* Two-column layout (like RoomDetails) */}
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          {/* Left Column: Image */}
+          <div className="h-64 md:h-auto">
+            {roomData.room_image ? (
+              <img
+                src={roomData.room_image}
+                alt={roomData.room_name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                No Image
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Information */}
+          <div className="p-6 flex flex-col">
+            <h1 className="text-3xl font-bold mb-4">{roomData.room_name}</h1>
+            <p className="text-gray-700 mb-6">{roomData.description}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div>
+                <span className="block text-gray-600 font-medium">
+                  Room Type
+                </span>
+                <span className="text-lg font-semibold">
+                  {roomData.room_type}
+                </span>
+              </div>
+              <div>
+                <span className="block text-gray-600 font-medium">
+                  Status
+                </span>
+                <span className="text-lg font-semibold">
+                  {roomData.status.toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <span className="block text-gray-600 font-medium">
+                  Capacity
+                </span>
+                <span className="text-lg font-semibold">
+                  {roomData.capacity}
+                </span>
+              </div>
+              {/* Amenities as a bulleted list */}
+              <div>
+                <span className="block text-gray-600 font-medium">
+                  Amenities
+                </span>
+                {roomData.amenities.length === 0 ? (
+                  <span className="text-lg font-semibold">None</span>
+                ) : (
+                  <ul className="list-disc list-inside text-gray-700 text-sm mt-1">
+                    {roomData.amenities.map((amenityId) => {
+                      const desc = getAmenityDescription(amenityId);
+                      return <li key={amenityId}>{desc}</li>;
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            {/* Price + optional button */}
+            <div className="mt-auto">
+              <p className="text-2xl font-bold mb-4">
+                ₱ {roomData.room_price.toLocaleString()}
+              </p>
+              <button
+                onClick={onClose}
+                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+              >
+                Reserve Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer with close button */}
+        <div className="flex justify-end p-4 border-t">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ManageRooms: FC = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editRoomData, setEditRoomData] = useState<IRoom | null>(null);
+
+  // For the read-only view
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewRoomData, setViewRoomData] = useState<Room | null>(null);
+
   const [showModal, setShowModal] = useState(false);
   const [deleteRoomId, setDeleteRoomId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,11 +172,22 @@ const ManageRooms: FC = () => {
 
   const queryClient = useQueryClient();
 
+  // 1. Fetch Rooms (no undefined values)
   const { data: roomsData, isLoading, isError } = useQuery<{ data: Room[] }>({
     queryKey: ["rooms"],
     queryFn: fetchRooms,
   });
 
+  // 2. Also fetch ALL amenities with explicit page/pageSize
+  const { data: allAmenitiesData } = useQuery<{ data: Amenity[] }>({
+    // Provide explicit numeric values in your query key:
+    queryKey: ["allAmenitiesForView", 1, 100],
+    // Then your fetchAmenities function uses fallback if needed
+    queryFn: fetchAmenities,
+  });
+  const allAmenities = allAmenitiesData?.data || [];
+
+  // 3. Mutations for Create, Update, Delete
   const addRoomMutation = useMutation<AddRoomResponse, unknown, FormData>({
     mutationFn: addNewRoom,
     onMutate: () => {
@@ -91,15 +240,16 @@ const ManageRooms: FC = () => {
     },
   });
 
-  // Handler: Add new room
+  // 4. Handlers
+
+  // A. Add New Room
   const handleAddNew = () => {
     setEditRoomData(null); // No data => new room
     setShowFormModal(true);
   };
 
-  // Handler: Edit existing room
+  // B. Edit Existing Room
   const handleEdit = (room: Room) => {
-    // Convert from your API shape to IRoom shape
     setEditRoomData({
       id: room.id,
       roomName: room.room_name,
@@ -113,15 +263,19 @@ const ManageRooms: FC = () => {
             : "Available",
       roomPrice: room.room_price,
       description: room.description,
-      // capacity is text-based, e.g. "2 Adults"
       capacity: room.capacity,
-      // You may store amenity IDs or an empty array if you haven't implemented it
       amenities: room.amenities ?? [],
     });
     setShowFormModal(true);
   };
 
-  // Handler: Delete room
+  // C. View (READ)
+  const handleView = (room: Room) => {
+    setViewRoomData(room);
+    setShowViewModal(true);
+  };
+
+  // D. Delete Room
   const handleDelete = (roomId: number) => {
     setDeleteRoomId(roomId);
     setShowModal(true);
@@ -136,9 +290,9 @@ const ManageRooms: FC = () => {
     setShowModal(false);
   };
 
-  // Handler: Save (Add or Edit)
+  // E. Save (Create or Update)
   const handleSave = async (roomData: IRoom): Promise<void> => {
-    // Convert from IRoom shape to FormData for your API
+    // Convert from IRoom shape to FormData
     const formData = new FormData();
     formData.append("room_name", roomData.roomName);
     formData.append("room_type", roomData.roomType);
@@ -147,10 +301,10 @@ const ManageRooms: FC = () => {
     formData.append("description", roomData.description || "");
     formData.append("capacity", roomData.capacity || "");
 
-    // For amenities, if your API expects an array of IDs, you might do something like:
-    // roomData.amenities.forEach((amenityId) => {
-    //   formData.append("amenities", String(amenityId));
-    // });
+    // For amenities, append each ID
+    roomData.amenities.forEach((amenityId) => {
+      formData.append("amenities", String(amenityId));
+    });
 
     // If there's an image update
     if (roomData.roomImage instanceof File) {
@@ -166,11 +320,11 @@ const ManageRooms: FC = () => {
     }
   };
 
-  // Loading states
+  // 5. Loading & Error States
   if (isLoading) return <DashboardSkeleton />;
   if (isError) return <Error />;
 
-  // Rooms array from API
+  // 6. Rooms array from API
   const rooms = roomsData?.data || [];
 
   return (
@@ -201,41 +355,38 @@ const ManageRooms: FC = () => {
               key={room.id}
               className="bg-white shadow-md rounded-lg overflow-hidden"
             >
-              {/* Room Image */}
               <img
                 src={room.room_image}
                 alt={room.room_name}
                 className="w-full h-48 object-cover"
               />
-
-              {/* Card Content */}
               <div className="p-4 flex flex-col space-y-2">
                 <div className="flex justify-between items-center">
                   <h2 className="text-xl font-bold text-gray-900">
                     {room.room_name}
                   </h2>
-                  {/* You might display status or something else here */}
                   <span className="text-sm font-semibold text-blue-600 uppercase">
                     {room.status}
                   </span>
                 </div>
-
-                {/* Room Type & Capacity */}
                 <p className="text-gray-600 text-sm">
                   {room.room_type} | Capacity: {room.capacity}
                 </p>
-
-                {/* Description */}
                 <p className="text-gray-700 text-sm mb-2 line-clamp-2">
                   {room.description || "No description provided."}
                 </p>
-
-                {/* Price and Action Buttons */}
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-lg font-bold text-gray-900">
                     ₱ {room.room_price?.toLocaleString()}
                   </span>
                   <div className="flex gap-2">
+                    {/* READ button */}
+                    <button
+                      onClick={() => handleView(room)}
+                      className="px-3 py-1 uppercase font-semibold bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
+                    >
+                      View
+                    </button>
                     <button
                       onClick={() => handleEdit(room)}
                       className="px-3 py-1 uppercase font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
@@ -258,8 +409,6 @@ const ManageRooms: FC = () => {
         {/* Edit/Add Room Modal */}
         {showFormModal && (
           <EditRoomModal
-            // Pass in an empty array for now or fetch real amenities
-            availableAmenities={[]}
             isOpen={showFormModal}
             cancel={() => setShowFormModal(false)}
             onSave={handleSave}
@@ -279,6 +428,14 @@ const ManageRooms: FC = () => {
           className="px-4 py-2 bg-red-600 text-white rounded-md uppercase font-bold hover:bg-red-700 transition-all duration-300"
           cancelText="No"
           confirmText="Delete Room"
+        />
+
+        {/* View (Read) Modal */}
+        <ViewRoomModal
+          isOpen={showViewModal}
+          onClose={() => setShowViewModal(false)}
+          roomData={viewRoomData}
+          allAmenities={allAmenities}
         />
       </div>
     </div>

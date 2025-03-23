@@ -76,16 +76,18 @@ const EditAmenityModal: FC<IEditAmenityModalProps> = ({
                 <label className="block text-sm font-medium mb-1">
                   Description
                 </label>
-                <textarea
-                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={4}
+                <input 
+                  type="text" 
+                  name="description" 
+                  id="description" 
                   value={formState.description}
-                  onChange={(e) =>
+                  onChange={(e) => 
                     setFormState((prev) => ({
                       ...prev,
                       description: e.target.value,
                     }))
                   }
+                  className="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
                 {errors["description"] && (
                   <p className="text-red-500 text-xs mt-1">

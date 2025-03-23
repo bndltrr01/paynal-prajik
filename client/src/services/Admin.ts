@@ -190,9 +190,10 @@ export const deleteArea = async (areaId: number) => {
 };
 
 // CRUD Amenities
-export const fetchAmenities = async () => {
+export const fetchAmenities = async ({ queryKey }: any) => {
   try {
-    const response = await ADMIN.get("/amenities", {
+    const [, page, pageSize] = queryKey;
+    const response = await ADMIN.get(`/amenities?page=${page}&page_size=${pageSize}`, {
       withCredentials: true,
     });
     return response.data;

@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { FC, useState, useEffect, ChangeEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAmenities } from "../../services/Admin";
 
 export interface IRoom {
     id: number;
@@ -20,7 +22,6 @@ interface IRoomFormModalProps {
     onSave: (data: IRoom) => Promise<void>;
     roomData: IRoom | null;
     loading?: boolean;
-    availableAmenities?: { id: number; name: string }[];
 }
 
 const EditRoomModal: FC<IRoomFormModalProps> = ({
@@ -29,8 +30,8 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
     onSave,
     roomData,
     loading = false,
-    availableAmenities = [],
 }) => {
+    // Local form state
     const [formState, setFormState] = useState<IRoom>({
         id: roomData?.id || 0,
         roomName: roomData?.roomName || "",
@@ -38,13 +39,28 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         capacity: roomData?.capacity || "",
         amenities: roomData?.amenities || [],
         roomPrice: roomData?.roomPrice || 0,
-        // Default to "Available" if creating a new room
         status: roomData?.status || "Available",
         description: roomData?.description || "",
         roomImage: roomData?.roomImage || "",
     });
 
+    // Fetch amenities only when modal is open
+    const {
+        data: amenitiesData,
+        isLoading: isLoadingAmenities,
+        isError: isErrorAmenities,
+    } = useQuery({
+        queryKey: ["amenities", 1, 100],
+        queryFn: fetchAmenities,
+        enabled: isOpen,
+    });
+
+    const availableAmenities = amenitiesData?.data || [];
+
+    // For image preview
     const [previewUrl, setPreviewUrl] = useState<string>("");
+
+    // For storing field-level errors from the server
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Map front-end fields to API fields if needed
@@ -72,7 +88,7 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         }
     }, [formState.roomImage]);
 
-    // Handle field changes
+    // Handle text/select/textarea changes
     const handleChange = (
         e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -80,16 +96,16 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         setFormState((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Handle amenities (checkbox)
+    // Toggle an amenity in the local state
     const handleAmenityChange = (amenityId: number) => {
         setFormState((prev) => {
-            const newSet = new Set(prev.amenities);
-            if (newSet.has(amenityId)) {
-                newSet.delete(amenityId);
+            const amenitySet = new Set(prev.amenities);
+            if (amenitySet.has(amenityId)) {
+                amenitySet.delete(amenityId);
             } else {
-                newSet.add(amenityId);
+                amenitySet.add(amenityId);
             }
-            return { ...prev, amenities: Array.from(newSet) };
+            return { ...prev, amenities: Array.from(amenitySet) };
         });
     };
 
@@ -114,8 +130,8 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
 
     // Close modal on ESC
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
+        const handleKeyDown = (evt: KeyboardEvent) => {
+            if (evt.key === "Escape") {
                 cancel();
             }
         };
@@ -142,14 +158,16 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 20, opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="bg-white w-full max-w-3xl mx-4 rounded shadow-lg p-6 relative max-h-[90vh] overflow-y-auto"
+                        // Widened modal: max-w-4xl
+                        className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg p-6 relative max-h-[90vh] overflow-y-auto"
                     >
                         <h2 className="text-xl font-semibold mb-4">
                             {roomData ? "Edit Room" : "Add New Room"}
                         </h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* 2-column grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Left Column */}
                                 <div className="space-y-4">
                                     {/* Room Name */}
@@ -182,7 +200,7 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                             name="roomType"
                                             value={formState.roomType}
                                             onChange={handleChange}
-                                            placeholder="e.g. Deluxe, Suite"
+                                            placeholder="e.g., Deluxe, Suite"
                                             className="border border-gray-300 rounded w-full p-2"
                                         />
                                         {errors[fieldMapping.roomType] && (
@@ -212,36 +230,7 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                         )}
                                     </div>
 
-                                    {/* Amenities (checkboxes) */}
-                                    {availableAmenities.length > 0 && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">
-                                                Amenities
-                                            </label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {availableAmenities.map((amenity) => (
-                                                    <label key={amenity.id} className="flex items-center gap-2">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={formState.amenities.includes(amenity.id)}
-                                                            onChange={() => handleAmenityChange(amenity.id)}
-                                                        />
-                                                        <span>{amenity.name}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                            {errors[fieldMapping.amenities] && (
-                                                <p className="text-red-500 text-xs mt-1">
-                                                    {errors[fieldMapping.amenities]}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* 
-                    Hide Status when creating (roomData == null),
-                    show only when editing.
-                  */}
+                                    {/* Status (Only when editing) */}
                                     {roomData && (
                                         <div>
                                             <label className="block text-sm font-medium mb-1">
@@ -283,10 +272,7 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                             </p>
                                         )}
                                     </div>
-                                </div>
 
-                                {/* Right Column */}
-                                <div className="space-y-4">
                                     {/* Description */}
                                     <div>
                                         <label className="block text-sm font-medium mb-1">
@@ -305,7 +291,10 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                             </p>
                                         )}
                                     </div>
+                                </div>
 
+                                {/* Right Column */}
+                                <div className="space-y-5 max-h-[55vh] overflow-y-auto">
                                     {/* Room Image */}
                                     <div>
                                         <label className="block text-sm font-medium mb-1">
@@ -321,12 +310,55 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                             <img
                                                 src={previewUrl}
                                                 alt="Preview"
-                                                className="w-full h-48 object-cover border border-gray-200 mt-2"
+                                                className="w-full h-56 object-cover border border-gray-200 mt-2"
                                             />
                                         )}
                                         {errors[fieldMapping.roomImage] && (
                                             <p className="text-red-500 text-xs mt-1">
                                                 {errors[fieldMapping.roomImage]}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Amenities */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">
+                                            Amenities
+                                        </label>
+                                        {isLoadingAmenities && (
+                                            <p className="text-gray-500 text-sm">Loading amenities...</p>
+                                        )}
+                                        {isErrorAmenities && (
+                                            <p className="text-red-500 text-sm">Failed to load amenities.</p>
+                                        )}
+                                        {!isLoadingAmenities && !isErrorAmenities && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-3">
+                                                {availableAmenities.length === 0 ? (
+                                                    <p className="text-gray-500 text-sm">
+                                                        No amenities available.
+                                                    </p>
+                                                ) : (
+                                                    availableAmenities.map((amenity: any) => (
+                                                        <label
+                                                            key={amenity.id}
+                                                            className="flex items-center gap-2 cursor-pointer"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={formState.amenities.includes(amenity.id)}
+                                                                onChange={() => handleAmenityChange(amenity.id)}
+                                                            />
+                                                            <span className="text-black text-md">
+                                                                {amenity.description}
+                                                            </span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                        {errors["amenities"] && (
+                                            <p className="text-red-500 text-xs mt-1">
+                                                {errors["amenities"]}
                                             </p>
                                         )}
                                     </div>

@@ -18,6 +18,13 @@ interface Amenity {
   description: string;
 }
 
+interface PaginatedAmenities {
+  data: Amenity[];
+  page: number;
+  pages: number;
+  total: number;
+}
+
 interface AddAmenityResponse {
   data: any;
 }
@@ -32,15 +39,18 @@ const ManageAmenities = () => {
   const [loading, setLoading] = useState(false);
   const [loaderText, setLoaderText] = useState("");
 
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 15;
+
   const queryClient = useQueryClient();
 
   const {
-    data: amenitiesData,
+    data: amenitiesResponse,
     isLoading,
     isError,
-  } = useQuery<{ data: Amenity[] }>({
-    queryKey: ["amenities"],
-    queryFn: fetchAmenities
+  } = useQuery<PaginatedAmenities, Error>({
+    queryKey: ["amenities", page, pageSize],
+    queryFn: fetchAmenities,
   });
 
   const createAmenityMutation = useMutation<AddAmenityResponse, unknown, { description: string }>({
@@ -98,13 +108,13 @@ const ManageAmenities = () => {
   if (isLoading) return <DashboardSkeleton />;
   if (isError) return <Error />;
 
-  const amenities = amenitiesData?.data || [];
+  const amenities: Amenity[] = amenitiesResponse?.data || [];
 
-  const filteredAmenities = amenities.filter((amenity) => {
+  // Filter amenities based on search and filter criteria
+  const filteredAmenities = amenities.filter((amenity: Amenity) => {
     const matchesSearch = amenity.description
       .toLowerCase()
       .includes(search.toLowerCase());
-
     if (filter === "all") return matchesSearch;
     return matchesSearch;
   });
@@ -123,11 +133,13 @@ const ManageAmenities = () => {
     setDeleteAmenityId(amenityId);
     setShowDeleteModal(true);
   };
+
   const confirmDeleteAmenity = () => {
     if (deleteAmenityId !== null) {
       deleteAmenityMutation.mutate(deleteAmenityId);
     }
   };
+
   const cancelDeleteAmenity = () => {
     setDeleteAmenityId(null);
     setShowDeleteModal(false);
@@ -135,7 +147,6 @@ const ManageAmenities = () => {
 
   const handleSaveAmenity = async (amenity: IAmenity) => {
     const payload = { description: amenity.description };
-
     if (amenity.id === 0) {
       await createAmenityMutation.mutateAsync(payload);
     } else {
@@ -182,13 +193,12 @@ const ManageAmenities = () => {
             onChange={(e) => setFilter(e.target.value)}
           >
             <option value="all">All Amenities</option>
-            {/* If you had statuses or categories, you'd list them here */}
           </select>
         </div>
 
         {/* Grid of Amenity Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredAmenities.map((amenity) => (
+          {filteredAmenities.map((amenity: Amenity) => (
             <div
               key={amenity.id}
               className="bg-white shadow-md rounded-lg overflow-hidden"
@@ -198,7 +208,6 @@ const ManageAmenities = () => {
                 <p className="text-gray-700 text-sm mb-2 line-clamp-4">
                   {amenity.description || "No description provided."}
                 </p>
-
                 {/* Action Buttons */}
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex gap-2">
@@ -220,6 +229,33 @@ const ManageAmenities = () => {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {amenitiesResponse && (
+          <div className="flex justify-center items-center mt-8 gap-4">
+            <button
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              disabled={page === 1}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span>
+              Page {amenitiesResponse.page} of {amenitiesResponse.pages}
+            </span>
+            <button
+              onClick={() =>
+                setPage((prev) =>
+                  prev < amenitiesResponse.pages ? prev + 1 : prev
+                )
+              }
+              disabled={page >= amenitiesResponse.pages}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {/* Create/Edit Modal */}
         {showFormModal && (

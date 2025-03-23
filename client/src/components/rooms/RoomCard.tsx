@@ -22,7 +22,6 @@ const RoomCard: FC<RoomCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  // Use a badge color based on room status:
   const statusBadge =
     status.toLowerCase() === "available"
       ? "bg-green-500"
@@ -55,7 +54,7 @@ const RoomCard: FC<RoomCardProps> = ({
         </div>
         <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
           <span className="text-lg font-bold text-gray-800">
-            ₱{price.toLocaleString()}
+            ₱ {price.toLocaleString()}
           </span>
           <div className="flex gap-2">
             <button

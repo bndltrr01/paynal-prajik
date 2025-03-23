@@ -11,6 +11,7 @@ from user_roles.serializers import CustomUserSerializer
 from user_roles.models import CustomUsers
 from property.models import Rooms, Amenities, Areas
 from property.serializers import RoomSerializer, AmenitySerializer, AreaSerializer
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Create your views here.
 @api_view(['GET'])
@@ -260,9 +261,22 @@ def delete_area(request,area_id):
 def fetch_amenities(request):
     try:
         amenities = Amenities.objects.all()
-        serializer = AmenitySerializer(amenities, many=True)
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 15)
+        
+        paginator = Paginator(amenities, page_size)
+        try:
+            amenities_page = paginator.page(page)
+        except PageNotAnInteger:
+            amenities_page = paginator.page(1)
+        except EmptyPage:
+            amenities_page = paginator.page(paginator.num_pages)
+        serializer = AmenitySerializer(amenities_page, many=True)
         return Response({
-            "data": serializer.data
+            "data": serializer.data,
+            "page": amenities_page.number,
+            "pages": paginator.num_pages,
+            "total": paginator.count
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({
@@ -291,7 +305,7 @@ def create_amenity(request):
         return Response({
             "error": str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def retreive_amenity(request, pk):
