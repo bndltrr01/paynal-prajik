@@ -44,7 +44,7 @@ const RoomList: FC = () => {
       status: room.status,
       description: room.description,
       capacity: room.capacity,
-      price: Number(room.room_price),
+      price: room.room_price,
       amenities: room.amenities
     };
   });

@@ -73,7 +73,6 @@ def area_reservations(request):
 
 # Rooms
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def fetch_rooms(request):
     try:
         rooms = Rooms.objects.all()
@@ -158,7 +157,6 @@ def delete_room(request, room_id):
 
 # Areas
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def fetch_areas(request):
     try:
         areas = Areas.objects.all()
@@ -257,7 +255,6 @@ def delete_area(request,area_id):
 
 # CRUD Amenities
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def fetch_amenities(request):
     try:
         amenities = Amenities.objects.all()

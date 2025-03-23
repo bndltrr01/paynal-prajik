@@ -8,7 +8,7 @@ interface RoomCardProps {
   title: string;
   status: string;
   capacity: string;
-  price: number;
+  price: string | number;
 }
 
 const RoomCard: FC<RoomCardProps> = ({
@@ -54,7 +54,7 @@ const RoomCard: FC<RoomCardProps> = ({
         </div>
         <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
           <span className="text-lg font-bold text-gray-800">
-            ₱ {price.toLocaleString()}
+            {price}
           </span>
           <div className="flex gap-2">
             <button

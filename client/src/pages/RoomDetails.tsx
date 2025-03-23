@@ -136,7 +136,7 @@ const RoomDetails = () => {
             </div>
             <div className="mt-auto">
               <p className="text-2xl font-bold mb-4">
-                ₱ {roomDetail.room_price.toLocaleString()}
+                {roomDetail.room_price.toLocaleString()}
               </p>
               <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
                 Reserve Now
