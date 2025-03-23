@@ -77,16 +77,6 @@ const BookingCard = ({
           </span>
 
           <div className="flex gap-3 ml-auto">
-            {isReservedOrBooked() && (
-              <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                Check In
-              </button>
-            )}
-            {normalizedStatus === "checkedin" && (
-              <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
-                Check Out
-              </button>
-            )}
             {(normalizedStatus === "pending" || isReservedOrBooked()) && (
               <button className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
                 Cancel

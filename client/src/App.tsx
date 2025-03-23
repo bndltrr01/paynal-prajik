@@ -25,12 +25,13 @@ import AvailabilityResults from "./pages/AvailabilityResults";
 import GuestProfile from "./layout/guest/GuestProfile";
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
+import RoomImage from "./components/RoomImage";
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
   const location = useLocation();
 
-  const isAdminRoute = 
+  const isAdminRoute =
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/guest") ||
     location.pathname.startsWith("/registration");

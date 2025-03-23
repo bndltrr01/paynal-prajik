@@ -3,6 +3,9 @@
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAvailability } from "../services/Booking";
+import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
+import Navbar from "../layout/Navbar";
+import Footer from "../layout/Footer";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
@@ -25,17 +28,19 @@ const AvailabilityResults = () => {
   const departureLabel = departure;
 
   return (
-    <div className="container min-h-screen mx-auto px-4 pt-28 pb-8">
+    <div className="container min-h-screen mx-auto px-4 py-10 mt-[120px] pb-8">
       {/* Page Header */}
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl md:text-3xl font-bold">
-          Availability Results
-        </h1>
+      <div className="mb-8 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold">Availability Results</h1>
         <p className="text-gray-600 mt-2">
-          Showing availability from{" "}
-          <span className="font-semibold">{arrivalLabel}</span> to{" "}
+          Showing availability from
+          <span className="font-semibold">{arrivalLabel}</span> to
           <span className="font-semibold">{departureLabel}</span>
         </p>
+      </div>
+
+      <div className="w-[80%] mx-auto">
+        <RoomAvailabilityCalendar />
       </div>
 
       {/* Loading and Error States */}
@@ -74,12 +79,11 @@ const AvailabilityResults = () => {
                       />
                     )}
                     {/* Room Name & Basic Info */}
-                    <h3 className="text-lg font-bold mb-1">
-                      {room.room_name}
-                    </h3>
+                    <h3 className="text-lg font-bold mb-1">{room.room_name}</h3>
                     {room.room_type && (
                       <p className="text-sm text-gray-500 mb-1">
-                        Room Type: <span className="font-medium">{room.room_type}</span>
+                        Room Type:{" "}
+                        <span className="font-medium">{room.room_type}</span>
                       </p>
                     )}
                     {/* Additional Details (Bed Size, Capacity) */}
