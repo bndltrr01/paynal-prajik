@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/AvailabilityResults.tsx
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAvailability } from "../services/Booking";
 
@@ -25,7 +25,7 @@ const AvailabilityResults = () => {
   const departureLabel = departure;
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container min-h-screen mx-auto px-4 pt-28 pb-8">
       {/* Page Header */}
       <div className="mb-6 text-center">
         <h1 className="text-2xl md:text-3xl font-bold">
@@ -101,9 +101,17 @@ const AvailabilityResults = () => {
                     <p className="text-gray-800 font-semibold text-lg mb-3">
                       ₱{Number(room.room_price).toLocaleString()}
                     </p>
-                    <button className="mt-auto bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
-                      Book Room
-                    </button>
+                    <div className="mt-auto flex justify-evenly items-center gap-2">
+                      <Link
+                        to={`/rooms/${room.id}`}
+                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                      >
+                        View Room
+                      </Link>
+                      <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+                        Book Room
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

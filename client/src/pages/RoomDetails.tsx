@@ -1,7 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchRoomDetail } from "../services/Room";
 import { lazy } from "react";
+import { fetchRoomDetail } from "../services/Room";
+// Import your fetchAmenities function
+import { fetchAmenities } from "../services/Admin";
 
 const LoadingDashboard = lazy(() => import("../motions/skeletons/AdminDashboardSkeleton"));
 const Error = lazy(() => import("./_ErrorBoundary"));
@@ -18,25 +20,49 @@ interface RoomDetail {
   amenities: number[];
 }
 
+interface Amenity {
+  id: number;
+  description: string;
+}
+
 const RoomDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data, isLoading, error } = useQuery({
+  const {
+    data: roomData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["room", id],
     queryFn: () => fetchRoomDetail(id as string),
     enabled: !!id,
   });
 
-  if (isLoading) return <LoadingDashboard />
-  if (error) return <Error />
+  const {
+    data: allAmenitiesData,
+    isLoading: isLoadingAmenities,
+    error: amenitiesError,
+  } = useQuery({
+    queryKey: ["allAmenitiesForRoomDetails", 1, 100],
+    queryFn: fetchAmenities,
+  });
 
-  const roomDetail: RoomDetail = data?.data;
+  if (isLoading) return <LoadingDashboard />;
+  if (error) return <Error />;
 
-  if (!roomDetail)
-    return (
-      <div className="text-center mt-4">No room details available</div>
-    );
+  const roomDetail: RoomDetail | undefined = roomData?.data;
+  if (!roomDetail) {
+    return <div className="text-center mt-4">No room details available</div>;
+  }
+
+  // All amenities from the server
+  const allAmenities: Amenity[] = allAmenitiesData?.data || [];
+
+  const getAmenityDescription = (amenityId: number) => {
+    const found = allAmenities.find((a) => a.id === amenityId);
+    return found ? found.description : `ID: ${amenityId}`;
+  };
 
   return (
     <div className="container min-h-screen mx-auto px-4 pt-20 pb-8">
@@ -87,7 +113,26 @@ const RoomDetails = () => {
                   {roomDetail.capacity}
                 </span>
               </div>
-              {/* You can add amenities here if needed */}
+
+              {/* Amenities in a bulleted list */}
+              <div>
+                <span className="block text-gray-600 font-medium">
+                  Amenities
+                </span>
+                {isLoadingAmenities ? (
+                  <p className="text-sm text-gray-500">Loading amenities...</p>
+                ) : amenitiesError ? (
+                  <p className="text-sm text-red-500">Failed to load amenities.</p>
+                ) : roomDetail.amenities.length === 0 ? (
+                  <span className="text-lg font-semibold">None</span>
+                ) : (
+                  <ul className="list-disc list-inside mt-1 text-gray-700">
+                    {roomDetail.amenities.map((amenityId) => (
+                      <li key={amenityId}>{getAmenityDescription(amenityId)}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <div className="mt-auto">
               <p className="text-2xl font-bold mb-4">

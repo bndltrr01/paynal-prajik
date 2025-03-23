@@ -27,6 +27,9 @@ class RoomSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['room_image'] = instance.room_image.url if instance.room_image else None
+        
+        if instance.room_price is not None:
+            representation['room_price'] = f"₱{instance.room_price:,.2f}"
         return representation
 
 class AreaSerializer(serializers.ModelSerializer):

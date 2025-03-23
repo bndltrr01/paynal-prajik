@@ -209,14 +209,14 @@ const Navbar: FC = () => {
                 position="bottom"
               >
                 {imageLoading ? (
-                  <div className="h-10 w-10 flex items-center justify-center">
+                  <div className="h-16 w-16 flex items-center justify-center">
                     <i className="fa fa-spinner fa-spin"></i>
                   </div>
                 ) : (
                   <img
                     src={profileImage || DefaultImg}
                     alt="Profile"
-                    className="h-20 w-20 rounded-full object-cover cursor-pointer"
+                    className="h-16 w-16 rounded-full object-cover cursor-pointer"
                   />
                 )}
               </Dropdown>

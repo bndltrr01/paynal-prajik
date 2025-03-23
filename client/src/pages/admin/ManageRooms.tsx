@@ -14,10 +14,9 @@ import {
 } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
-/** 
- * Amenity interface must include an 'id' field so you can map
- * numeric IDs to descriptions.
- */
+// 1. Import icons from lucide-react
+import { Eye, Edit, Trash2 } from "lucide-react";
+
 interface Amenity {
   id: number;
   description: string;
@@ -47,7 +46,6 @@ const ViewRoomModal: FC<{
 }> = ({ isOpen, onClose, roomData, allAmenities }) => {
   if (!isOpen || !roomData) return null;
 
-  // Helper: map each ID to its description
   const getAmenityDescription = (id: number) => {
     const found = allAmenities.find((a) => a.id === id);
     return found ? found.description : `ID: ${id}`;
@@ -172,17 +170,15 @@ const ManageRooms: FC = () => {
 
   const queryClient = useQueryClient();
 
-  // 1. Fetch Rooms (no undefined values)
+  // 1. Fetch Rooms
   const { data: roomsData, isLoading, isError } = useQuery<{ data: Room[] }>({
     queryKey: ["rooms"],
     queryFn: fetchRooms,
   });
 
-  // 2. Also fetch ALL amenities with explicit page/pageSize
+  // 2. Also fetch ALL amenities (for the View modal)
   const { data: allAmenitiesData } = useQuery<{ data: Amenity[] }>({
-    // Provide explicit numeric values in your query key:
     queryKey: ["allAmenitiesForView", 1, 100],
-    // Then your fetchAmenities function uses fallback if needed
     queryFn: fetchAmenities,
   });
   const allAmenities = allAmenitiesData?.data || [];
@@ -244,7 +240,7 @@ const ManageRooms: FC = () => {
 
   // A. Add New Room
   const handleAddNew = () => {
-    setEditRoomData(null); // No data => new room
+    setEditRoomData(null);
     setShowFormModal(true);
   };
 
@@ -292,7 +288,6 @@ const ManageRooms: FC = () => {
 
   // E. Save (Create or Update)
   const handleSave = async (roomData: IRoom): Promise<void> => {
-    // Convert from IRoom shape to FormData
     const formData = new FormData();
     formData.append("room_name", roomData.roomName);
     formData.append("room_type", roomData.roomType);
@@ -301,21 +296,16 @@ const ManageRooms: FC = () => {
     formData.append("description", roomData.description || "");
     formData.append("capacity", roomData.capacity || "");
 
-    // For amenities, append each ID
     roomData.amenities.forEach((amenityId) => {
       formData.append("amenities", String(amenityId));
     });
-
-    // If there's an image update
     if (roomData.roomImage instanceof File) {
       formData.append("room_image", roomData.roomImage);
     }
 
     if (!roomData.id) {
-      // Creating a new room
       await addRoomMutation.mutateAsync(formData);
     } else {
-      // Updating an existing room
       await editRoomMutation.mutateAsync({ roomId: roomData.id, formData });
     }
   };
@@ -353,15 +343,15 @@ const ManageRooms: FC = () => {
           {rooms.map((room) => (
             <div
               key={room.id}
-              className="bg-white shadow-md rounded-lg overflow-hidden"
+              className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col h-full"
             >
               <img
                 src={room.room_image}
                 alt={room.room_name}
                 className="w-full h-48 object-cover"
               />
-              <div className="p-4 flex flex-col space-y-2">
-                <div className="flex justify-between items-center">
+              <div className="p-4 flex flex-col h-full">
+                <div className="flex justify-between items-center mb-2">
                   <h2 className="text-xl font-bold text-gray-900">
                     {room.room_name}
                   </h2>
@@ -369,35 +359,36 @@ const ManageRooms: FC = () => {
                     {room.status}
                   </span>
                 </div>
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-600 text-sm mb-1">
                   {room.room_type} | Capacity: {room.capacity}
                 </p>
+                {/* Limit the description to 2 lines */}
                 <p className="text-gray-700 text-sm mb-2 line-clamp-2">
                   {room.description || "No description provided."}
                 </p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-gray-900">
-                    ₱ {room.room_price?.toLocaleString()}
-                  </span>
+
+                <div className="mt-auto flex justify-between items-center">
+                  <p className="text-lg font-bold text-gray-900">
+                    {room.room_price}
+                  </p>
                   <div className="flex gap-2">
-                    {/* READ button */}
                     <button
                       onClick={() => handleView(room)}
-                      className="px-3 py-1 uppercase font-semibold bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
                     >
-                      View
+                      <Eye />
                     </button>
                     <button
                       onClick={() => handleEdit(room)}
-                      className="px-3 py-1 uppercase font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
                     >
-                      Edit
+                      <Edit />
                     </button>
                     <button
                       onClick={() => handleDelete(room.id)}
-                      className="px-3 py-1 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
                     >
-                      Delete
+                      <Trash2 />
                     </button>
                   </div>
                 </div>
