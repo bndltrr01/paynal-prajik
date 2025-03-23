@@ -6,10 +6,9 @@ interface RoomCardProps {
   name: string;
   image: string;
   title: string;
-  admission: string;
-  bedType: string;
-  capacity: number;
-  price: number;
+  status: string;
+  capacity: string;
+  price: string | number;
 }
 
 const RoomCard: FC<RoomCardProps> = ({
@@ -17,16 +16,20 @@ const RoomCard: FC<RoomCardProps> = ({
   name,
   image,
   title,
-  bedType,
+  status,
   capacity,
   price,
-  admission,
 }) => {
   const navigate = useNavigate();
 
-  // Use a badge color based on admission type:
-  const admissionBadge =
-    admission.toLowerCase() === "vip" ? "bg-yellow-500" : "bg-blue-500";
+  const statusBadge =
+    status.toLowerCase() === "available"
+      ? "bg-green-500"
+      : status.toLowerCase() === "occupied"
+      ? "bg-red-500"
+      : status.toLowerCase() === "maintenance"
+      ? "bg-gray-500"
+      : "bg-blue-500";
 
   return (
     <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-transform hover:-translate-y-1 hover:shadow-lg">
@@ -37,25 +40,21 @@ const RoomCard: FC<RoomCardProps> = ({
           <div className="flex items-center space-x-2 mt-1">
             <span className="text-sm text-gray-600">{title}</span>
             <span
-              className={`text-xs font-semibold text-white px-2 py-1 rounded-full ${admissionBadge}`}
+              className={`text-xs font-semibold text-white px-2 py-1 rounded-full ${statusBadge}`}
             >
-              {admission.toUpperCase()}
+              {status.toUpperCase()}
             </span>
           </div>
         </div>
         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
           <div className="flex items-center space-x-1">
-            <i className="fa fa-bed text-blue-500"></i>
-            <span>{bedType}</span>
-          </div>
-          <div className="flex items-center space-x-1">
             <i className="fa fa-users text-green-500"></i>
-            <span>{capacity} pax</span>
+            <span>{capacity}</span>
           </div>
         </div>
         <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
           <span className="text-lg font-bold text-gray-800">
-            ₱{price.toLocaleString()}
+            {price}
           </span>
           <div className="flex gap-2">
             <button

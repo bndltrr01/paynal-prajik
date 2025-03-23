@@ -21,4 +21,11 @@ urlpatterns = [
     path('show_area/<int:area_id>', views.show_area_details, name='show_area_details'),
     path('edit_area/<int:area_id>', views.edit_area, name='edit_area'),
     path('delete_area/<int:area_id>', views.delete_area, name='delete_area'),
+    
+    # CRUD Amenities
+    path('amenities', views.fetch_amenities, name='fetch_amenities'),
+    path('add_amenity', views.create_amenity, name='create_amenity'),
+    path('show_amenity/<int:pk>', views.retreive_amenity, name='retreive_amenity'),
+    path('edit_amenity/<int:pk>', views.update_amenity, name='update_amenity'),
+    path('delete_amenity/<int:pk>', views.delete_amenity, name='delete_amenity'),
 ]

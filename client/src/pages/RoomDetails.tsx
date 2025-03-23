@@ -1,46 +1,57 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { lazy } from "react";
 import { fetchRoomDetail } from "../services/Room";
+// Import your fetchAmenities function
+import { fetchAmenities } from "../services/Admin";
+
+const LoadingDashboard = lazy(() => import("../motions/skeletons/AdminDashboardSkeleton"));
+const Error = lazy(() => import("./_ErrorBoundary"));
 
 interface RoomDetail {
   id: number;
-  admission: string;
   room_name: string;
-  room_number: string;
   room_type: string;
   status: string;
   room_price: number;
   room_image: string;
   description: string;
-  bed_size: string;
-  pax: number;
+  capacity: string;
+  amenities: number[];
+}
+
+interface Amenity {
+  id: number;
+  description: string;
 }
 
 const RoomDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const { data, isLoading, error } = useQuery({
+  const {
+    data: roomData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["room", id],
     queryFn: () => fetchRoomDetail(id as string),
     enabled: !!id,
   });
 
-  if (isLoading)
-    return (
-      <div className="flex justify-center items-center h-screen text-xl">
-        Loading...
-      </div>
-    );
-  if (error)
-    return (
-      <div className="text-center text-red-500 mt-4">
-        Failed to fetch room details.
-      </div>
-    );
+  const {
+    data: allAmenitiesData,
+    isLoading: isLoadingAmenities,
+    error: amenitiesError,
+  } = useQuery({
+    queryKey: ["allAmenitiesForRoomDetails", 1, 100],
+    queryFn: fetchAmenities,
+  });
 
-  const roomDetail: RoomDetail = data?.data;
+  if (isLoading) return <LoadingDashboard />;
+  if (error) return <Error />;
 
+<<<<<<< HEAD
   if (!roomDetail)
     return <div className="text-center mt-4">No room details available</div>;
 
@@ -49,6 +60,27 @@ const RoomDetails = () => {
       <button
         onClick={() => navigate("/rooms")}
         className="text-2xl text-blue-600 hover:text-blue-800 focus:outline-none mb-10"
+=======
+  const roomDetail: RoomDetail | undefined = roomData?.data;
+  if (!roomDetail) {
+    return <div className="text-center mt-4">No room details available</div>;
+  }
+
+  // All amenities from the server
+  const allAmenities: Amenity[] = allAmenitiesData?.data || [];
+
+  const getAmenityDescription = (amenityId: number) => {
+    const found = allAmenities.find((a) => a.id === amenityId);
+    return found ? found.description : `ID: ${amenityId}`;
+  };
+
+  return (
+    <div className="container min-h-screen mx-auto px-4 pt-20 pb-8">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate("/rooms")}
+        className="mb-4 text-blue-600 hover:text-blue-800 focus:outline-none cursor-pointer"
+>>>>>>> 71f8f21c968efea5173506187f7d9c81015b2061
       >
         &larr; Back to Rooms
       </button>
@@ -76,18 +108,10 @@ const RoomDetails = () => {
               </div>
               <div>
                 <span className="block text-gray-600 font-medium">
-                  Admission
+                  Status
                 </span>
                 <span className="text-lg font-semibold">
-                  {roomDetail.admission.toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Bed Size
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomDetail.bed_size}
+                  {roomDetail.status.toUpperCase()}
                 </span>
               </div>
               <div>
@@ -95,13 +119,33 @@ const RoomDetails = () => {
                   Capacity
                 </span>
                 <span className="text-lg font-semibold">
-                  {roomDetail.pax} Pax
+                  {roomDetail.capacity}
                 </span>
+              </div>
+
+              {/* Amenities in a bulleted list */}
+              <div>
+                <span className="block text-gray-600 font-medium">
+                  Amenities
+                </span>
+                {isLoadingAmenities ? (
+                  <p className="text-sm text-gray-500">Loading amenities...</p>
+                ) : amenitiesError ? (
+                  <p className="text-sm text-red-500">Failed to load amenities.</p>
+                ) : roomDetail.amenities.length === 0 ? (
+                  <span className="text-lg font-semibold">None</span>
+                ) : (
+                  <ul className="list-disc list-inside mt-1 text-gray-700">
+                    {roomDetail.amenities.map((amenityId) => (
+                      <li key={amenityId}>{getAmenityDescription(amenityId)}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
             <div className="mt-auto">
               <p className="text-2xl font-bold mb-4">
-                ₱{roomDetail.room_price.toLocaleString()}
+                {roomDetail.room_price.toLocaleString()}
               </p>
               <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
                 Reserve Now

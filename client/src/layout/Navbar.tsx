@@ -106,7 +106,7 @@ const Navbar: FC = () => {
         setImageLoading(true);
         try {
           const data = await getGuestDetails(userDetails.id);
-          setProfileImage(data.user.profile_image);
+          setProfileImage(data.data.profile_image);
         } catch (err) {
           console.error(`Failed to fetch user profile for Navbar: ${err}`);
         } finally {
@@ -129,11 +129,16 @@ const Navbar: FC = () => {
       )}
 
       <nav
+<<<<<<< HEAD
         className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75  ${
           isScrolled || isAvailabilityPage || isMyBookingPage
             ? "bg-gray-100 shadow-md text-black"
+=======
+        className={`fixed top-0 left-0 w-full px-10 py-2 z-40 transition-all duration-75  ${isScrolled || isAvailabilityPage || isMyBookingPage
+            ? "bg-gray-200 shadow-lg text-black"
+>>>>>>> 71f8f21c968efea5173506187f7d9c81015b2061
             : "bg-transparent text-white"
-        }`}
+          }`}
       >
         <div className="max-w-7xl mx-auto flex items-center">
           {/* Left Section */}
@@ -154,11 +159,10 @@ const Navbar: FC = () => {
                 <SlotNavButton
                   key={index}
                   to={link.link}
-                  className={`${
-                    isScrolled || isAvailabilityPage || isMyBookingPage
+                  className={`${isScrolled || isAvailabilityPage || isMyBookingPage
                       ? "text-black hover:text-purple-600"
                       : "bg-transparent text-white hover:text-purple-600"
-                  }`}
+                    }`}
                 >
                   <i className={link.icon}></i> {link.text}
                 </SlotNavButton>
@@ -211,14 +215,14 @@ const Navbar: FC = () => {
                 position="bottom"
               >
                 {imageLoading ? (
-                  <div className="h-10 w-10 flex items-center justify-center">
+                  <div className="h-16 w-16 flex items-center justify-center">
                     <i className="fa fa-spinner fa-spin"></i>
                   </div>
                 ) : (
                   <img
                     src={profileImage || DefaultImg}
                     alt="Profile"
-                    className="h-12 w-12 rounded-full object-cover cursor-pointer"
+                    className="h-16 w-16 rounded-full object-cover cursor-pointer"
                   />
                 )}
               </Dropdown>
@@ -306,9 +310,8 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
-          loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         loading={loading}
         confirmText={
           loading ? (

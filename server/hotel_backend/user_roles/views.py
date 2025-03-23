@@ -56,8 +56,6 @@ def change_password(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def send_register_otp(request):
     try:     
         email = request.data.get("email")
@@ -127,8 +125,6 @@ def send_register_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def verify_otp(request):
     try:
         email = request.data.get("email")
@@ -155,8 +151,6 @@ def verify_otp(request):
         DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
         first_name = "Guest"
         last_name = ""
-        age = 0
-        gender = "male"
         
         if CustomUsers.objects.filter(email=email).exists():
             return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -167,8 +161,6 @@ def verify_otp(request):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            age=age,
-            gender=gender,
             is_admin=False,
             profile_image=DEFAULT_PROFILE_IMAGE
         )
@@ -214,8 +206,6 @@ def verify_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def resend_otp(request):
     try:
         email = request.data.get("email")
@@ -247,8 +237,6 @@ def resend_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def forgot_password(request):
     try:
         email = request.data.get('email')
@@ -281,8 +269,6 @@ def forgot_password(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def verify_reset_otp(request):
     try:
         email = request.data.get('email')
@@ -318,8 +304,6 @@ def verify_reset_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def reset_password(request):
     try:
         email = request.data.get('email')
@@ -387,8 +371,6 @@ def reset_password(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def user_login(request):
     try:
         email = request.data.get('email')
@@ -416,8 +398,6 @@ def user_login(request):
             'username': auth_user.username,
             'first_name': auth_user.first_name,
             'last_name': auth_user.last_name,
-            'age': auth_user.age,
-            'guest_type': auth_user.guest_type,
             'role': role,
             'profile_image': auth_user.profile_image.url if auth_user.profile_image else "",
         }
@@ -455,18 +435,15 @@ def user_login(request):
 @permission_classes([IsAuthenticated])
 def user_auth(request):
     user = request.user
-    role = 'admin' if user.is_admin else 'guest'
     return Response({
         'isAuthenticated': True,
-        'role': role,
+        'role': 'admin' if user.is_admin else 'guest',
         'user': {
             'id': user.id,
             'email': user.email,
-            'role': role,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image': user.profile_image.url if user.profile_image else "",
-            'age': user.age
         }
     }, status=status.HTTP_200_OK)
 

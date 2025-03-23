@@ -97,7 +97,7 @@ const RegistrationFlow: FC = () => {
                 });
                 setIsAuthenticated(true);
                 setUserDetails(response.data.user);
-                navigate("/guest");
+                navigate("/");
             }
         } catch (error: any) {
             if (error.response) {

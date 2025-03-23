@@ -3,17 +3,10 @@ from cloudinary.models import CloudinaryField # type: ignore
 
 # Create your models here.
 class Amenities(models.Model):
-    name = models.CharField(max_length=100, unique=True, null=False)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     
     class Meta:
         db_table = 'amenities'
-
-class RoomAmenities(models.Model):
-    amenity = models.ForeignKey(Amenities, on_delete=models.CASCADE, related_name='amenities')
-    
-    class Meta:
-        db_table = 'room_amenities'
 
 class Rooms(models.Model):
     ROOM_STATUS_CHOICES = [
@@ -21,19 +14,7 @@ class Rooms(models.Model):
         ('occupied', 'Occupied'),
         ('maintenance', 'Maintenance'),
     ]
-    
-    ADMISSION_CHOICES = [
-        ('regular', 'Regular'),
-        ('vip', 'VIP'),
-    ]
-    
-    admission = models.CharField(
-        max_length=20,
-        choices=ADMISSION_CHOICES,
-        default='regular',
-    )
     room_name = models.CharField(max_length=100, null=False, default="Room")
-    room_number = models.CharField(max_length=10, unique=True, null=False)
     room_type = models.CharField(max_length=100, null=False)
     status = models.CharField(
         max_length=20,
@@ -43,8 +24,8 @@ class Rooms(models.Model):
     room_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     room_image = CloudinaryField('room_image', null=False, blank=False)
     description = models.TextField(blank=True)
-    bed_size = models.CharField(max_length=30, null=False)
-    pax = models.PositiveIntegerField(default=1)
+    capacity = models.TextField(max_length=100, null=False)
+    amenities = models.ManyToManyField(Amenities, related_name='rooms', blank=True)
     
     class Meta:
         db_table = 'rooms'

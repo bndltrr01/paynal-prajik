@@ -6,13 +6,12 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from booking.models import *
+from django.core.exceptions import ValidationError
 from user_roles.serializers import CustomUserSerializer
 from user_roles.models import CustomUsers
 from property.models import Rooms, Amenities, Areas
 from property.serializers import RoomSerializer, AmenitySerializer, AreaSerializer
-from property.utils import generate_room_number
-from .validations.manage_rooms import validate_room_data
-from rest_framework.exceptions import ValidationError
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 # Create your views here.
 @api_view(['GET'])
@@ -74,7 +73,6 @@ def area_reservations(request):
 
 # Rooms
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def fetch_rooms(request):
     try:
         rooms = Rooms.objects.all()
@@ -91,13 +89,9 @@ def fetch_rooms(request):
 @permission_classes([IsAuthenticated])
 def add_new_room(request):
     try:
-        validated_data = validate_room_data(request.data)
-    except ValidationError as e:
-        return Response({"error": e.detail}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        serializer = RoomSerializer(data=validated_data)
+        serializer = RoomSerializer(data=request.data)
         if serializer.is_valid():
-            instance = serializer.save(room_number=generate_room_number())
+            instance = serializer.save()
             data = RoomSerializer(instance).data
             return Response({
                 "message": "Room added successfully",
@@ -132,11 +126,7 @@ def edit_room(request, room_id):
     except Rooms.DoesNotExist:
         return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
     try:
-        validated_data = validate_room_data(request.data)
-    except ValidationError as err:
-        return Response({"error": err.detail}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        serializer = RoomSerializer(room, data=validated_data, partial=True)
+        serializer = RoomSerializer(room, data=request.data, partial=True)
         if serializer.is_valid():
             instance = serializer.save()
             data = RoomSerializer(instance).data
@@ -167,7 +157,6 @@ def delete_room(request, room_id):
 
 # Areas
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
 def fetch_areas(request):
     try:
         areas = Areas.objects.all()
@@ -264,6 +253,122 @@ def delete_area(request,area_id):
             "error": str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# CRUD Amenities
+@api_view(['GET'])
+def fetch_amenities(request):
+    try:
+        amenities = Amenities.objects.all()
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 15)
+        
+        paginator = Paginator(amenities, page_size)
+        try:
+            amenities_page = paginator.page(page)
+        except PageNotAnInteger:
+            amenities_page = paginator.page(1)
+        except EmptyPage:
+            amenities_page = paginator.page(paginator.num_pages)
+        serializer = AmenitySerializer(amenities_page, many=True)
+        return Response({
+            "data": serializer.data,
+            "page": amenities_page.number,
+            "pages": paginator.num_pages,
+            "total": paginator.count
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_amenity(request):
+    try:
+        serializer = AmenitySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Amenity added successfully"
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                "error": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except ValidationError as ve:
+        return Response({
+            "error": str(ve)
+        }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def retreive_amenity(request, pk):
+    try:
+        amenity = Amenities.objects.get(pk=pk)
+        serializer = AmenitySerializer(amenity)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Amenities.DoesNotExist:
+        return Response({
+            "error": "Amenity not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_amenity(request, pk):
+    try:
+        amenity = Amenities.objects.get(pk=pk)
+    except Amenities.DoesNotExist:
+        return Response({
+            "error": "Amenity not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    try:
+        serializer = AmenitySerializer(amenity, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Amenity updated successfully"
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "error": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except ValidationError as ve:
+        return Response({
+            "error": str(ve)
+        }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_amenity(request, pk):
+    try:
+        amenity = Amenities.objects.get(pk=pk)
+        amenity.delete()
+        return Response({
+            "message": "Amenity deleted successfully"
+        }, status=status.HTTP_200_OK)
+    except Amenities.DoesNotExist:
+        return Response({
+            "error": "Amenity not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# CRUD Users
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def manage_users(request):
