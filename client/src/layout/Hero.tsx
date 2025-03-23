@@ -1,4 +1,3 @@
-import Navbar from "./Navbar";
 import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
@@ -7,7 +6,6 @@ import { slides } from "../constants/HomepageHeroSlides";
 const Hero = () => {
   return (
     <section className="relative w-full h-screen">
-      <Navbar />
       <Swiper
         modules={[Autoplay]}
         slidesPerView={1}

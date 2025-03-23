@@ -1,11 +1,7 @@
-import AOS from "aos";
-import { Suspense, lazy, useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
-import ScrollToTop from "./components/ScrollToTop";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
-import useTokenHandler from "./hooks/useTokenHandler";
 import AdminLayout from "./layout/admin/AdminLayout";
 import NotFound from "./pages/_NotFound";
 import About from "./pages/About";
@@ -24,28 +20,25 @@ import MyBooking from "./pages/MyBooking";
 import RegistrationFlow from "./pages/RegistrationFlow";
 import Rooms from "./pages/Rooms";
 import Venue from "./pages/Venue";
-import GuestDashboard from "./pages/guests/GuestDashboard";
-import GuestLayout from "./layout/guest/GuestLayout";
 import RoomDetails from "./pages/RoomDetails";
 import AvailabilityResults from "./pages/AvailabilityResults";
 import GuestProfile from "./layout/guest/GuestProfile";
-
-const LoadingHydrate = lazy(() => import("./motions/loaders/LoadingHydrate"));
+import Navbar from "./layout/Navbar";
+import Footer from "./layout/Footer";
+import RoomImage from "./components/RoomImage";
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
-  useTokenHandler();
+  const location = useLocation();
 
-  useEffect(() => {
-    AOS.init({
-      duration: 700,
-      easing: "ease-in-out",
-    });
-  }, []);
+  const isAdminRoute =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/guest") ||
+    location.pathname.startsWith("/registration");
 
   return (
-    <Suspense fallback={<LoadingHydrate />}>
-      <ScrollToTop />
+    <>
+      {!isAdminRoute && <Navbar />}
       <Routes>
         <Route
           path="/"
@@ -61,13 +54,6 @@ const App = () => {
             )
           }
         />
-
-        <Route element={<ProtectedRoute requiredRole="guest" />}>
-          <Route path="/guest" element={<GuestLayout />}>
-            <Route index element={<GuestDashboard />} />
-            <Route path="book-room" element={<Navigate to="/registration" />} />
-          </Route>
-        </Route>
 
         <Route path="/registration" element={<RegistrationFlow />} />
         <Route path="/about" element={<About />} />
@@ -94,7 +80,8 @@ const App = () => {
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </Suspense>
+      {!isAdminRoute && <Footer />}
+    </>
   );
 };
 

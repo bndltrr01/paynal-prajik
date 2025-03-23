@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 
 @import "swiper/css";
@@ -8,9 +7,9 @@
 
 /* Add some custom styles here */
 @layer base {
-  html {
-    font-family: "Roboto", sans-serif;
-    scroll-behavior: smooth;
+  html,
+  body {
+    overflow-x: hidden;
   }
 
   ::selection {
@@ -34,14 +33,22 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #38a169, #68d391); /* A smooth green gradient */
+    background: linear-gradient(
+      180deg,
+      #38a169,
+      #68d391
+    ); /* A smooth green gradient */
     border-radius: 10px;
     box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.2);
     transition: background 0.3s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #2f855a, #48bb78); /* A darker green gradient */
+    background: linear-gradient(
+      180deg,
+      #2f855a,
+      #48bb78
+    ); /* A darker green gradient */
   }
 
   * {

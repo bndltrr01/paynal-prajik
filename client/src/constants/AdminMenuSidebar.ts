@@ -2,8 +2,7 @@ import {
   faGauge,
   faBookBookmark,
   faBed, 
-  faUsers, 
-  // faMapMarkerAlt,
+  faUsers,
   faChartLine,
   faComment,
   faConciergeBell,
@@ -21,11 +20,6 @@ export const menuItems = [
     label: "Manage Bookings",
     link: '/admin/bookings'
   },
-  // {
-  //   icon: faMapMarkerAlt,
-  //   label: "Reservations",
-  //   link: '/admin/reservations'
-  // },
   {
     icon: faCalendarCheck, 
     label: "Manage Areas",

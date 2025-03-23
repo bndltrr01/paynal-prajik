@@ -1,4 +1,3 @@
-import Navbar from "./Navbar";
 import reservation_bg from "../assets/reservation_bg.jpg";
 
 const VenueHero = () => {
@@ -9,7 +8,6 @@ const VenueHero = () => {
     >
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60 z-0"></div>
-      <Navbar />
       {/* Hero Content */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 sm:px-8 md:px-12 lg:px-16 xl:px-20 2xl:px-28">
         {/* Title */}

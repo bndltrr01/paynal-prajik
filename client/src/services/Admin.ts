@@ -87,7 +87,7 @@ export const roomDetail = async (roomId: number) => {
     console.error(`Failed to fetch room detail: ${error}`);
     throw error;
   }
-}
+};
 
 export const editRoom = async (
   roomId: number,
@@ -130,7 +130,7 @@ export const fetchAreas = async () => {
     console.error(`Failed to fetch areas: ${error}`);
     throw error;
   }
-}
+};
 
 export const addNewArea = async (payload: FormData): Promise<{ data: any }> => {
   try {
@@ -145,7 +145,7 @@ export const addNewArea = async (payload: FormData): Promise<{ data: any }> => {
     console.error(`Failed to add area: ${error}`);
     throw error;
   }
-}
+};
 
 export const areaDetail = async (areaId: number) => {
   try {
@@ -157,9 +157,12 @@ export const areaDetail = async (areaId: number) => {
     console.error(`Failed to fetch area detail: ${error}`);
     throw error;
   }
-}
+};
 
-export const editArea = async (areaId: number, payload: FormData): Promise<{ data: any }> => {
+export const editArea = async (
+  areaId: number,
+  payload: FormData
+): Promise<{ data: any }> => {
   try {
     const response = await ADMIN.put(`/edit_area/${areaId}`, payload, {
       headers: {
@@ -172,7 +175,7 @@ export const editArea = async (areaId: number, payload: FormData): Promise<{ dat
     console.error(`Failed to edit area: ${error}`);
     throw error;
   }
-}
+};
 
 export const deleteArea = async (areaId: number) => {
   try {
@@ -184,4 +187,66 @@ export const deleteArea = async (areaId: number) => {
     console.error(`Failed to delete area: ${error}`);
     throw error;
   }
-}
+};
+
+// CRUD Amenities
+export const fetchAmenities = async ({ queryKey }: any) => {
+  try {
+    const [, page, pageSize] = queryKey;
+    const response = await ADMIN.get(`/amenities?page=${page}&page_size=${pageSize}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch amenities: ${error}`);
+    throw error;
+  }
+};
+
+export const createAmenity = async (payload: { description: string }): Promise<{ data: any }> => {
+  try {
+    const response = await ADMIN.post("/add_amenity", payload, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to add amenity: ${error}`);
+    throw error;
+  }
+};
+
+export const readAmenity = async (amenityId: number) => {
+  try {
+    const response = await ADMIN.get(`/show_amenity/${amenityId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to read amenity: ${error}`);
+    throw error;
+  }
+};
+
+export const updateAmenity = async (amenityId: number, payload: { description: string }) => {
+  try {
+    const response = await ADMIN.put(`/edit_amenity/${amenityId}`, payload, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to update amenity: ${error}`);
+    throw error;
+  }
+};
+
+export const deleteAmenity = async (amenityId: number) => {
+  try {
+    const response = await ADMIN.delete(`/delete_amenity/${amenityId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to delete amenity: ${error}`);
+    throw error;
+  }
+};

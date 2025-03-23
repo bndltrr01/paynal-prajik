@@ -30,6 +30,7 @@ const Navbar: FC = () => {
   const location = useLocation();
   const isAvailabilityPage = location.pathname === "/availability";
   const isMyBookingPage = location.pathname === "/mybooking";
+  const isRoomDetailsPage = location.pathname.startsWith("/rooms/");
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -106,7 +107,7 @@ const Navbar: FC = () => {
         setImageLoading(true);
         try {
           const data = await getGuestDetails(userDetails.id);
-          setProfileImage(data.user.profile_image);
+          setProfileImage(data.data.profile_image);
         } catch (err) {
           console.error(`Failed to fetch user profile for Navbar: ${err}`);
         } finally {
@@ -129,9 +130,12 @@ const Navbar: FC = () => {
       )}
 
       <nav
-        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75  ${
-          isScrolled || isAvailabilityPage || isMyBookingPage
-            ? "bg-gray-100 shadow-md text-black"
+        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75   ${
+          isScrolled ||
+          isAvailabilityPage ||
+          isMyBookingPage ||
+          isRoomDetailsPage
+            ? "bg-gray-200 shadow-md text-black"
             : "bg-transparent text-white"
         }`}
       >
@@ -155,8 +159,11 @@ const Navbar: FC = () => {
                   key={index}
                   to={link.link}
                   className={`${
-                    isScrolled || isAvailabilityPage || isMyBookingPage
-                      ? "text-black hover:text-purple-600"
+                    isScrolled ||
+                    isAvailabilityPage ||
+                    isMyBookingPage ||
+                    isRoomDetailsPage
+                      ? "text-black  hover:text-purple-600"
                       : "bg-transparent text-white hover:text-purple-600"
                   }`}
                 >
@@ -211,14 +218,14 @@ const Navbar: FC = () => {
                 position="bottom"
               >
                 {imageLoading ? (
-                  <div className="h-10 w-10 flex items-center justify-center">
+                  <div className="h-16 w-16 flex items-center justify-center">
                     <i className="fa fa-spinner fa-spin"></i>
                   </div>
                 ) : (
                   <img
                     src={profileImage || DefaultImg}
                     alt="Profile"
-                    className="h-12 w-12 rounded-full object-cover cursor-pointer"
+                    className="h-14 w-14 rounded-full object-cover cursor-pointer"
                   />
                 )}
               </Dropdown>
