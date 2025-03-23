@@ -1,21 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FC, useState } from "react";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
 import Modal from "../../components/Modal";
-import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
+import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import {
   addNewRoom,
   deleteRoom,
   editRoom,
-  fetchRooms,
   fetchAmenities,
+  fetchRooms,
 } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
-// 1. Import icons from lucide-react
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Edit, Eye, Trash2 } from "lucide-react";
 
 interface Amenity {
   id: number;
@@ -315,7 +314,7 @@ const ManageRooms: FC = () => {
         {/* Loader Overlay */}
         {loading && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
-            <ManageRoomLoader size="80px" color="white" text={loaderText} />
+            <EventLoader size="80px" color="white" text={loaderText} />
           </div>
         )}
 

@@ -4,8 +4,6 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAvailability } from "../services/Booking";
 import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
-import Navbar from "../layout/Navbar";
-import Footer from "../layout/Footer";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
@@ -103,7 +101,7 @@ const AvailabilityResults = () => {
                     </div>
                     {/* Price & Action */}
                     <p className="text-gray-800 font-semibold text-lg mb-3">
-                      ₱{Number(room.room_price).toLocaleString()}
+                      {room.room_price}
                     </p>
                     <div className="mt-auto flex justify-evenly items-center gap-2">
                       <Link

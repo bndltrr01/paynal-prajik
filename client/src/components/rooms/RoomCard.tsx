@@ -58,13 +58,13 @@ const RoomCard: FC<RoomCardProps> = ({
           </span>
           <div className="flex gap-2">
             <button
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
               onClick={() => navigate(`/rooms/${id}`)}
             >
               View Details
             </button>
             <Link to="/availability">
-              <button className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+              <button className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer">
                 Reserve Now
               </button>
             </Link>

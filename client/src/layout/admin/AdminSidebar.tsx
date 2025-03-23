@@ -17,7 +17,7 @@ interface AdminData {
   profile_pic: string;
 }
 
-const AdminSidebar: FC = () => {
+const AdminSidebar: FC<{ role: string }> = ({ role }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
@@ -54,9 +54,22 @@ const AdminSidebar: FC = () => {
       } catch (error) {
         console.error(`Failed to fetch admin profile: ${error}`);
       }
-    }
+    };
     adminProfile();
-  }, [])
+  }, []);
+
+  const filteredMenuItems = menuItems.filter((item) => {
+    if (role.toLowerCase() === "staff") {
+      if (
+        item.label === "Dashboard" ||
+        item.label === "Manage Staff" ||
+        item.label === "Reports & Analytics"
+      ) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   return (
     <>
@@ -68,14 +81,23 @@ const AdminSidebar: FC = () => {
         </div>
         <div className="flex-grow overflow-y-auto p-2">
           <ul className="space-y-4">
-            {menuItems.map((item, index) => (
+            {filteredMenuItems.map((item, index) => (
               <li key={index}>
                 <NavLink
                   to={item.link}
                   end={item.link === "/admin"}
-                  className={({ isActive }) => `flex items-center space-x-1 justify-baseline rounded-md cursor-pointer ${isActive ? "border-r-3 border-blue-600 bg-blue-100/80 text-blue-700 font-bold" : "hover:bg-black/15"}`}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-1 justify-baseline rounded-md cursor-pointer ${isActive
+                      ? "border-r-3 border-blue-600 bg-blue-100/80 text-blue-700 font-bold"
+                      : "hover:bg-black/15"
+                    }`
+                  }
                 >
-                  <FontAwesomeIcon icon={item.icon} className="text-2xl p-2 w-5 h-5 text-left" /> <span className="text-lg">{item.label}</span>
+                  <FontAwesomeIcon
+                    icon={item.icon}
+                    className="text-2xl p-2 w-5 h-5 text-left"
+                  />{" "}
+                  <span className="text-lg">{item.label}</span>
                 </NavLink>
               </li>
             ))}
@@ -99,7 +121,8 @@ const AdminSidebar: FC = () => {
         cancel={modalCancel}
         onConfirm={handleLogout}
         loading={loading}
-        className={`bg-red-600 text-white hover:bg-red-700 font-bold uppercase text-sm px-6 py-3 rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-300 cursor-pointer ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+        className={`bg-red-600 text-white hover:bg-red-700 font-bold uppercase text-sm px-6 py-3 rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 ease-linear transition-all duration-300 cursor-pointer ${loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         confirmText={
           loading ? (
             <>

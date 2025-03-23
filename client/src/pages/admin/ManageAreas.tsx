@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MapPinOff } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EditAreaModal, { IArea as IEditArea } from "../../components/admin/EditAreaModal";
 import Modal from "../../components/Modal";
+import ManageRoomLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
-import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
-import { fetchAreas, addNewArea, editArea, deleteArea } from "../../services/Admin";
+import { addNewArea, deleteArea, editArea, fetchAreas } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
-import { MapPinOff } from "lucide-react";
 
 interface Area {
   id: number;

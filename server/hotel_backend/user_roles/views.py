@@ -110,8 +110,6 @@ def send_register_otp(request):
         OTP_EXPIRATION_TIME = 120
         cache.set(cache_key, otp_generated, OTP_EXPIRATION_TIME)
         
-        print(form.errors)
-        
         return Response({
             "success": "OTP sent for account verification",
             'otp': otp_generated
@@ -149,6 +147,7 @@ def verify_otp(request):
 
         # Create guest user with default values.
         DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
+        
         first_name = "Guest"
         last_name = ""
         
@@ -161,7 +160,7 @@ def verify_otp(request):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            is_admin=False,
+            role="guest",
             profile_image=DEFAULT_PROFILE_IMAGE
         )
         user.save()
@@ -233,7 +232,7 @@ def resend_otp(request):
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({
-            'error': 'An error occurred while resending the OTP. Please try again later.'
+            'error': f'An error occurred while resending the OTP. Please try again later. {e}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -388,8 +387,6 @@ def user_login(request):
         if auth_user is None:
             return Response({'error': 'Your password is incorrect'}, status=status.HTTP_401_UNAUTHORIZED)
         
-        role = 'admin' if user.is_admin else 'guest'
-        
         token = RefreshToken.for_user(auth_user)
         
         user_data = {
@@ -398,12 +395,12 @@ def user_login(request):
             'username': auth_user.username,
             'first_name': auth_user.first_name,
             'last_name': auth_user.last_name,
-            'role': role,
+            'role': auth_user.role,
             'profile_image': auth_user.profile_image.url if auth_user.profile_image else "",
         }
         
         response = Response({
-            'message': f'{role.capitalize()} logged in successfully!',
+            'message': f'{auth_user.role.capitalize()} logged in successfully!',
             'user': user_data,
             'access_token': str(token.access_token),
             'refresh_token': str(token)
@@ -437,10 +434,11 @@ def user_auth(request):
     user = request.user
     return Response({
         'isAuthenticated': True,
-        'role': 'admin' if user.is_admin else 'guest',
+        'role': user.role,
         'user': {
             'id': user.id,
             'email': user.email,
+            'username': user.username,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'profile_image': user.profile_image.url if user.profile_image else "",

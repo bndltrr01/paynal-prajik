@@ -1,4 +1,5 @@
 import "./App.css";
+import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
@@ -12,7 +13,6 @@ import ManageAmenities from "./pages/admin/ManageAmenities";
 import ManageAreas from "./pages/admin/ManageAreas";
 import ManageBookings from "./pages/admin/ManageBookings";
 import ManageRooms from "./pages/admin/ManageRooms";
-import ManageUsers from "./pages/admin/ManageUsers";
 import Reports from "./pages/admin/Reports";
 import ForgotPassword from "./pages/ForgotPassword";
 import Homepage from "./pages/Homepage";
@@ -25,7 +25,9 @@ import AvailabilityResults from "./pages/AvailabilityResults";
 import GuestProfile from "./layout/guest/GuestProfile";
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
-import RoomImage from "./components/RoomImage";
+import ManageStaff from "./pages/admin/ManageStaff";
+
+const EventLoader = lazy(() => import("./motions/loaders/EventLoader"));
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
@@ -38,13 +40,14 @@ const App = () => {
 
   return (
     <>
+      <Suspense fallback={<EventLoader />} />
       {!isAdminRoute && <Navbar />}
       <Routes>
         <Route
           path="/"
           element={
             isAuthenticated ? (
-              role === "admin" ? (
+              role === "admin" || role === "staff" ? (
                 <Navigate to="/admin" replace />
               ) : (
                 <Homepage />
@@ -73,7 +76,7 @@ const App = () => {
             <Route path="areas" element={<ManageAreas />} />
             <Route path="rooms" element={<ManageRooms />} />
             <Route path="amenities" element={<ManageAmenities />} />
-            <Route path="users" element={<ManageUsers />} />
+            <Route path="staff" element={<ManageStaff />} />
             <Route path="comments" element={<Comments />} />
             <Route path="reports" element={<Reports />} />
           </Route>
@@ -81,6 +84,7 @@ const App = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isAdminRoute && <Footer />}
+      <Suspense />
     </>
   );
 };
