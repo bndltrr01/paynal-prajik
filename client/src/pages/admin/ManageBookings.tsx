@@ -82,7 +82,6 @@ const ManageBookings: FC = () => {
           <table className="min-w-full bg-white border border-gray-200">
             <thead>
               <tr className="bg-gray-100">
-                <th className="py-2 px-4 border-b">Booking ID</th>
                 <th className="py-2 px-4 border-b">Guest</th>
                 <th className="py-2 px-4 border-b">Room</th>
                 <th className="py-2 px-4 border-b">Check-In</th>
@@ -95,7 +94,6 @@ const ManageBookings: FC = () => {
               {filteredBookings.length > 0 ? (
                 filteredBookings.map((booking) => (
                   <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="py-2 px-4 border-b text-center">{booking.id}</td>
                     <td className="py-2 px-4 border-b">
                       {booking.user.first_name} {booking.user.last_name}
                       <div className="text-xs text-gray-500">{booking.user.email}</div>
@@ -105,15 +103,14 @@ const ManageBookings: FC = () => {
                     <td className="py-2 px-4 border-b text-center">{booking.check_out_date}</td>
                     <td className="py-2 px-4 border-b text-center">
                       <span
-                        className={`px-2 py-1 rounded-full text-sm font-semibold ${
-                          booking.status === "Confirmed"
-                            ? "bg-green-100 text-green-800"
-                            : booking.status === "Checked In"
+                        className={`px-2 py-1 rounded-full text-sm font-semibold ${booking.status === "Confirmed"
+                          ? "bg-green-100 text-green-800"
+                          : booking.status === "Checked In"
                             ? "bg-blue-100 text-blue-800"
                             : booking.status === "Checked Out"
-                            ? "bg-gray-100 text-gray-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+                              ? "bg-gray-100 text-gray-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
                       >
                         {booking.status.replace("_", " ").toUpperCase()}
                       </span>
