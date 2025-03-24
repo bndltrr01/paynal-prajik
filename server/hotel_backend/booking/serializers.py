@@ -1,7 +1,44 @@
 from rest_framework import serializers
 from .models import Bookings, Reservations, Transactions, Reviews
 from user_roles.models import CustomUsers
-from property.models import Rooms
+from property.models import Rooms, Amenities
+
+class AmenitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Amenities
+        fields = ['id', 'description']
+
+class RoomSerializer(serializers.ModelSerializer):
+    amenities = AmenitySerializer(many=True, read_only=True)
+    room_image = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Rooms
+        fields = [
+            'id',
+            'room_name',
+            'room_type',
+            'status',
+            'room_price',
+            'room_image',
+            'description',
+            'capacity',
+            'amenities'
+        ]
+    
+    def get_room_image(self, obj):
+        if obj.room_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.room_image.url)
+            return obj.room_image.url
+        return None
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.room_price is not None:
+            representation['room_price'] = f"₱{float(instance.room_price):,.2f}"
+        return representation
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:

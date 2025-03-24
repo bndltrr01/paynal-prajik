@@ -6,7 +6,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { FC, useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import DefaultImg from "../assets/Default_pfp.jpg";
 import hotelLogo from "../assets/hotel_logo.png";
 import Dropdown from "../components/Dropdown";
@@ -130,14 +130,13 @@ const Navbar: FC = () => {
       )}
 
       <nav
-        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75   ${
-          isScrolled ||
+        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75   ${isScrolled ||
           isAvailabilityPage ||
           isMyBookingPage ||
           isRoomDetailsPage
-            ? "bg-gray-200 shadow-md text-black"
-            : "bg-transparent text-white"
-        }`}
+          ? "bg-gray-200 shadow-md text-black"
+          : "bg-transparent text-white"
+          }`}
       >
         <div className="max-w-7xl mx-auto flex items-center">
           {/* Left Section */}
@@ -158,14 +157,13 @@ const Navbar: FC = () => {
                 <SlotNavButton
                   key={index}
                   to={link.link}
-                  className={`${
-                    isScrolled ||
+                  className={`${isScrolled ||
                     isAvailabilityPage ||
                     isMyBookingPage ||
                     isRoomDetailsPage
-                      ? "text-black  hover:text-purple-600"
-                      : "bg-transparent text-white hover:text-purple-600"
-                  }`}
+                    ? "text-black  hover:text-purple-600"
+                    : "bg-transparent text-white hover:text-purple-600"
+                    }`}
                 >
                   <i className={link.icon}></i> {link.text}
                 </SlotNavButton>
@@ -269,9 +267,12 @@ const Navbar: FC = () => {
                 className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
                 onClick={() => setMenuOpen(false)}
               >
-                <Link to={link.link} className="flex items-center">
+                <NavLink
+                  to={link.link}
+                  className={({ isActive }) => `flex items-center ${isActive ? 'text-purple-600 font-bold' : ''}`}
+                >
                   <i className={`mr-3 ${link.icon}`}></i> {link.text}
-                </Link>
+                </NavLink>
               </li>
             ))}
             <li
@@ -313,9 +314,8 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
-          loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         loading={loading}
         confirmText={
           loading ? (

@@ -3,8 +3,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Reservations, Bookings
 from property.models import Rooms, Areas
-from property.serializers import RoomSerializer, AreaSerializer
-from .serializers import ReservationSerializer, BookingSerializer, BookingRequestSerializer
+from property.serializers import AreaSerializer
+from .serializers import (
+    ReservationSerializer, 
+    BookingSerializer, 
+    BookingRequestSerializer,
+    RoomSerializer
+)
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
@@ -35,7 +40,7 @@ def fetch_availability(request):
     available_rooms = Rooms.objects.filter(status='available')
     available_areas = Areas.objects.filter(status='available')
     
-    room_serializer = RoomSerializer(available_rooms, many=True)
+    room_serializer = RoomSerializer(available_rooms, many=True, context={'request': request})
     area_serializer = AreaSerializer(available_areas, many=True)
     
     return Response({
@@ -48,7 +53,6 @@ def bookings_list(request):
     try:
         if request.method == 'GET':
             if request.user.is_authenticated:
-                # Admin or authenticated user can see all bookings
                 bookings = Bookings.objects.all().order_by('-created_at')
                 serializer = BookingSerializer(bookings, many=True)
                 return Response({
@@ -57,11 +61,9 @@ def bookings_list(request):
             else:
                 return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
         elif request.method == 'POST':
-            # No authentication required for creating new bookings
             serializer = BookingRequestSerializer(data=request.data)
             if serializer.is_valid():
                 booking = serializer.save()
-                # Return the created booking with its id
                 booking_data = BookingSerializer(booking).data
                 return Response({
                     "id": booking.id,
@@ -83,11 +85,9 @@ def booking_detail(request, booking_id):
         return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
     
     if request.method == 'GET':
-        # Get the booking serialized data
         booking_serializer = BookingSerializer(booking)
         data = booking_serializer.data
         
-        # Add room details
         room_serializer = RoomSerializer(booking.room)
         data['room'] = room_serializer.data
         
@@ -182,18 +182,18 @@ def area_reservations(request):
 def room_detail(request, room_id):
     try:
         room = Rooms.objects.get(id=room_id)
+        serializer = RoomSerializer(room, context={'request': request})
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
     except Rooms.DoesNotExist:
         return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    serializer = RoomSerializer(room)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_bookings(request):
-    """
-    Retrieve the bookings for the currently authenticated user
-    """
     try:
         user = request.user
         bookings = Bookings.objects.filter(user=user).order_by('-created_at')
@@ -221,32 +221,24 @@ def user_bookings(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def cancel_booking(request, booking_id):
-    """
-    Cancel a booking with the provided reason
-    """
     try:
-        # Get the booking
         booking = Bookings.objects.get(id=booking_id)
         
-        # Check if the booking belongs to the current user
         if booking.user != request.user:
             return Response({"error": "You can only cancel your own bookings"}, status=status.HTTP_403_FORBIDDEN)
         
-        # Check if booking is in a cancellable state (pending or confirmed)
         if booking.status not in ['pending', 'confirmed']:
-            return Response({"error": f"Cannot cancel booking with status: {booking.status}"}, 
-                           status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "error": f"Cannot cancel booking with status: {booking.status}"
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Get cancellation reason
         reason = request.data.get('reason', '')
         
-        # Update booking
         booking.status = 'cancelled'
         booking.cancellation_reason = reason
         booking.cancellation_date = datetime.now().date()
         booking.save()
         
-        # Return success response
         return Response({
             "message": "Booking cancelled successfully",
             "booking_id": booking_id

@@ -42,12 +42,12 @@ export const menuItems = [
   },
   {
     icon: faComment,
-    label: "Comments/Feedback",
+    label: "Comments",
     link: '/admin/comments'
   },
   {
     icon: faChartLine,
-    label: "Reports & Analytics",
+    label: "Reports",
     link: '/admin/reports'
   },
 ];

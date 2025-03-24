@@ -48,7 +48,7 @@ export interface BookingFormData {
     roomId: string | null;
     checkIn: string | null;
     checkOut: string | null;
-    status?: string;
+    status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out';
 }
 
 export const createBooking = async (bookingData: BookingFormData) => {
@@ -75,7 +75,7 @@ export const fetchRoomById = async (roomId: string) => {
             headers: { 'Content-Type': 'application/json' },
             withCredentials: true
         });
-        return response.data;
+        return response.data.data;
     } catch (error) {
         console.error(`Failed to fetch room details: ${error}`);
         throw error;

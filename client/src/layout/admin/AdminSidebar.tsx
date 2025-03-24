@@ -1,15 +1,15 @@
 import React, { Suspense, useState, useEffect, FC } from "react";
 import { fetchAdminProfile } from "../../services/Admin";
 import { menuItems } from "../../constants/AdminMenuSidebar";
-import AdminDetailSkeleton from "../../motions/skeletons/AdminDetailSkeleton";
 import { useUserContext } from "../../contexts/AuthContext";
 import Modal from "../../components/Modal";
 import { logout } from "../../services/Auth";
 import { useNavigate, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import AdminProfile from "./AdminProfile";
 
-const AdminProfile = React.lazy(() => import("./AdminProfile"));
+const AdminDetailSkeleton = React.lazy(() => import("../../motions/skeletons/AdminDetailSkeleton"));
 
 interface AdminData {
   name: string;
@@ -63,7 +63,7 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
       if (
         item.label === "Dashboard" ||
         item.label === "Manage Staff" ||
-        item.label === "Reports & Analytics"
+        item.label === "Reports"
       ) {
         return false;
       }
@@ -73,8 +73,8 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
 
   return (
     <>
-      <aside className="min-h-screen flex flex-col p-2 bg-white text-black z-40 shadow-lg">
-        <div className="p-4">
+      <aside className="min-h-screen flex flex-col p-4 bg-white text-black w-2xs">
+        <div className="p-2">
           <Suspense fallback={<AdminDetailSkeleton />}>
             {admin ? <AdminProfile admin={admin} /> : <AdminDetailSkeleton />}
           </Suspense>
@@ -95,7 +95,7 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
                 >
                   <FontAwesomeIcon
                     icon={item.icon}
-                    className="text-2xl p-2 w-5 h-5 text-left"
+                    className="p-2 w-5 h-5 text-xl text-left"
                   />{" "}
                   <span className="text-md">{item.label}</span>
                 </NavLink>

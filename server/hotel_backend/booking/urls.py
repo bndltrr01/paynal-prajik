@@ -5,7 +5,7 @@ from . import views
 urlpatterns = [
     path('availability', views.fetch_availability, name='fetch_availability'),
     path('bookings', views.bookings_list, name='bookings_list'),
-    path("bookings/<int:booking_id>", views.booking_detail, name='booking_detail'),
+    path('bookings/<int:booking_id>', views.booking_detail, name='booking_detail'),
     path('bookings/<int:booking_id>/cancel', views.cancel_booking, name='cancel_booking'),
     path('reservation', views.reservation_list, name='reservation_list'),
     path('reservation/<int:reservation_id>', views.reservation_detail, name='reservation_detail'),
