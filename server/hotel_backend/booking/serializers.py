@@ -41,9 +41,21 @@ class RoomSerializer(serializers.ModelSerializer):
         return representation
 
 class BookingSerializer(serializers.ModelSerializer):
+    room_details = RoomSerializer(source='room', read_only=True)
+    
     class Meta:
         model = Bookings
-        fields = '__all__'
+        fields = [
+            'id',
+            'user',
+            'room',
+            'room_details',
+            'check_in_date',
+            'check_out_date',
+            'status',
+            'created_at',
+            'updated_at'
+        ]
 
 class BookingRequestSerializer(serializers.Serializer):
     firstName = serializers.CharField(max_length=100)
@@ -55,6 +67,7 @@ class BookingRequestSerializer(serializers.Serializer):
     roomId = serializers.CharField()
     checkIn = serializers.DateField()
     checkOut = serializers.DateField()
+    status = serializers.CharField(default='pending')
     
     def create(self, validated_data):
         # Find or create user
@@ -79,7 +92,7 @@ class BookingRequestSerializer(serializers.Serializer):
                 room=room,
                 check_in_date=validated_data['checkIn'],
                 check_out_date=validated_data['checkOut'],
-                status='confirmed'
+                status=validated_data.get('status', 'pending')
             )
             return booking
         except Rooms.DoesNotExist:

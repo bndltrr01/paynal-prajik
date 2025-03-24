@@ -11,6 +11,9 @@ interface BookingCardProps {
   price: number;
   status: string;
   bookingId: string | number;
+  roomDetails?: {
+    room_image?: string;
+  };
 }
 
 const BookingCard = ({
@@ -21,6 +24,7 @@ const BookingCard = ({
   price,
   status,
   bookingId,
+  roomDetails,
 }: BookingCardProps) => {
   const [showCancellationModal, setShowCancellationModal] = useState(false);
   const queryClient = useQueryClient();
@@ -89,9 +93,13 @@ const BookingCard = ({
     <div className="w-full max-w-7xl mx-auto bg-white shadow-md rounded-lg p-6 flex flex-col md:flex-row gap-6 mb-6">
       <div className="w-full md:w-56 h-36 flex items-center justify-center overflow-hidden rounded-lg bg-gray-200">
         <img
-          src={imageUrl}
+          src={roomDetails?.room_image || imageUrl}
           alt={roomType}
           className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to default image if room image fails to load
+            (e.target as HTMLImageElement).src = imageUrl;
+          }}
         />
       </div>
 
@@ -104,9 +112,6 @@ const BookingCard = ({
           </p>
           <p className="text-blue-600 font-semibold text-lg">
             PRICE: {price.toLocaleString()}
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            Your stay in our comfortable {roomType.toLowerCase()} includes free wifi, room service, and access to our amenities.
           </p>
         </div>
 

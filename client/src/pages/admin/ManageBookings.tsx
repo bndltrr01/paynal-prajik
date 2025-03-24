@@ -1,5 +1,5 @@
-import { FC, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { FC, useState } from "react";
 import { fetchBookings } from "../../services/Booking";
 
 interface Booking {
@@ -8,9 +8,6 @@ interface Booking {
     first_name: string;
     last_name: string;
     email: string;
-  };
-  room: {
-    roomName: string;
   };
   check_in_date: string;
   check_out_date: string;
@@ -42,9 +39,7 @@ const ManageBookings: FC = () => {
 
   const filteredBookings = (bookingsData || []).filter((booking) => {
     const guestName = `${booking.user.first_name} ${booking.user.last_name}`.toLowerCase();
-    const matchesSearch =
-      guestName.includes(searchTerm.toLowerCase()) ||
-      booking.room.roomName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = guestName.includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" ||
       booking.status.toLowerCase() === statusFilter.toLowerCase();
@@ -58,7 +53,7 @@ const ManageBookings: FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
         <input
           type="text"
-          placeholder="Search by guest or room"
+          placeholder="Search by guest name"
           value={searchTerm}
           onChange={handleSearchChange}
           className="p-2 ring-1 rounded w-full md:w-1/3"
@@ -82,11 +77,11 @@ const ManageBookings: FC = () => {
           <table className="min-w-full bg-white border border-gray-200">
             <thead>
               <tr className="bg-gray-100">
-                <th className="py-2 px-4 border-b">Guest</th>
-                <th className="py-2 px-4 border-b">Room</th>
+                <th className="py-2 px-4 border-b">Full Name</th>
                 <th className="py-2 px-4 border-b">Check-In</th>
                 <th className="py-2 px-4 border-b">Check-Out</th>
                 <th className="py-2 px-4 border-b">Status</th>
+                <th className="py-2 px-4 border-b">Created At</th>
                 <th className="py-2 px-4 border-b">Actions</th>
               </tr>
             </thead>
@@ -95,10 +90,9 @@ const ManageBookings: FC = () => {
                 filteredBookings.map((booking) => (
                   <tr key={booking.id} className="hover:bg-gray-50">
                     <td className="py-2 px-4 border-b">
-                      {booking.user.first_name} {booking.user.last_name}
+                      <div className="font-medium">{booking.user.first_name} {booking.user.last_name}</div>
                       <div className="text-xs text-gray-500">{booking.user.email}</div>
                     </td>
-                    <td className="py-2 px-4 border-b">{booking.room.roomName}</td>
                     <td className="py-2 px-4 border-b text-center">{booking.check_in_date}</td>
                     <td className="py-2 px-4 border-b text-center">{booking.check_out_date}</td>
                     <td className="py-2 px-4 border-b text-center">
@@ -114,6 +108,9 @@ const ManageBookings: FC = () => {
                       >
                         {booking.status.replace("_", " ").toUpperCase()}
                       </span>
+                    </td>
+                    <td className="py-2 px-4 border-b text-center">
+                      {new Date(booking.created_at).toLocaleString()}
                     </td>
                     <td className="py-2 px-4 border-b text-center">
                       <button className="text-blue-500 hover:underline mr-2">View</button>

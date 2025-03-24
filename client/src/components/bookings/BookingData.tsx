@@ -32,6 +32,9 @@ interface FormattedBooking {
   price: number;
   status: string;
   bookingId: string | number;
+  roomDetails?: {
+    room_image?: string;
+  };
 }
 
 interface RoomData {
@@ -53,55 +56,45 @@ interface BookingData {
 const BookingData = ({ bookingId }: BookingDataProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // Use prop if provided, otherwise check URL params (for backward compatibility)
-  const effectiveBookingId = bookingId || searchParams.get('bookingId');
   const [bookingsToShow, setBookingsToShow] = useState<FormattedBooking[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const effectiveBookingId = bookingId || searchParams.get('bookingId');
 
-  // Fetch specific booking detail if bookingId is present
-  const { data: bookingData, isLoading: isLoadingBooking } = useQuery<BookingData>({
+  const { data: bookingData, isLoading: isLoadingBooking, error: bookingError } = useQuery<BookingData>({
     queryKey: ['booking', effectiveBookingId],
     queryFn: () => fetchBookingDetail(effectiveBookingId || ''),
     enabled: !!effectiveBookingId,
   });
 
-  // Fetch all user bookings if no bookingId is provided
-  const { data: userBookings, isLoading: isLoadingUserBookings } = useQuery<BookingData[]>({
+  const { data: userBookings, isLoading: isLoadingUserBookings, error: userBookingsError } = useQuery<BookingData[]>({
     queryKey: ['user-bookings'],
     queryFn: fetchUserBookings,
     enabled: !effectiveBookingId,
   });
 
-  // Handle successful booking cancellation
-  // This will be triggered by the BookingCard component via query invalidation
   useEffect(() => {
-    // Check if we have a specific booking and it was cancelled
     if (effectiveBookingId && bookingData && bookingData.status === 'cancelled') {
-      // Redirect to my-booking page with cancelled=true flag
       navigate('/my-booking?cancelled=true', { replace: true });
     }
   }, [bookingData, effectiveBookingId, navigate]);
 
-  // Process specific booking data
   useEffect(() => {
     if (effectiveBookingId && bookingData) {
-      // Transform booking data to the format expected by BookingCard
       const roomType = bookingData.room?.room_name || "Unknown Room";
       const formattedBooking: FormattedBooking = {
         roomType: roomType,
-        imageUrl: roomImages[roomType] || deluxe_twin, // Default to deluxe_twin if no match
+        imageUrl: roomImages[roomType] || deluxe_twin,
         dates: `${new Date(bookingData.check_in_date).toLocaleDateString()} - ${new Date(bookingData.check_out_date).toLocaleDateString()}`,
         guests: bookingData.room?.pax || 2,
         price: bookingData.room?.room_price || 0,
         status: bookingData.status || "pending",
         bookingId: bookingData.id,
+        roomDetails: bookingData.room,
       };
 
       setBookingsToShow([formattedBooking]);
     }
   }, [effectiveBookingId, bookingData]);
 
-  // Process all user bookings
   useEffect(() => {
     if (!effectiveBookingId && userBookings && userBookings.length > 0) {
       const formattedBookings = userBookings.map((booking) => {
@@ -114,6 +107,7 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
           price: booking.room?.room_price || 0,
           status: booking.status || "pending",
           bookingId: booking.id,
+          roomDetails: booking.room,
         };
       });
 
@@ -122,6 +116,7 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
   }, [effectiveBookingId, userBookings]);
 
   const isLoading = isLoadingBooking || isLoadingUserBookings;
+  const error = bookingError || userBookingsError;
 
   if (isLoading) {
     return (
@@ -136,7 +131,7 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
   if (error) {
     return (
       <div className="p-6 text-center text-red-500">
-        <p>Error loading booking: {error}</p>
+        <p>Error loading booking: {error instanceof Error ? error.message : 'An error occurred'}</p>
       </div>
     );
   }

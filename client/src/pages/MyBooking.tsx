@@ -7,15 +7,12 @@ const MyBooking = () => {
   const bookingId = searchParams.get('bookingId');
   const [pageTitle, setPageTitle] = useState("My Bookings");
 
-  // Check for different status flags in URL
   const isSuccess = searchParams.get('success') === 'true';
   const isCancelled = searchParams.get('cancelled') === 'true';
 
   useEffect(() => {
-    // Update page title based on whether viewing a specific booking
     if (bookingId) {
       setPageTitle("Booking Details");
-      // Scroll to top on initial load
       window.scrollTo(0, 0);
     } else {
       setPageTitle("My Bookings");
