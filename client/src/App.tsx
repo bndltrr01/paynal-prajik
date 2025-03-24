@@ -1,33 +1,34 @@
-import "./App.css";
 import { Suspense, lazy } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import "./App.css";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
 import AdminLayout from "./layout/admin/AdminLayout";
+import Footer from "./layout/Footer";
+import GuestProfile from "./layout/guest/GuestProfile";
+import Navbar from "./layout/Navbar";
 import NotFound from "./pages/_NotFound";
 import About from "./pages/About";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import Reservations from "./pages/admin/Reservations";
 import Comments from "./pages/admin/Comments";
 import ManageAmenities from "./pages/admin/ManageAmenities";
 import ManageAreas from "./pages/admin/ManageAreas";
 import ManageBookings from "./pages/admin/ManageBookings";
 import ManageRooms from "./pages/admin/ManageRooms";
+import ManageStaff from "./pages/admin/ManageStaff";
 import Reports from "./pages/admin/Reports";
+import Reservations from "./pages/admin/Reservations";
+import AvailabilityResults from "./pages/AvailabilityResults";
+import ConfirmBooking from "./pages/ConfirmBooking";
 import ForgotPassword from "./pages/ForgotPassword";
 import Homepage from "./pages/Homepage";
 import MyBooking from "./pages/MyBooking";
 import RegistrationFlow from "./pages/RegistrationFlow";
+import RoomDetails from "./pages/RoomDetails";
 import Rooms from "./pages/Rooms";
 import Venue from "./pages/Venue";
-import RoomDetails from "./pages/RoomDetails";
-import AvailabilityResults from "./pages/AvailabilityResults";
-import GuestProfile from "./layout/guest/GuestProfile";
-import Navbar from "./layout/Navbar";
-import Footer from "./layout/Footer";
-import ManageStaff from "./pages/admin/ManageStaff";
 
-const EventLoader = lazy(() => import("./motions/loaders/EventLoader"));
+const LoadingHydrate = lazy(() => import("./motions/loaders/LoadingHydrate"));
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
@@ -40,7 +41,7 @@ const App = () => {
 
   return (
     <>
-      <Suspense fallback={<EventLoader />} />
+      <Suspense fallback={<LoadingHydrate />} />
       {!isAdminRoute && <Navbar />}
       <Routes>
         <Route
@@ -58,6 +59,7 @@ const App = () => {
           }
         />
 
+        <Route path="/confirm-booking" element={<ConfirmBooking />} />
         <Route path="/registration" element={<RegistrationFlow />} />
         <Route path="/about" element={<About />} />
         <Route path="/guest/:id" element={<GuestProfile />} />
@@ -65,7 +67,7 @@ const App = () => {
         <Route path="/rooms" element={<Rooms />} />
         <Route path="/rooms/:id" element={<RoomDetails />} />
         <Route path="/availability" element={<AvailabilityResults />} />
-        <Route path="/mybooking" element={<MyBooking />} />
+        <Route path="/my-booking" element={<MyBooking />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         {/* Protected admin routes */}
         <Route element={<ProtectedRoute requiredRole="admin" />}>

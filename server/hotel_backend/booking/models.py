@@ -6,6 +6,7 @@ from django.utils.timezone import now
 # Create your models here.
 class Bookings(models.Model):
     BOOKING_STATUS_CHOICES = [
+        ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
         ('checked_in', 'Checked In'),
         ('checked_out', 'Checked Out'),
@@ -18,7 +19,7 @@ class Bookings(models.Model):
     status = models.CharField(
         max_length=20,
         choices=BOOKING_STATUS_CHOICES,
-        default='confirmed',
+        default='pending',
     )
     cancellation_date = models.DateField(null=True, blank=True)
     cancellation_reason = models.TextField(null=True, blank=True)

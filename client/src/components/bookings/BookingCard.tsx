@@ -1,3 +1,8 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { cancelBooking } from "../../services/Booking";
+import CancellationModal from "./CancellationModal";
+
 interface BookingCardProps {
   roomType: string;
   imageUrl: string;
@@ -5,6 +10,7 @@ interface BookingCardProps {
   guests: number | string;
   price: number;
   status: string;
+  bookingId: string | number;
 }
 
 const BookingCard = ({
@@ -14,16 +20,35 @@ const BookingCard = ({
   guests,
   price,
   status,
+  bookingId,
 }: BookingCardProps) => {
+  const [showCancellationModal, setShowCancellationModal] = useState(false);
+  const queryClient = useQueryClient();
+
   // Normalize status to lowercase for consistency
   const normalizedStatus = status.toLowerCase();
+
+  // Cancel booking mutation
+  const cancelMutation = useMutation({
+    mutationFn: (reason: string) => cancelBooking(bookingId.toString(), reason),
+    onSuccess: () => {
+      // Close modal
+      setShowCancellationModal(false);
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['booking'] });
+      queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
+    },
+  });
 
   const statusStyles: Record<string, string> = {
     pending: "bg-yellow-500 text-white",
     reserved: "bg-green-500 text-white",
-    booked: "bg-green-500 text-white", // Keep both booked and reserved with the same style
-    checkedin: "bg-blue-500 text-white",
-    checkedout: "bg-gray-500 text-white",
+    booked: "bg-green-500 text-white",
+    confirmed: "bg-green-500 text-white",
+    checked_in: "bg-blue-500 text-white",
+    checked_out: "bg-gray-500 text-white",
+    cancelled: "bg-red-500 text-white",
     canceled: "bg-red-500 text-white",
     noshow: "bg-black text-white",
   };
@@ -31,16 +56,33 @@ const BookingCard = ({
   // Use normalized status for style lookup, with fallback
   const styleClass = statusStyles[normalizedStatus] || statusStyles.pending;
 
-  // Helper function to check if status matches either booked or reserved
-  const isReservedOrBooked = () =>
-    normalizedStatus === "reserved" || normalizedStatus === "booked";
+  // Check if booking can be canceled (only pending or confirmed bookings)
+  const canCancel = normalizedStatus === "pending" ||
+    normalizedStatus === "confirmed" ||
+    normalizedStatus === "booked" ||
+    normalizedStatus === "reserved";
 
-  // Function to get display status - convert "booked" to "reserved"
+  // Function to get display status with better formatting
   const getDisplayStatus = () => {
     if (normalizedStatus === "booked") {
-      return "RESERVED";
+      return "CONFIRMED";
     }
-    return status.toUpperCase();
+
+    // Convert underscores to spaces and capitalize first letter of each word
+    return status
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Handle cancel click
+  const handleCancelClick = () => {
+    setShowCancellationModal(true);
+  };
+
+  // Handle cancel confirmation
+  const handleConfirmCancel = (reason: string) => {
+    cancelMutation.mutate(reason);
   };
 
   return (
@@ -55,7 +97,8 @@ const BookingCard = ({
 
       <div className="flex-grow flex flex-col justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{dates}</h2>
+          <h2 className="text-lg font-semibold">{roomType}</h2>
+          <p className="text-gray-600">{dates}</p>
           <p className="text-gray-600 flex items-center">
             <span className="mr-2">👥</span> Persons: {guests}
           </p>
@@ -63,9 +106,7 @@ const BookingCard = ({
             PRICE: {price.toLocaleString()}
           </p>
           <p className="text-gray-500 text-sm mt-2">
-            A Deluxe Room offers a spacious and elegant setting with modern
-            amenities, featuring a comfortable king-sized bed, a luxurious
-            en-suite bathroom, and stunning views.
+            Your stay in our comfortable {roomType.toLowerCase()} includes free wifi, room service, and access to our amenities.
           </p>
         </div>
 
@@ -77,14 +118,26 @@ const BookingCard = ({
           </span>
 
           <div className="flex gap-3 ml-auto">
-            {(normalizedStatus === "pending" || isReservedOrBooked()) && (
-              <button className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
-                Cancel
+            {canCancel && (
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                onClick={handleCancelClick}
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? 'Processing...' : 'Cancel Booking'}
               </button>
             )}
           </div>
         </div>
       </div>
+
+      {/* Cancellation Modal */}
+      <CancellationModal
+        isOpen={showCancellationModal}
+        onClose={() => setShowCancellationModal(false)}
+        onConfirm={handleConfirmCancel}
+        bookingId={bookingId}
+      />
     </div>
   );
 };

@@ -1,10 +1,54 @@
 from rest_framework import serializers
 from .models import Bookings, Reservations, Transactions, Reviews
+from user_roles.models import CustomUsers
+from property.models import Rooms
 
 class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bookings
         fields = '__all__'
+
+class BookingRequestSerializer(serializers.Serializer):
+    firstName = serializers.CharField(max_length=100)
+    lastName = serializers.CharField(max_length=100)
+    phoneNumber = serializers.CharField(max_length=20)
+    emailAddress = serializers.EmailField()
+    address = serializers.CharField(max_length=200)
+    specialRequests = serializers.CharField(required=False, allow_blank=True)
+    roomId = serializers.CharField()
+    checkIn = serializers.DateField()
+    checkOut = serializers.DateField()
+    
+    def create(self, validated_data):
+        # Find or create user
+        try:
+            user = CustomUsers.objects.get(email=validated_data['emailAddress'])
+        except CustomUsers.DoesNotExist:
+            # Create a new user with a temporary password
+            user = CustomUsers.objects.create(
+                email=validated_data['emailAddress'],
+                first_name=validated_data['firstName'],
+                last_name=validated_data['lastName'],
+                phone_number=validated_data['phoneNumber'],
+                address=validated_data['address'],
+                role='guest'
+            )
+            
+        # Create booking
+        try:
+            room = Rooms.objects.get(id=validated_data['roomId'])
+            booking = Bookings.objects.create(
+                user=user,
+                room=room,
+                check_in_date=validated_data['checkIn'],
+                check_out_date=validated_data['checkOut'],
+                status='confirmed'
+            )
+            return booking
+        except Rooms.DoesNotExist:
+            raise serializers.ValidationError("Room not found")
+        except Exception as e:
+            raise serializers.ValidationError(str(e))
 
 class ReservationSerializer(serializers.ModelSerializer):
     guest_name = serializers.SerializerMethodField()

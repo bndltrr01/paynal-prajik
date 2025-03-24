@@ -52,7 +52,7 @@ const ViewRoomModal: FC<{
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg relative max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg relative max-h-[100vh] overflow-y-auto">
         {/* Two-column layout (like RoomDetails) */}
         <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left Column: Image */}
@@ -124,22 +124,12 @@ const ViewRoomModal: FC<{
               </p>
               <button
                 onClick={onClose}
-                className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
               >
-                Reserve Now
+                Close
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Footer with close button */}
-        <div className="flex justify-end p-4 border-t">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

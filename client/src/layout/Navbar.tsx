@@ -206,7 +206,7 @@ const Navbar: FC = () => {
                   },
                   {
                     label: "My Bookings",
-                    onClick: () => navigate("/mybooking"),
+                    onClick: () => navigate("/my-booking"),
                     icon: <FontAwesomeIcon icon={faCalendarCheck} />,
                   },
                   {

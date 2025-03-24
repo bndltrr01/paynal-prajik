@@ -257,7 +257,7 @@ def delete_area(request,area_id):
 @api_view(['GET'])
 def fetch_amenities(request):
     try:
-        amenities = Amenities.objects.all()
+        amenities = Amenities.objects.all().order_by('id')
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 15)
         

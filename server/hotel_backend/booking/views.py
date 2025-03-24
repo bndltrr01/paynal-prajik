@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from .models import Reservations, Bookings
 from property.models import Rooms, Areas
 from property.serializers import RoomSerializer, AreaSerializer
-from .serializers import ReservationSerializer, BookingSerializer
+from .serializers import ReservationSerializer, BookingSerializer, BookingRequestSerializer
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
@@ -44,21 +44,29 @@ def fetch_availability(request):
     }, status=status.HTTP_200_OK)
 
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
 def bookings_list(request):
     try:
         if request.method == 'GET':
-            bookings = Bookings.objects.all().order_by('-created_at')
-            serializer = BookingSerializer(bookings, many=True)
-            return Response({
-                "data": serializer.data
-            }, status=status.HTTP_200_OK)
-        elif request.method == 'POST':
-            serializer = BookingSerializer(data=request.data)
-            if serializer.is_valid():
-                serializer.save()
+            if request.user.is_authenticated:
+                # Admin or authenticated user can see all bookings
+                bookings = Bookings.objects.all().order_by('-created_at')
+                serializer = BookingSerializer(bookings, many=True)
                 return Response({
                     "data": serializer.data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
+        elif request.method == 'POST':
+            # No authentication required for creating new bookings
+            serializer = BookingRequestSerializer(data=request.data)
+            if serializer.is_valid():
+                booking = serializer.save()
+                # Return the created booking with its id
+                booking_data = BookingSerializer(booking).data
+                return Response({
+                    "id": booking.id,
+                    "message": "Booking created successfully",
+                    "data": booking_data
                 }, status=status.HTTP_201_CREATED)
             return Response({
                 "error": serializer.errors
@@ -73,10 +81,18 @@ def booking_detail(request, booking_id):
         booking = Bookings.objects.get(id=booking_id)
     except Bookings.DoesNotExist:
         return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    
     if request.method == 'GET':
-        serializer = BookingSerializer(booking)
+        # Get the booking serialized data
+        booking_serializer = BookingSerializer(booking)
+        data = booking_serializer.data
+        
+        # Add room details
+        room_serializer = RoomSerializer(booking.room)
+        data['room'] = room_serializer.data
+        
         return Response({
-            "data": serializer.data
+            "data": data
         }, status=status.HTTP_200_OK)
     elif request.method == 'PUT':
         serializer = BookingSerializer(booking, data=request.data)
@@ -159,5 +175,84 @@ def area_reservations(request):
             return Response({
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def room_detail(request, room_id):
+    try:
+        room = Rooms.objects.get(id=room_id)
+    except Rooms.DoesNotExist:
+        return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = RoomSerializer(room)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_bookings(request):
+    """
+    Retrieve the bookings for the currently authenticated user
+    """
+    try:
+        user = request.user
+        bookings = Bookings.objects.filter(user=user).order_by('-created_at')
+        
+        # Create a list of booking data with the related room info
+        booking_data = []
+        for booking in bookings:
+            # Get room details
+            room = booking.room
+            room_serializer = RoomSerializer(room)
+            
+            # Create booking data
+            booking_serializer = BookingSerializer(booking)
+            data = booking_serializer.data
+            data['room'] = room_serializer.data
+            
+            booking_data.append(data)
+        
+        return Response({
+            "data": booking_data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cancel_booking(request, booking_id):
+    """
+    Cancel a booking with the provided reason
+    """
+    try:
+        # Get the booking
+        booking = Bookings.objects.get(id=booking_id)
+        
+        # Check if the booking belongs to the current user
+        if booking.user != request.user:
+            return Response({"error": "You can only cancel your own bookings"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if booking is in a cancellable state (pending or confirmed)
+        if booking.status not in ['pending', 'confirmed']:
+            return Response({"error": f"Cannot cancel booking with status: {booking.status}"}, 
+                           status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get cancellation reason
+        reason = request.data.get('reason', '')
+        
+        # Update booking
+        booking.status = 'cancelled'
+        booking.cancellation_reason = reason
+        booking.cancellation_date = datetime.now().date()
+        booking.save()
+        
+        # Return success response
+        return Response({
+            "message": "Booking cancelled successfully",
+            "booking_id": booking_id
+        }, status=status.HTTP_200_OK)
+        
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

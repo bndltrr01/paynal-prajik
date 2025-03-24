@@ -105,7 +105,7 @@ const ManageBookings: FC = () => {
                     <td className="py-2 px-4 border-b text-center">{booking.check_out_date}</td>
                     <td className="py-2 px-4 border-b text-center">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        className={`px-2 py-1 rounded-full text-sm font-semibold ${
                           booking.status === "Confirmed"
                             ? "bg-green-100 text-green-800"
                             : booking.status === "Checked In"
@@ -115,7 +115,7 @@ const ManageBookings: FC = () => {
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {booking.status.replace("_", " ")}
+                        {booking.status.replace("_", " ").toUpperCase()}
                       </span>
                     </td>
                     <td className="py-2 px-4 border-b text-center">

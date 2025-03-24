@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/AvailabilityResults.tsx
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAvailability } from "../services/Booking";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
+import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
@@ -108,9 +108,12 @@ const AvailabilityResults = () => {
                       >
                         View Room
                       </Link>
-                      <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+                      <Link
+                        to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
+                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                      >
                         Book Room
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 ))}
