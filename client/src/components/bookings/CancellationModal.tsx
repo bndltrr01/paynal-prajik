@@ -5,10 +5,9 @@ interface CancellationModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (reason: string) => void;
-    bookingId: string | number;
 }
 
-const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: CancellationModalProps) => {
+const CancellationModal = ({ isOpen, onClose, onConfirm }: CancellationModalProps) => {
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
