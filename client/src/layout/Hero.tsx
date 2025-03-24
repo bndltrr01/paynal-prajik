@@ -10,7 +10,7 @@ const Hero = () => {
         modules={[Autoplay]}
         slidesPerView={1}
         loop={true}
-        autoplay={{ delay: 2000, disableOnInteraction: false }}
+        autoplay={{ delay: 10000, disableOnInteraction: false }}
         className="w-full h-full"
       >
         {slides.map((slide) => (
