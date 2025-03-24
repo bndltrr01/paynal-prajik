@@ -13,7 +13,7 @@ const AdminProfile = React.lazy(() => import("./AdminProfile"));
 
 interface AdminData {
   name: string;
-  email: string;
+  role: string;
   profile_pic: string;
 }
 
@@ -25,7 +25,7 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
 
   const [admin, setAdmin] = useState<AdminData>({
     name: "",
-    email: "",
+    role: "",
     profile_pic: "",
   });
 
@@ -73,8 +73,8 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
 
   return (
     <>
-      <aside className="min-h-screen flex flex-col px-2 bg-white text-black z-0 shadow-lg">
-        <div className="px-3 py-4">
+      <aside className="min-h-screen flex flex-col p-2 bg-white text-black z-40 shadow-lg">
+        <div className="p-4">
           <Suspense fallback={<AdminDetailSkeleton />}>
             {admin ? <AdminProfile admin={admin} /> : <AdminDetailSkeleton />}
           </Suspense>
@@ -87,7 +87,7 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
                   to={item.link}
                   end={item.link === "/admin"}
                   className={({ isActive }) =>
-                    `flex items-center space-x-1 justify-baseline rounded-md cursor-pointer ${isActive
+                    `flex items-center space-x-2 justify-baseline rounded-md cursor-pointer ${isActive
                       ? "border-r-3 border-blue-600 bg-blue-100/80 text-blue-700 font-bold"
                       : "hover:bg-black/15"
                     }`
@@ -97,7 +97,7 @@ const AdminSidebar: FC<{ role: string }> = ({ role }) => {
                     icon={item.icon}
                     className="text-2xl p-2 w-5 h-5 text-left"
                   />{" "}
-                  <span className="text-lg">{item.label}</span>
+                  <span className="text-md">{item.label}</span>
                 </NavLink>
               </li>
             ))}

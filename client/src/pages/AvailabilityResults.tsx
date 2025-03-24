@@ -31,9 +31,8 @@ const AvailabilityResults = () => {
       <div className="mb-8 text-center">
         <h1 className="text-2xl md:text-3xl font-bold">Availability Results</h1>
         <p className="text-gray-600 mt-2">
-          Showing availability from
-          <span className="font-semibold">{arrivalLabel}</span> to
-          <span className="font-semibold">{departureLabel}</span>
+          Showing availability from <span className="font-semibold"> {arrivalLabel} </span> to
+          <span className="font-semibold"> {departureLabel} </span>
         </p>
       </div>
 
@@ -84,7 +83,6 @@ const AvailabilityResults = () => {
                         <span className="font-medium">{room.room_type}</span>
                       </p>
                     )}
-                    {/* Additional Details (Bed Size, Capacity) */}
                     <div className="text-sm text-gray-700 mb-2">
                       {room.bed_size && (
                         <p>

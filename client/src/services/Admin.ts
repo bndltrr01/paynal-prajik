@@ -13,6 +13,18 @@ export const fetchAdminProfile = async () => {
   }
 };
 
+export const fetchStaffProfile = async () => {
+  try {
+    const response = await ADMIN.get('/staff_detail', {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch staff details: ${error}`);
+    throw error;
+  }
+};
+
 export const fetchStats = async () => {
   try {
     const response = await ADMIN.get("/stats", {

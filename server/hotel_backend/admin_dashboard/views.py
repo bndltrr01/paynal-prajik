@@ -18,14 +18,14 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 @permission_classes([IsAuthenticated])
 def get_admin_details(request):
     try:
-        admin_details = AdminDetails.objects.get(email="admin@gmail.com")
+        admin_details = request.user
     except AdminDetails.DoesNotExist:
         return Response({"error": "Admin not found"}, status=status.HTTP_404_NOT_FOUND)
     
     data = {
-        "name": admin_details.name,
-        "email": admin_details.email,
-        "profile_pic": admin_details.profile_pic.url if admin_details.profile_pic else None
+        "name": admin_details.first_name + " " + admin_details.last_name,
+        "role": admin_details.role,
+        "profile_pic": admin_details.profile_image.url if admin_details.profile_image else None
     }
     
     return Response({
