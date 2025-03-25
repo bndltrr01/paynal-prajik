@@ -6,6 +6,7 @@ import ProtectedRoute from "./contexts/ProtectedRoutes";
 import AdminLayout from "./layout/admin/AdminLayout";
 import Footer from "./layout/Footer";
 import Navbar from "./layout/Navbar";
+import useTokenHandler from "./hooks/useTokenHandler";
 
 const LoadingHydrate = lazy(() => import("./motions/loaders/LoadingHydrate"));
 const NotFound = lazy(() => import("./pages/_NotFound"));
@@ -34,6 +35,7 @@ const Reservations = lazy(() => import("./pages/admin/Reservations"));
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
   const location = useLocation();
+  useTokenHandler();
 
   const isAdminRoute =
     location.pathname.startsWith("/admin") ||

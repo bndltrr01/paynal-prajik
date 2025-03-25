@@ -16,15 +16,21 @@ from datetime import timedelta
 @permission_classes([IsAuthenticated])
 def auth_logout(request):
     try:
+        # Log user activity before logout
+        print(f"Logging out user: {request.user.username} (ID: {request.user.id})")
+        
+        # Logout the user
         logout(request)
         
         response = Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
         
+        # Clear all authentication cookies with proper parameters
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         
         return response
     except Exception as e:
+        print(f"Logout error: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -378,7 +384,7 @@ def user_login(request):
         if not email or not password:
             return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        user = CustomUsers.objects.filter(email=email).first()
+        user = CustomUsers.objects.filter(email=email)
         if not user:
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -400,7 +406,7 @@ def user_login(request):
         }
         
         response = Response({
-            'message': f'{auth_user.role.capitalize()} logged in successfully!',
+            'message': f'{auth_user.first_name} logged in successfully!',
             'user': user_data,
             'access_token': str(token.access_token),
             'refresh_token': str(token)
@@ -431,19 +437,36 @@ def user_login(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_auth(request):
-    user = request.user
-    return Response({
-        'isAuthenticated': True,
-        'role': user.role,
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'profile_image': user.profile_image.url if user.profile_image else "",
-        }
-    }, status=status.HTTP_200_OK)
+    try:
+        user = request.user
+        print(f"User authentication check: {user.username} (ID: {user.id})")
+        
+        # Check if user is properly authenticated
+        if not user.is_authenticated:
+            print(f"User {user.username} is not authenticated")
+            return Response({
+                'isAuthenticated': False,
+                'error': 'User is not authenticated'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        return Response({
+            'isAuthenticated': True,
+            'role': user.role,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'profile_image': user.profile_image.url if user.profile_image else "",
+            }
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Auth check error: {str(e)}")
+        return Response({
+            'isAuthenticated': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

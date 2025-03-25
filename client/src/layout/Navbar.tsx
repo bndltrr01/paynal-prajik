@@ -42,11 +42,10 @@ const Navbar: FC = () => {
 
   const {
     isAuthenticated,
-    setIsAuthenticated,
-    setRole,
     profileImage,
     userDetails,
     setProfileImage,
+    clearAuthState
   } = useUserContext();
 
   const [imageLoading, setImageLoading] = useState<boolean>(false);
@@ -54,21 +53,29 @@ const Navbar: FC = () => {
   const handleLogout = async () => {
     setLoading(true);
     try {
+      console.log("Starting logout process");
       const response = await logout();
-      if (response.status === 200) {
-        setIsAuthenticated(false);
-        setRole("");
-        setNotification({
-          message: "Logged out successfully",
-          type: "success",
-          icon: "fas fa-check-circle",
-        });
-        setIsModalOpen(false);
-        navigate("/", { replace: true });
-      }
-      setLoading(false);
+      console.log("Logout response:", response.status);
+
+      clearAuthState();
+
+      setNotification({
+        message: "Logged out successfully",
+        type: "success",
+        icon: "fas fa-check-circle",
+      });
+      setIsModalOpen(false);
+
+      navigate("/", { replace: true });
     } catch (error) {
       console.error(`Failed to logout: ${error}`);
+      setNotification({
+        message: "Error during logout, but session cleared",
+        type: "warning",
+        icon: "fas fa-exclamation-triangle",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
