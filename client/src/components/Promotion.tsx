@@ -10,6 +10,9 @@ const Promotion = () => {
             src={resort}
             alt="Luxury Hotel Experience"
             className="rounded-lg shadow-md w-full md:w-auto h-auto object-cover"
+            loading="lazy"
+            width="750"
+            height="620"
           />
         </div>
 

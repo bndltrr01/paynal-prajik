@@ -1,11 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MapPinOff } from "lucide-react";
 import { useState } from "react";
+<<<<<<< HEAD
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import EditAreaModal, {
   IArea as IEditArea,
 } from "../../components/admin/EditAreaModal";
+=======
+import EditAreaModal, { IArea as IEditArea } from "../../components/admin/EditAreaModal";
+>>>>>>> 0686cf5c10fbfc385472e9783fa1a416506af0d9
 import Modal from "../../components/Modal";
+import ManageRoomLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
+<<<<<<< HEAD
 import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
 import {
   fetchAreas,
@@ -13,8 +21,10 @@ import {
   editArea,
   deleteArea,
 } from "../../services/Admin";
+=======
+import { addNewArea, deleteArea, editArea, fetchAreas } from "../../services/Admin";
+>>>>>>> 0686cf5c10fbfc385472e9783fa1a416506af0d9
 import Error from "../_ErrorBoundary";
-import { MapPinOff } from "lucide-react";
 
 interface Area {
   id: number;

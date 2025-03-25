@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface RoomCardProps {
   id: string | number;
@@ -26,10 +26,14 @@ const RoomCard: FC<RoomCardProps> = ({
     status.toLowerCase() === "available"
       ? "bg-green-500"
       : status.toLowerCase() === "occupied"
-      ? "bg-red-500"
-      : status.toLowerCase() === "maintenance"
-      ? "bg-gray-500"
-      : "bg-blue-500";
+        ? "bg-red-500"
+        : status.toLowerCase() === "maintenance"
+          ? "bg-gray-500"
+          : "bg-blue-500";
+
+  const handleReserveClick = () => {
+    navigate(`/confirm-booking?roomId=${id}`);
+  };
 
   return (
     <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-transform hover:-translate-y-1 hover:shadow-lg">
@@ -58,16 +62,17 @@ const RoomCard: FC<RoomCardProps> = ({
           </span>
           <div className="flex gap-2">
             <button
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
               onClick={() => navigate(`/rooms/${id}`)}
             >
               View Details
             </button>
-            <Link to="/availability">
-              <button className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
-                Reserve Now
-              </button>
-            </Link>
+            <button
+              className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer"
+              onClick={handleReserveClick}
+            >
+              Reserve Now
+            </button>
           </div>
         </div>
       </div>

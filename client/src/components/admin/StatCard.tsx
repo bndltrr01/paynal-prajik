@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, memo } from "react";
 
 interface StatCardProps {
     title: string;
@@ -15,4 +15,4 @@ const StatCard: FC<StatCardProps> = ({ title, value, borderColor }) => {
     );
 };
 
-export default StatCard;
+export default memo(StatCard);

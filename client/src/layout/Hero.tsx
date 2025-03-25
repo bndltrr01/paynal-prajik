@@ -10,7 +10,7 @@ const Hero = () => {
         modules={[Autoplay]}
         slidesPerView={1}
         loop={true}
-        autoplay={{ delay: 2000, disableOnInteraction: false }}
+        autoplay={{ delay: 10000, disableOnInteraction: false }}
         className="w-full h-full"
       >
         {slides.map((slide) => (
@@ -21,10 +21,10 @@ const Hero = () => {
             >
               <div className="flex flex-col justify-center items-center h-screen z-10 relative text-center px-6 sm:px-12 md:px-20">
                 <div className="text-white max-w-4xl">
-                  <h1 className="font-playfair mb-4 text-[clamp(2rem,4vw,3.5rem)] leading-tight">
+                  <h1 className="font-playfair mb-4 text-6xl leading-tight">
                     {slide.heading}
                   </h1>
-                  <p className="font-montserrat text-[clamp(1.1rem,1.4vw,1.3rem)] leading-relaxed">
+                  <p className="font-montserrat text-xl leading-relaxed">
                     {slide.description}
                   </p>
                 </div>

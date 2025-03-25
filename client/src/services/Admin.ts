@@ -13,6 +13,18 @@ export const fetchAdminProfile = async () => {
   }
 };
 
+export const fetchStaffProfile = async () => {
+  try {
+    const response = await ADMIN.get('/staff_detail', {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch staff details: ${error}`);
+    throw error;
+  }
+};
+
 export const fetchStats = async () => {
   try {
     const response = await ADMIN.get("/stats", {
@@ -37,9 +49,10 @@ export const areaReservations = async () => {
   }
 };
 
-export const manageUsers = async () => {
+// CRUD Users
+export const fetchAllStaff = async () => {
   try {
-    const response = await ADMIN.get("/manage_users", {
+    const response = await ADMIN.get("/staff", {
       withCredentials: true,
     });
     return response.data.data;
@@ -48,6 +61,60 @@ export const manageUsers = async () => {
     throw error;
   }
 };
+
+export const addNewStaff = async (payload: FormData): Promise<{ data: any }> => {
+  try {
+    const response = await ADMIN.post("/add_staff", payload, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response;
+  } catch (error) {
+    console.error(`Failed to add staff: ${error}`);
+    throw error;
+  }
+};
+
+export const staffDetail = async (staffId: number) => {
+  try {
+    const response = await ADMIN.get(`/show_staff/${staffId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch staff detail: ${error}`);
+    throw error;
+  }
+};
+
+export const manageStaff = async (staffId: number, payload: FormData) => {
+  try {
+    const response = await ADMIN.put(`/edit_staff/${staffId}`, payload, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to manage staff: ${error}`);
+    throw error;
+  }
+};
+
+export const archiveStaff = async (staffId: number) => {
+  try {
+    const response = await ADMIN.delete(`/archive_staff/${staffId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to archive staff: ${error}`);
+    throw error;
+  }
+}
 
 // CRUD Rooms
 export const fetchRooms = async () => {
@@ -89,10 +156,7 @@ export const roomDetail = async (roomId: number) => {
   }
 };
 
-export const editRoom = async (
-  roomId: number,
-  payload: FormData
-): Promise<{ data: any }> => {
+export const editRoom = async (roomId: number, payload: FormData): Promise<{ data: any }> => {
   try {
     const response = await ADMIN.put(`/edit_room/${roomId}`, payload, {
       headers: {
@@ -247,6 +311,49 @@ export const deleteAmenity = async (amenityId: number) => {
     return response.data;
   } catch (error) {
     console.error(`Failed to delete amenity: ${error}`);
+    throw error;
+  }
+};
+
+// Booking Management
+export const updateBookingStatus = async (bookingId: number, status: string) => {
+  try {
+    const response = await ADMIN.put(`/booking/${bookingId}/status`, 
+      { status },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to update booking status: ${error}`);
+    throw error;
+  }
+};
+
+export const getBookingDetails = async (bookingId: number) => {
+  try {
+    const response = await ADMIN.get(`/booking/${bookingId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch booking details: ${error}`);
+    throw error;
+  }
+};
+
+export const getAllBookings = async () => {
+  try {
+    const response = await ADMIN.get('/bookings', {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch all bookings: ${error}`);
     throw error;
   }
 };

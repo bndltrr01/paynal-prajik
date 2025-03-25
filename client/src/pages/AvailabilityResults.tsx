@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/AvailabilityResults.tsx
-import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAvailability } from "../services/Booking";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
-import Navbar from "../layout/Navbar";
-import Footer from "../layout/Footer";
+import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
@@ -33,9 +31,8 @@ const AvailabilityResults = () => {
       <div className="mb-8 text-center">
         <h1 className="text-2xl md:text-3xl font-bold">Availability Results</h1>
         <p className="text-gray-600 mt-2">
-          Showing availability from
-          <span className="font-semibold">{arrivalLabel}</span> to
-          <span className="font-semibold">{departureLabel}</span>
+          Showing availability from <span className="font-semibold"> {arrivalLabel} </span> to
+          <span className="font-semibold"> {departureLabel} </span>
         </p>
       </div>
 
@@ -86,7 +83,6 @@ const AvailabilityResults = () => {
                         <span className="font-medium">{room.room_type}</span>
                       </p>
                     )}
-                    {/* Additional Details (Bed Size, Capacity) */}
                     <div className="text-sm text-gray-700 mb-2">
                       {room.bed_size && (
                         <p>
@@ -103,7 +99,7 @@ const AvailabilityResults = () => {
                     </div>
                     {/* Price & Action */}
                     <p className="text-gray-800 font-semibold text-lg mb-3">
-                      ₱{Number(room.room_price).toLocaleString()}
+                      {room.room_price}
                     </p>
                     <div className="mt-auto flex justify-evenly items-center gap-2">
                       <Link
@@ -112,9 +108,12 @@ const AvailabilityResults = () => {
                       >
                         View Room
                       </Link>
-                      <button className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
+                      <Link
+                        to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
+                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                      >
                         Book Room
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 ))}

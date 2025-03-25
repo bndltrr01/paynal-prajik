@@ -1,5 +1,5 @@
-import { FC, ReactNode, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { FC, memo, ReactNode, useCallback, useEffect } from "react";
 
 interface ModalProps {
   icon?: string;
@@ -26,16 +26,24 @@ const Modal: FC<ModalProps> = ({
   isOpen,
   loading = false
 }) => {
+  const handleCancel = useCallback(() => {
+    cancel();
+  }, [cancel]);
+
+  const handleConfirm = useCallback(() => {
+    onConfirm();
+  }, [onConfirm]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        cancel();
+        handleCancel();
       }
-    }
+    };
 
     if (isOpen) window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cancel, isOpen]);
+  }, [isOpen, handleCancel]);
 
   return (
     <AnimatePresence mode="wait">
@@ -81,7 +89,7 @@ const Modal: FC<ModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={onConfirm}
+                onClick={handleConfirm}
                 className={className}
                 disabled={loading}
               >
@@ -95,4 +103,4 @@ const Modal: FC<ModalProps> = ({
   );
 };
 
-export default Modal;
+export default memo(Modal);

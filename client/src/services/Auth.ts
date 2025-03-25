@@ -5,6 +5,13 @@ export const authenticateUser = async () => {
         const response = await API.get('/auth/user', {
             withCredentials: true
         });
+        
+        // Validate that we have proper response data
+        if (!response || !response.data || !response.data.isAuthenticated || !response.data.user) {
+            console.error('Invalid authentication response:', response);
+            throw new Error('Invalid authentication response');
+        }
+        
         return response;
     } catch (error) {
         console.error(`Failed to authenticate user: ${error}`);
@@ -105,9 +112,34 @@ export const logout = async () => {
             },
             withCredentials: true
         });
+        
+        // Clear cookies manually as a fallback
+        document.cookie.split(';').forEach(cookie => {
+            const [name] = cookie.split('=').map(c => c.trim());
+            if (name) {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; samesite=lax`;
+            }
+        });
+        
+        // Clear any local storage/session storage data
+        localStorage.clear();
+        sessionStorage.clear();
+        
         return response;
     } catch (error) {
         console.error(`Failed to logout: ${error}`);
+        
+        // Clear cookies and storage even if server request fails
+        document.cookie.split(';').forEach(cookie => {
+            const [name] = cookie.split('=').map(c => c.trim());
+            if (name) {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; samesite=lax`;
+            }
+        });
+        
+        localStorage.clear();
+        sessionStorage.clear();
+        
         throw error;
     }
 };

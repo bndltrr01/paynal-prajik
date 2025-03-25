@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FC } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllRooms } from "../../services/Room";
-import RoomCard from "./RoomCard";
+import { FC } from "react";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import Error from "../../pages/_ErrorBoundary";
+import { fetchAllRooms } from "../../services/Room";
+import RoomCard from "./RoomCard";
 
 interface Room {
   id: number;
