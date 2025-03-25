@@ -19,6 +19,9 @@ const RoomImage = () => {
           src={deluxe_single}
           alt="Deluxe Room"
           className="w-full h-auto object-cover"
+          loading="lazy"
+          width="1200"
+          height="800"
         />
       </div>
     </div>

@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FC, useState, useEffect, ChangeEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChangeEvent, FC, FormEvent, memo, useCallback, useEffect, useState } from "react";
 
-export interface IStaff {
+interface IStaff {
     id: number;
     first_name: string;
     last_name: string;
     email: string;
-    password?: string;
-    confirm_password?: string;
+    password: string;
+    confirm_password: string;
 }
 
 interface IStaffFormModalProps {
     isOpen: boolean;
     cancel: () => void;
-    onSave: (data: IStaff) => Promise<void>;
-    staffData: IStaff | null;
+    onSave: (staff: IStaff) => Promise<void>;
+    staffData?: IStaff | null;
     loading?: boolean;
 }
 
@@ -49,12 +49,12 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
         setErrors({});
     }, [staffData]);
 
-    const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormState((prev) => ({ ...prev, [name]: value }));
-    };
+    }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = useCallback(async (e: FormEvent) => {
         e.preventDefault();
         if (formState.password && formState.password !== formState.confirm_password) {
             setErrors({ confirm_password: "Passwords do not match" });
@@ -69,7 +69,7 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
             const errorData = error.response?.data?.error;
             setErrors(errorData ? errorData : { general: "An error occurred" });
         }
-    };
+    }, [formState, onSave]);
 
     useEffect(() => {
         const handleKeyDown = (evt: KeyboardEvent) => {
@@ -88,109 +88,140 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="fixed inset-0 flex items-center justify-center z-10 bg-black/45 overflow-y-auto"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                 >
                     <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 20, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="bg-white w-full max-w-2xl mx-4 rounded shadow-lg p-6 relative max-h-[90vh] overflow-y-auto"
+                        className="w-full max-w-md bg-white rounded-lg shadow-lg p-6 mx-4"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
                     >
                         <h2 className="text-xl font-semibold mb-4">
-                            {staffData ? "Edit Staff" : "Add New Staff"}
+                            {staffData ? "Edit Staff" : "Add Staff"}
                         </h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">First Name</label>
-                                <input
-                                    type="text"
-                                    name="first_name"
-                                    value={formState.first_name}
-                                    onChange={handleChange}
-                                    placeholder="Enter First Name"
-                                    className="border border-gray-300 rounded w-full p-2"
-                                />
-                                {errors.first_name && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
-                                )}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* First Name */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">
+                                        First Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="first_name"
+                                        value={formState.first_name}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border rounded-md"
+                                        required
+                                    />
+                                    {errors.first_name && (
+                                        <p className="text-red-500 text-xs mt-1">
+                                            {errors.first_name}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Last Name */}
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">
+                                        Last Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="last_name"
+                                        value={formState.last_name}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border rounded-md"
+                                        required
+                                    />
+                                    {errors.last_name && (
+                                        <p className="text-red-500 text-xs mt-1">
+                                            {errors.last_name}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Email */}
                             <div>
-                                <label className="block text-sm font-medium mb-1">Last Name</label>
-                                <input
-                                    type="text"
-                                    name="last_name"
-                                    value={formState.last_name}
-                                    onChange={handleChange}
-                                    placeholder="Enter Last Name"
-                                    className="border border-gray-300 rounded w-full p-2"
-                                />
-                                {errors.last_name && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Email</label>
+                                <label className="block text-sm font-medium mb-1">
+                                    Email
+                                </label>
                                 <input
                                     type="email"
                                     name="email"
                                     value={formState.email}
                                     onChange={handleChange}
-                                    placeholder="Enter Email"
-                                    className="border border-gray-300 rounded w-full p-2"
+                                    className="w-full p-2 border rounded-md"
+                                    required
                                 />
                                 {errors.email && (
                                     <p className="text-red-500 text-xs mt-1">{errors.email}</p>
                                 )}
                             </div>
+
+                            {/* Password */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">
-                                    Password {staffData ? "(Leave blank to keep current)" : ""}
+                                    Password {staffData ? "(leave empty to keep current)" : ""}
                                 </label>
                                 <input
                                     type="password"
                                     name="password"
                                     value={formState.password}
                                     onChange={handleChange}
-                                    placeholder={staffData ? "New Password (optional)" : "Enter Password"}
-                                    className="border border-gray-300 rounded w-full p-2"
+                                    className="w-full p-2 border rounded-md"
+                                    required={!staffData}
                                 />
                                 {errors.password && (
                                     <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                                 )}
                             </div>
+
+                            {/* Confirm Password */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">
-                                    Confirm Password {staffData ? "(Leave blank to keep current)" : ""}
+                                    Confirm Password
                                 </label>
                                 <input
                                     type="password"
                                     name="confirm_password"
-                                    value={formState.confirm_password || ""}
+                                    value={formState.confirm_password}
                                     onChange={handleChange}
-                                    placeholder={staffData ? "Confirm New Password" : "Confirm Password"}
-                                    className="border border-gray-300 rounded w-full p-2"
+                                    className="w-full p-2 border rounded-md"
+                                    required={!staffData}
                                 />
                                 {errors.confirm_password && (
-                                    <p className="text-red-500 text-xs mt-1">{errors.confirm_password}</p>
+                                    <p className="text-red-500 text-xs mt-1">
+                                        {errors.confirm_password}
+                                    </p>
                                 )}
                             </div>
+
+                            {/* Error Message */}
+                            {errors.general && (
+                                <p className="text-red-500 text-center mt-2">
+                                    {errors.general}
+                                </p>
+                            )}
+
+                            {/* Action Buttons */}
                             <div className="flex justify-end space-x-2 pt-4">
                                 <button
                                     type="button"
                                     onClick={cancel}
-                                    className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition-colors duration-300 uppercase font-semibold"
+                                    className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition-colors duration-300"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 uppercase font-semibold"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300"
                                 >
-                                    {staffData ? "Update" : "Save"}
+                                    {loading ? "Saving..." : "Save"}
                                 </button>
                             </div>
                         </form>
@@ -201,4 +232,4 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
     );
 };
 
-export default EditStaffModal;
+export default memo(EditStaffModal);
