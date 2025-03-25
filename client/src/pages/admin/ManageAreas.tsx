@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import EditAreaModal, { IArea as IEditArea } from "../../components/admin/EditAreaModal";
+import EditAreaModal, {
+  IArea as IEditArea,
+} from "../../components/admin/EditAreaModal";
 import Modal from "../../components/Modal";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
-import { fetchAreas, addNewArea, editArea, deleteArea } from "../../services/Admin";
+import {
+  fetchAreas,
+  addNewArea,
+  editArea,
+  deleteArea,
+} from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 import { MapPinOff } from "lucide-react";
 
@@ -33,7 +40,11 @@ const ManageAreas = () => {
   const queryClient = useQueryClient();
 
   // Fetch areas; API returns { data: IArea[] }
-  const { data: areasData, isLoading, isError } = useQuery<{ data: Area[] }>({
+  const {
+    data: areasData,
+    isLoading,
+    isError,
+  } = useQuery<{ data: Area[] }>({
     queryKey: ["areas"],
     queryFn: fetchAreas,
   });
@@ -58,7 +69,11 @@ const ManageAreas = () => {
   });
 
   // Mutation for editing an area
-  const editAreaMutation = useMutation<AddAreaResponse, unknown, { areaId: number; formData: FormData }>({
+  const editAreaMutation = useMutation<
+    AddAreaResponse,
+    unknown,
+    { areaId: number; formData: FormData }
+  >({
     mutationFn: ({ areaId, formData }) => editArea(areaId, formData),
     onMutate: () => {
       setLoading(true);
@@ -173,14 +188,19 @@ const ManageAreas = () => {
         {areas.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {areas.map((area) => (
-              <div key={area.id} className="bg-white shadow-md rounded-lg overflow-hidden">
+              <div
+                key={area.id}
+                className="bg-white shadow-md rounded-lg overflow-hidden"
+              >
                 <img
                   src={area.area_image}
                   alt={area.area_name}
                   className="w-full h-48 object-cover"
                 />
                 <div className="p-4 flex flex-col space-y-2">
-                  <h2 className="text-xl font-bold text-gray-900">{area.area_name}</h2>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {area.area_name}
+                  </h2>
                   <p className="text-gray-700 text-sm mb-2 line-clamp-2">
                     {area.description || "No description provided."}
                   </p>
@@ -189,12 +209,13 @@ const ManageAreas = () => {
                     Price Per Hour: ₱{area.price_per_hour.toLocaleString()}
                   </p>
                   <span
-                    className={`px-2 py-1 mt-2 text-sm font-semibold text-white rounded-full ${area.status === "available"
-                      ? "bg-green-500"
-                      : area.status === "occupied"
+                    className={`px-2 py-1 mt-2 text-sm font-semibold text-white rounded-full ${
+                      area.status === "available"
+                        ? "bg-green-500"
+                        : area.status === "occupied"
                         ? "bg-red-500"
                         : "bg-yellow-500"
-                      }`}
+                    }`}
                   >
                     {area.status.charAt(0).toUpperCase() + area.status.slice(1)}
                   </span>
@@ -221,7 +242,8 @@ const ManageAreas = () => {
             <MapPinOff className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-2xl font-semibold">No Areas Found</p>
             <p className="mt-2 text-gray-500 text-center max-w-md">
-              It looks like you haven't added any areas yet. Click the button below to create your first area.
+              It looks like you haven't added any areas yet. Click the button
+              below to create your first area.
             </p>
           </div>
         )}
