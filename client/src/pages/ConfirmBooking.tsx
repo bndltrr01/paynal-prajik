@@ -33,6 +33,12 @@ const ConfirmBooking = () => {
   const arrival = searchParams.get('arrival');
   const departure = searchParams.get('departure');
 
+  // Date selection state (when dates are not provided in URL)
+  const [selectedArrival, setSelectedArrival] = useState(arrival || '');
+  const [selectedDeparture, setSelectedDeparture] = useState(departure || '');
+  const [dateSelectionCompleted, setDateSelectionCompleted] = useState(!!arrival && !!departure);
+  const [dateError, setDateError] = useState<string | null>(null);
+
   // Form state
   const [formData, setFormData] = useState({
     firstName: '',
@@ -51,6 +57,9 @@ const ConfirmBooking = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  // Get today's date for date input min attribute
+  const today = new Date().toISOString().split('T')[0];
+
   // Fetch room data
   const { data: roomData, isLoading } = useQuery<RoomData>({
     queryKey: ['room', roomId],
@@ -65,10 +74,10 @@ const ConfirmBooking = () => {
   }, [isLoading, roomData]);
 
   useEffect(() => {
-    if (!roomId || !arrival || !departure) {
+    if (!roomId) {
       navigate('/');
     }
-  }, [roomId, arrival, departure, navigate]);
+  }, [roomId, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -101,6 +110,26 @@ const ConfirmBooking = () => {
     };
   }, [validIdPreview]);
 
+  const handleDateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedArrival || !selectedDeparture) {
+      setDateError('Please select both check-in and check-out dates');
+      return;
+    }
+
+    const arrivalDate = new Date(selectedArrival);
+    const departureDate = new Date(selectedDeparture);
+
+    if (departureDate <= arrivalDate) {
+      setDateError('Check-out date must be after check-in date');
+      return;
+    }
+
+    setDateSelectionCompleted(true);
+    setDateError(null);
+  };
+
   const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (!isAuthenticated) {
@@ -116,7 +145,7 @@ const ConfirmBooking = () => {
       return;
     }
 
-    if (!roomId || !arrival || !departure) {
+    if (!roomId || !selectedArrival || !selectedDeparture) {
       setError('Missing required booking information');
       return;
     }
@@ -133,8 +162,8 @@ const ConfirmBooking = () => {
         address: formData.address,
         specialRequests: formData.specialRequests,
         roomId: roomId,
-        checkIn: arrival,
-        checkOut: departure,
+        checkIn: selectedArrival,
+        checkOut: selectedDeparture,
         status: 'pending'
       };
 
@@ -174,10 +203,10 @@ const ConfirmBooking = () => {
 
   // Calculate number of nights
   const calculateNights = () => {
-    if (!arrival || !departure) return 1;
+    if (!selectedArrival || !selectedDeparture) return 1;
 
-    const arrivalDate = new Date(arrival);
-    const departureDate = new Date(departure);
+    const arrivalDate = new Date(selectedArrival);
+    const departureDate = new Date(selectedDeparture);
     const diffTime = Math.abs(departureDate.getTime() - arrivalDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -185,8 +214,8 @@ const ConfirmBooking = () => {
   };
 
   const nights = calculateNights();
-  const formattedArrivalDate = formatDate(arrival);
-  const formattedDepartureDate = formatDate(departure);
+  const formattedArrivalDate = formatDate(selectedArrival);
+  const formattedDepartureDate = formatDate(selectedDeparture);
 
   // If loading or no room data yet, show a loading state
   if (isLoading) {
@@ -198,6 +227,88 @@ const ConfirmBooking = () => {
             <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
           </div>
           <p className="mt-2 text-gray-600">Loading room details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If dates are not selected yet, show date selection form
+  if (!dateSelectionCompleted) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-7xl mt-16">
+        <h1 className="text-2xl md:text-3xl font-bold text-center mb-8">Select Your Stay Dates</h1>
+
+        {/* Room Information */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6 max-w-2xl mx-auto">
+          <div className="flex items-center space-x-4">
+            <img
+              src={roomData?.room_image}
+              alt={roomData?.room_name || "Room"}
+              className="w-24 h-24 object-cover rounded-md"
+            />
+            <div>
+              <h2 className="text-xl font-bold">{roomData?.room_name}</h2>
+              <p className="text-gray-600">{roomData?.room_type}</p>
+              <p className="text-lg font-semibold mt-1">{roomData?.room_price}</p>
+            </div>
+          </div>
+        </div>
+
+        {dateError && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-2xl mx-auto">
+            <p>{dateError}</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
+          <form onSubmit={handleDateSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label htmlFor="arrival-date" className="block text-sm font-medium text-gray-700 mb-1">
+                  Check-in Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="arrival-date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                  value={selectedArrival}
+                  onChange={(e) => setSelectedArrival(e.target.value)}
+                  min={today}
+                />
+              </div>
+              <div>
+                <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">
+                  Check-out Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="departure-date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                  value={selectedDeparture}
+                  onChange={(e) => setSelectedDeparture(e.target.value)}
+                  min={selectedArrival || today}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => navigate('/rooms')}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Back to Rooms
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Continue to Booking
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -358,8 +469,9 @@ const ConfirmBooking = () => {
                   id="checkIn"
                   name="checkIn"
                   required
-                  defaultValue={arrival || ""}
-                  disabled
+                  value={selectedArrival}
+                  onChange={(e) => setSelectedArrival(e.target.value)}
+                  min={today}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100"
                 />
               </div>
@@ -372,8 +484,9 @@ const ConfirmBooking = () => {
                   id="checkOut"
                   name="checkOut"
                   required
-                  defaultValue={departure || ""}
-                  disabled
+                  value={selectedDeparture}
+                  onChange={(e) => setSelectedDeparture(e.target.value)}
+                  min={selectedArrival || today}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100"
                 />
               </div>

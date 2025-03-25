@@ -12,6 +12,7 @@ from user_roles.models import CustomUsers
 from property.models import Rooms, Amenities, Areas
 from property.serializers import RoomSerializer, AmenitySerializer, AreaSerializer
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from booking.serializers import BookingSerializer
 
 # Create your views here.
 @api_view(['GET'])
@@ -466,5 +467,74 @@ def archive_staff(request, staff_id):
         }, status=status.HTTP_200_OK)
     except CustomUsers.DoesNotExist:
         return Response({"error": "Staff not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+# Bookings Management
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_bookings(request):
+    try:
+        bookings = Bookings.objects.all().order_by('-created_at')
+        serializer = BookingSerializer(bookings, many=True)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def booking_detail(request, booking_id):
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+        booking_serializer = BookingSerializer(booking)
+        data = booking_serializer.data
+        
+        room_serializer = RoomSerializer(booking.room)
+        data['room'] = room_serializer.data
+        
+        return Response({
+            "data": data
+        }, status=status.HTTP_200_OK)
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_booking_status(request, booking_id):
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({"error": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate status transition based on rules
+        valid_statuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show']
+        if new_status not in valid_statuses:
+            return Response({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        # Apply status change
+        booking.status = new_status
+        booking.save()
+        
+        # If cancelled, add cancellation info
+        if new_status == 'cancelled':
+            reason = request.data.get('reason', 'Cancelled by admin')
+            booking.cancellation_reason = reason
+            booking.cancellation_date = timezone.now().date()
+            booking.save()
+        
+        return Response({
+            "message": f"Booking status updated to {new_status}",
+            "booking_id": booking_id
+        }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

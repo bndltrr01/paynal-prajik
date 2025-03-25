@@ -314,3 +314,46 @@ export const deleteAmenity = async (amenityId: number) => {
     throw error;
   }
 };
+
+// Booking Management
+export const updateBookingStatus = async (bookingId: number, status: string) => {
+  try {
+    const response = await ADMIN.put(`/booking/${bookingId}/status`, 
+      { status },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to update booking status: ${error}`);
+    throw error;
+  }
+};
+
+export const getBookingDetails = async (bookingId: number) => {
+  try {
+    const response = await ADMIN.get(`/booking/${bookingId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch booking details: ${error}`);
+    throw error;
+  }
+};
+
+export const getAllBookings = async () => {
+  try {
+    const response = await ADMIN.get('/bookings', {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch all bookings: ${error}`);
+    throw error;
+  }
+};

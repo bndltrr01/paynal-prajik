@@ -49,6 +49,7 @@ def fetch_availability(request):
     }, status=status.HTTP_200_OK)
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def bookings_list(request):
     try:
         if request.method == 'GET':
@@ -61,10 +62,12 @@ def bookings_list(request):
             else:
                 return Response({"error": "Authentication required"}, status=status.HTTP_401_UNAUTHORIZED)
         elif request.method == 'POST':
-            serializer = BookingRequestSerializer(data=request.data)
+            print(f"Creating booking for authenticated user: {request.user.username} (ID: {request.user.id})")
+            serializer = BookingRequestSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 booking = serializer.save()
                 booking_data = BookingSerializer(booking).data
+                print(f"Booking created successfully for user ID: {booking.user.id}")
                 return Response({
                     "id": booking.id,
                     "message": "Booking created successfully",
@@ -74,6 +77,7 @@ def bookings_list(request):
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(f"Error creating booking: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])

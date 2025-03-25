@@ -1,11 +1,44 @@
 import { booking } from "./_axios";
 
-export const fetchBookings = async () => {
+export interface BookingResponse {
+    id: number;
+    user: {
+        id: number;
+        first_name: string;
+        last_name: string;
+        email: string;
+        profile_image?: string;
+        address?: string;
+        phone_number?: string;
+    };
+    room_details: {
+        id: number;
+        room_name: string;
+        room_type: string;
+        room_price: string;
+        room_image?: string;
+        description?: string;
+        capacity?: number;
+        amenities?: Array<{
+            id: number;
+            description: string;
+        }>;
+    };
+    check_in_date: string;
+    check_out_date: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+    cancellation_reason?: string;
+}
+
+export const fetchBookings = async (): Promise<{ data: BookingResponse[] }> => {
     try {
         const response = await booking.get('/bookings', {
             withCredentials: true
         });
-        return response.data.data;
+        console.log('Bookings response:', response.data);
+        return response.data;
     } catch (error) {
         console.error(`Failed to fetch bookings: ${error}`);
         throw error;

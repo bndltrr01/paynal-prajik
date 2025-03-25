@@ -34,4 +34,9 @@ urlpatterns = [
     path('show_staff/<int:staff_id>', views.show_staff_details, name='show_staff_details'),
     path('edit_staff/<int:staff_id>', views.edit_staff, name='edit_staff'),
     path('delete_staff/<int:staff_id>', views.archive_staff, name='delete_staff'),
+
+    # Add booking management endpoints
+    path('bookings', views.admin_bookings, name='admin_bookings'),
+    path('booking/<int:booking_id>', views.booking_detail, name='admin_booking_detail'),
+    path('booking/<int:booking_id>/status', views.update_booking_status, name='update_booking_status'),
 ]

@@ -2,6 +2,7 @@ from django.db import models
 from property.models import Rooms, Areas
 from user_roles.models import CustomUsers
 from django.utils.timezone import now
+from cloudinary.models import CloudinaryField # type: ignore
 
 # Create your models here.
 class Bookings(models.Model):
@@ -21,6 +22,8 @@ class Bookings(models.Model):
         choices=BOOKING_STATUS_CHOICES,
         default='pending',
     )
+    valid_id = CloudinaryField('valid_id', null=False, blank=False)
+    special_request = models.TextField(null=True, blank=True)
     cancellation_date = models.DateField(null=True, blank=True)
     cancellation_reason = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

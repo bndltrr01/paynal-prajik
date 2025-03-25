@@ -70,21 +70,28 @@ class BookingRequestSerializer(serializers.Serializer):
     status = serializers.CharField(default='pending')
     
     def create(self, validated_data):
-        # Find or create user
-        try:
-            user = CustomUsers.objects.get(email=validated_data['emailAddress'])
-        except CustomUsers.DoesNotExist:
-            # Create a new user with a temporary password
-            user = CustomUsers.objects.create(
-                email=validated_data['emailAddress'],
-                first_name=validated_data['firstName'],
-                last_name=validated_data['lastName'],
-                phone_number=validated_data['phoneNumber'],
-                address=validated_data['address'],
-                role='guest'
-            )
-            
-        # Create booking
+        request = self.context.get('request')
+        
+        if request and request.user and request.user.is_authenticated:
+            user = request.user
+            if user.first_name != validated_data['firstName'] or user.last_name != validated_data['lastName']:
+                user.first_name = validated_data['firstName']
+                user.last_name = validated_data['lastName']
+                user.phone_number = validated_data['phoneNumber']
+                user.address = validated_data['address']
+                user.save()
+        else:
+            try:
+                user = CustomUsers.objects.get(email=validated_data['emailAddress'])
+            except CustomUsers.DoesNotExist:
+                user = CustomUsers.objects.create(
+                    email=validated_data['emailAddress'],
+                    first_name=validated_data['firstName'],
+                    last_name=validated_data['lastName'],
+                    phone_number=validated_data['phoneNumber'],
+                    address=validated_data['address'],
+                    role='guest'
+                )
         try:
             room = Rooms.objects.get(id=validated_data['roomId'])
             booking = Bookings.objects.create(
