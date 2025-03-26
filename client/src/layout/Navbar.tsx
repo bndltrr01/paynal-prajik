@@ -201,17 +201,13 @@ const Navbar: FC = () => {
                   {
                     label: "Account",
                     onClick: () => {
-                      if (userDetails && userDetails.id) {
-                        navigate(`/guest/${userDetails.id}`);
-                      } else {
-                        console.error("User details are not available");
-                      }
+                      navigate(`/guest/${userDetails?.id}`);
                     },
                     icon: <FontAwesomeIcon icon={faCircleUser} />,
                   },
                   {
                     label: "My Bookings",
-                    onClick: () => navigate("/my-booking"),
+                    onClick: () => navigate("/guest/bookings"),
                     icon: <FontAwesomeIcon icon={faCalendarCheck} />,
                   },
                   {

@@ -49,7 +49,8 @@ const RoomDetails = () => {
 
   return (
     <div className="container mx-auto py-10 px-4">
-      <section className="container min-h-screen mt-[100px] min-w-screen overflow-x-hidden">
+      <section className="container mx-auto min-h-screen mt-[100px] overflow-x-hidden">
+        {/* Hero Banner */}
         <div
           className="h-[400px] w-full overflow-hidden bg-cover bg-center relative before:absolute before:inset-0 before:bg-black/60 before:z-0 text-white"
           style={{ backgroundImage: `url(${roomDetail.room_image})` }}
@@ -63,57 +64,73 @@ const RoomDetails = () => {
               <span className="text-xl">Back to Rooms</span>
             </Link>
           </div>
-          <div className="relative z-10 px-6 lg:px-80">
-            <div className="py-25">
-              <h1 className="text-7xl font-montserrat font-bold tracking-widest uppercase py-5">
-                {roomDetail.room_name}{" "}
+          <div className="relative z-10 flex h-full items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl md:text-5xl lg:text-7xl font-montserrat font-bold tracking-wider uppercase">
+                {roomDetail.room_name}
               </h1>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 2xl:grid-cols-2 px-4 md:px-10 lg:grid-cols-2">
-          <div className="w-full">
-            <div className="bg-white p-0 lg:p-10 mt-0 lg:mt-10 flex flex-col items-center">
-              <div className="w-full max-w-[1200px]">
+        {/* Room Details Section */}
+        <div className="py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Room Image */}
+            <div className="w-full">
+              <div className="bg-white rounded-lg overflow-hidden shadow-lg">
                 <img
                   src={roomDetail.room_image}
                   alt={roomDetail.room_name}
-                  className="w-full h-full object-cover rounded-md"
+                  className="w-full h-auto object-cover"
                 />
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4 py-6 md:py-10 lg:py-20">
-            <div className="bg-gray-100 p-6 md:p-10 rounded-lg shadow-sm w-full max-w-3xl mx-auto">
-              <h2 className="font-playfair text-4xl font-semibold mb-4">
-                Room Description
-              </h2>
-              <hr className="border-gray-300 mb-4" />
-              <span className="text-lg font-playfair">
-                {roomDetail.description}
-              </span>
-            </div>
-            <div className="bg-gray-100 p-6 md:p-10 rounded-lg shadow-sm w-full max-w-3xl mx-auto mt-6">
-              <h2 className="text-4xl font-playfair font-semibold mb-4">
-                Amenities
-              </h2>
-              <hr className="border-gray-300 mb-4" />
-              {isLoadingAmenities ? (
-                <p className="text-sm text-gray-500">Loading amenities...</p>
-              ) : amenitiesError ? (
-                <p className="text-sm text-red-500">Failed to load amenities.</p>
-              ) : roomDetail.amenities.length === 0 ? (
-                <span className="text-lg font-semibold">None</span>
-              ) : (
-                <ul className="list-disc pl-5 text-gray-700">
-                  {roomDetail.amenities.map((amenityId: any) => (
-                    <li key={amenityId} className="mb-2">
-                      {getAmenityDescription(amenityId)}
-                    </li>
-                  ))}
-                </ul>
-              )}
+
+            {/* Right Column - Room Details */}
+            <div className="flex flex-col space-y-8">
+              {/* Room Description */}
+              <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
+                <h2 className="font-playfair text-3xl font-semibold mb-4">
+                  Room Description
+                </h2>
+                <hr className="border-gray-300 mb-4" />
+                <p className="text-lg font-playfair">
+                  {roomDetail.description}
+                </p>
+              </div>
+
+              {/* Amenities */}
+              <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
+                <h2 className="text-3xl font-playfair font-semibold mb-4">
+                  Amenities
+                </h2>
+                <hr className="border-gray-300 mb-4" />
+                {isLoadingAmenities ? (
+                  <p className="text-sm text-gray-500">Loading amenities...</p>
+                ) : amenitiesError ? (
+                  <p className="text-sm text-red-500">Failed to load amenities.</p>
+                ) : roomDetail.amenities.length === 0 ? (
+                  <span className="text-lg font-semibold">None</span>
+                ) : (
+                  <ul className="list-disc pl-5 text-gray-700">
+                    {roomDetail.amenities.map((amenityId: any) => (
+                      <li key={amenityId} className="mb-2">
+                        {getAmenityDescription(amenityId)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Book Now Button */}
+              <div className="mt-4">
+                <Link to={`/booking/${roomDetail.id}`}>
+                  <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                    Book Now
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

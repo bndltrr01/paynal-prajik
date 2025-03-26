@@ -27,6 +27,7 @@ const BookingCalendar = lazy(() => import("./pages/BookingCalendar"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
 const Availability = lazy(() => import("./pages/Availability"));
 const CancelReservation = lazy(() => import("./pages/CancelReservation"));
+const VenueDetails = lazy(() => import("./pages/VenueDetails"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const Comments = lazy(() => import("./pages/admin/Comments"));
@@ -40,11 +41,11 @@ const Reservations = lazy(() => import("./pages/admin/Reservations"));
 
 // Lazy load guest pages
 const GuestDashboard = lazy(() => import("./pages/guests/GuestDashboard"));
-const Profile = lazy(() => import("./pages/guests/Profile"));
+const GuestBookings = lazy(() => import("./pages/guests/GuestBookings"));
+const GuestReservations = lazy(() => import("./pages/guests/GuestReservations"));
+const GuestCancellations = lazy(() => import("./pages/guests/GuestCancellations"));
 const PaymentHistory = lazy(() => import("./pages/guests/PaymentHistory"));
-const LoyaltyProgram = lazy(() => import("./pages/guests/LoyaltyProgram"));
-const Invoices = lazy(() => import("./pages/guests/Invoices"));
-const RoomSearchAndAvailability = lazy(() => import("./pages/guests/RoomSearchAndAvailability"));
+const GuestLayout = lazy(() => import("./layout/guest/GuestLayout"));
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
@@ -82,26 +83,42 @@ const App = () => {
 
             <Route path="/confirm-booking" element={<ConfirmBooking />} />
             <Route path="/registration" element={<RegistrationFlow />} />
+
+            {/* Legacy guest profile route for compatibility */}
             <Route path="/guest/:id" element={<GuestProfile />} />
+
             <Route path="/venues" element={<Venue />} />
+            <Route path="/venues/:id" element={<VenueDetails />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:id" element={<RoomDetails />} />
             <Route path="/booking/:roomId" element={<BookingCalendar />} />
             <Route path="/availability" element={<Availability />} />
             <Route path="/availability/results" element={<AvailabilityResults />} />
-            <Route path="/my-booking" element={<MyBooking />} />
+
+            {/* Redirect from MyBooking to the GuestBookings page */}
+            <Route
+              path="/my-booking"
+              element={
+                isAuthenticated ?
+                  <Navigate to="/guest/bookings" replace /> :
+                  <MyBooking />
+              }
+            />
+
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/about-us" element={<AboutUs />} />
             <Route path="/cancel-reservation" element={<CancelReservation />} />
 
-            {/* Protected guest routes */}
+            {/* Protected guest routes with GuestLayout */}
             <Route element={<ProtectedRoute requiredRole="guest" />}>
-              <Route path="/guest-dashboard" element={<GuestDashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/payment-history" element={<PaymentHistory />} />
-              <Route path="/loyalty-program" element={<LoyaltyProgram />} />
-              <Route path="/invoices" element={<Invoices />} />
-              <Route path="/room-search" element={<RoomSearchAndAvailability />} />
+              <Route path="/guest" element={<GuestLayout />}>
+                <Route index element={<GuestDashboard />} />
+                <Route path="bookings" element={<GuestBookings />} />
+                <Route path="reservations" element={<GuestReservations />} />
+                <Route path="cancellations" element={<GuestCancellations />} />
+                <Route path="payments" element={<PaymentHistory />} />
+                <Route path="reviews" element={<GuestDashboard />} /> {/* Placeholder for future reviews page */}
+              </Route>
             </Route>
 
             {/* Protected admin routes */}

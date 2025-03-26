@@ -48,4 +48,7 @@ class AreaSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['area_image'] = instance.area_image.url if instance.area_image else None
+        
+        if instance.price_per_hour is not None:
+            representation['price_per_hour'] = f"₱{instance.price_per_hour:,.2f}"
         return representation

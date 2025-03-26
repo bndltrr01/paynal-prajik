@@ -6,18 +6,18 @@ import "react-loading-skeleton/dist/skeleton.css"
 const LoadingHydrate: FC = () => {
   return (
     <motion.div
-      className="flex flex-col items-center justify-center min-h-screen bg-gray-50"
+      className="flex flex-col items-center justify-center bg-gray-50"
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8 }}
     >
       <motion.div
-        className="mb-8"
+        className="mb-8 mt-12"
         animate={{ rotate: 360 }}
         transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
       >
         <svg
-          className="w-16 h-16 text-violet-500"
+          className="w-12 h-12 text-violet-500"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"

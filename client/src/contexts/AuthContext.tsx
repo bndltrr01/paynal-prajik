@@ -36,9 +36,7 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [loading, setLoading] = useState<boolean>(true);
     const [profileImage, setProfileImage] = useState<string>("");
 
-    // Function to clear all authentication state
     const clearAuthState = () => {
-        console.log("Clearing auth state completely");
         setIsAuthenticated(false);
         setUserDetails(null);
         setSessionExpired(false);
@@ -49,21 +47,16 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                console.log("Checking authentication status...");
                 const res = await authenticateUser();
-
                 if (res && res.data && res.data.isAuthenticated === true && res.data.user && res.data.user.id) {
-                    console.log("Authentication successful:", res.data.user.username);
                     setIsAuthenticated(true);
                     setUserDetails(res.data.user);
                     setProfileImage(res.data.user.profile_image || "");
                     setRole(res.data.role || "");
                 } else {
-                    console.log("Invalid authentication response, clearing state");
                     clearAuthState();
                 }
             } catch (error) {
-                console.error("Authentication check failed:", error);
                 clearAuthState();
             } finally {
                 setLoading(false);
@@ -73,7 +66,6 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
         checkAuth();
 
         const handleFocus = () => {
-            console.log("Window focus detected, rechecking auth");
             checkAuth();
         };
 

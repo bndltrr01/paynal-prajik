@@ -86,7 +86,7 @@ const ViewRoomModal: FC<IViewRoomModalProps> = ({ isOpen, roomData, onClose }) =
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Price:</p>
-                                <p className="font-semibold">₱ {roomData.roomPrice.toLocaleString()}</p>
+                                <p className="font-semibold">{roomData.roomPrice.toLocaleString()}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-gray-500">Admission:</p>
