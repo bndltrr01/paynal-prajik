@@ -1,86 +1,75 @@
-import emerald_hall from "../../assets/emerald_hall.webp";
-import grand_ballroom from "../../assets/grand_ballroom.avif";
-import ruby_lounge from "../../assets/ruby_lounge.jpg";
-import conference_hall from "../../assets/conference_hall.webp";
-import rooftop_garden from "../../assets/rooftop_garden.jpg";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import ContentLoader from "../../motions/loaders/ContentLoader";
+import { fetchAreas } from "../../services/Area";
 import VenueCard from "./VenueCard";
 
+interface Area {
+  id: number;
+  area_name: string;
+  description: string;
+  area_image: string;
+  status: string;
+  capacity: number;
+  price_per_hour: string;
+}
+
 const VenueList = () => {
-  const areas = [
-    {
-      title: "Grand Ballroom",
-      location: "7th Floor - Grand Ballroom",
-      priceRange: "₱100,000",
-      capacity: 300,
-      description:
-        "A luxurious venue for weddings, corporate events, and celebrations. Features high ceilings, chandeliers, dance floor, and modern lighting and sound systems for unforgettable experiences.",
-      image: grand_ballroom,
-      isFeatured: true,
-    },
-    {
-      title: "Emerald Hall",
-      location: "7th Floor - Emerald Hall",
-      priceRange: "₱50,000",
-      capacity: 100,
-      description:
-        "An elegant venue ideal for weddings, receptions, and corporate events. Emerald Hall features stunning chandeliers, a bar and lounge area, and a spacious dance floor — perfect for any memorable celebration.",
-      image: emerald_hall,
-      isFeatured: false,
-    },
-
-    {
-      title: "Ruby Hall",
-      location: "7th Floor - Ruby Hall",
-      priceRange: "₱50,000",
-      capacity: 100,
-      description:
-        "A modern and stylish lounge perfect for private parties, cocktails, and corporate events. Ruby Hall offers cozy seating, vibrant LED cube tables, and ambient lighting to create a fun and relaxed atmosphere.",
-      image: ruby_lounge,
-      isFeatured: false,
-    },
-    {
-      title: "Conference Room",
-      location: "6th Floor - Conference Room",
-      priceRange: "₱30,000",
-      capacity: 30,
-      description:
-        "A fully-equipped conference room ideal for meetings, seminars, and corporate events. Designed with modern interiors, a large boardroom table, and ergonomic chairs for a professional and productive environment.",
-      image: conference_hall,
-      isFeatured: false,
-    },
-
-    {
-      title: "Rooftop Garden",
-      location: "8th Floor - Rooftop Garden",
-      priceRange: "₱80,000",
-      capacity: 80,
-      description:
-        "An open-air venue with stunning city views, perfect for weddings, private parties, and events. Features elegant lighting, lush greenery, cozy seating, and space for dining and entertainment.",
-      image: rooftop_garden,
-      isFeatured: false,
-    },
-  ];
+  const { data: areasData, isLoading, isError } = useQuery<{ data: Area[] }>({
+    queryKey: ["venues"],
+    queryFn: fetchAreas,
+  });
 
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <h2 className="text-center text-3xl sm:text-4xl font-bold mb-8">
+          Select Your Perfect Event Space
+        </h2>
+        <ContentLoader type="card" count={3} />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container mx-auto p-6">
+        <h2 className="text-center text-3xl sm:text-4xl font-bold mb-8">
+          Select Your Perfect Event Space
+        </h2>
+        <div className="text-center text-red-500">
+          Failed to load venues. Please try again later.
+        </div>
+      </div>
+    );
+  }
+
+  const areas = areasData?.data || [];
+
   return (
     <>
-      <div
-        className="container mx-auto p-6"
-      >
+      <div className="container mx-auto p-6">
         <h2 className="text-center text-3xl sm:text-4xl font-bold mb-8">
           Select Your Perfect Event Space
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {areas.map((area, index) => (
+          {areas.map((area: Area) => (
             <div
-              key={index}
+              key={area.id}
               className="cursor-pointer"
-              onClick={() => setSelectedArea(selectedArea === index ? null : index)}
+              onClick={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
             >
-              <VenueCard {...area} />
+              <VenueCard
+                id={area.id}
+                title={area.area_name}
+                priceRange={area.price_per_hour}
+                capacity={area.capacity}
+                image={area.area_image}
+                status={area.status}
+              />
             </div>
           ))}
         </div>

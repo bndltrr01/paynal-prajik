@@ -22,17 +22,21 @@ const RoomCard: FC<RoomCardProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const statusBadge =
-    status.toLowerCase() === "available"
-      ? "bg-green-500"
-      : status.toLowerCase() === "occupied"
-        ? "bg-red-500"
-        : status.toLowerCase() === "maintenance"
-          ? "bg-gray-500"
-          : "bg-blue-500";
+  const getStatusBadgeColor = (status: string): string => {
+    switch (status.toLowerCase()) {
+      case 'available':
+        return 'bg-green-100 text-green-700';
+      case 'occupied':
+        return 'bg-red-100 text-red-700';
+      case 'maintenance':
+        return 'bg-gray-100 text-gray-700';
+      default:
+        return 'bg-blue-100 text-blue-700';
+    }
+  };
 
   const handleReserveClick = () => {
-    navigate(`/confirm-booking?roomId=${id}`);
+    navigate(`/booking/${id}`);
   };
 
   return (
@@ -40,24 +44,23 @@ const RoomCard: FC<RoomCardProps> = ({
       <img src={image} alt={title} className="w-full h-48 object-cover" />
       <div className="flex flex-col flex-1 p-4">
         <div className="mb-3">
-          <h1 className="text-xl font-bold text-gray-800">{name}</h1>
-          <div className="flex items-center space-x-2 mt-1">
-            <span className="text-sm text-gray-600">{title}</span>
+          <div className="flex justify-between items-center">
+            <h1 className="text-xl font-bold text-gray-800">{name}</h1>
             <span
-              className={`text-xs font-semibold text-white px-2 py-1 rounded-full ${statusBadge}`}
+              className={`text-sm font-semibold px-2 py-1 rounded-full ${getStatusBadgeColor(status)}`}
             >
               {status.toUpperCase()}
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+        <div className="flex flex-wrap pb-4 gap-4 text-sm text-gray-600">
           <div className="flex items-center space-x-1">
             <i className="fa fa-users text-green-500"></i>
             <span>{capacity}</span>
           </div>
         </div>
         <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
-          <span className="text-lg font-bold text-gray-800">
+          <span className="text-xl font-semibold text-gray-900">
             {price}
           </span>
           <div className="flex gap-2">

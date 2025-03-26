@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ChangeEvent, FC, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChangeEvent, FC, useEffect, useState } from "react";
 
 export interface IArea {
   id: number;
@@ -27,7 +27,6 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
   cancel,
   loading = false,
 }) => {
-  // Initialize form state; updated when areaData changes
   const [formState, setFormState] = useState<IArea>({
     id: areaData?.id || 0,
     area_name: areaData?.area_name || "",
@@ -50,7 +49,6 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
     status: "status",
   };
 
-  // Update formState when areaData changes
   useEffect(() => {
     setFormState({
       id: areaData?.id || 0,
@@ -63,7 +61,6 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
     });
   }, [areaData]);
 
-  // Set the preview URL
   useEffect(() => {
     if (formState.area_image instanceof File) {
       const objectUrl = URL.createObjectURL(formState.area_image);
@@ -73,7 +70,7 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
       if (formState.area_image.startsWith("http")) {
         setPreviewUrl(formState.area_image);
       } else {
-        setPreviewUrl(`https://res.cloudinary.com/your_cloud_name/${formState.area_image}`);
+        setPreviewUrl(`https://res.cloudinary.com/dxxzqzq0y/image/upload/${formState.area_image}`);
       }
     } else {
       setPreviewUrl("");
@@ -97,7 +94,12 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onSave(formState);
+      if (!areaData?.id) {
+        setFormState(prev => ({ ...prev, status: "available" }));
+        await onSave({ ...formState, status: "available" });
+      } else {
+        await onSave(formState);
+      }
       setErrors({});
     } catch (error: any) {
       setErrors(error.response?.data?.error || {});
@@ -200,27 +202,29 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Status */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Status
-                    </label>
-                    <select
-                      name="status"
-                      value={formState.status}
-                      onChange={handleChange}
-                      className="border border-gray-300 rounded w-full p-2"
-                    >
-                      <option value="available">Available</option>
-                      <option value="occupied">Occupied</option>
-                      <option value="maintenance">Maintenance</option>
-                    </select>
-                    {errors[fieldMapping.status] && (
-                      <p className="text-red-500 text-xs mt-1">
-                        {errors[fieldMapping.status]}
-                      </p>
-                    )}
-                  </div>
+                  {/* Status - Only show for editing existing areas */}
+                  {areaData?.id ? (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Status
+                      </label>
+                      <select
+                        name="status"
+                        value={formState.status}
+                        onChange={handleChange}
+                        className="border border-gray-300 rounded w-full p-2"
+                      >
+                        <option value="available">Available</option>
+                        <option value="occupied">Occupied</option>
+                        <option value="maintenance">Maintenance</option>
+                      </select>
+                      {errors[fieldMapping.status] && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors[fieldMapping.status]}
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
 
                   {/* Description */}
                   <div>

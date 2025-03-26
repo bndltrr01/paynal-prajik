@@ -12,6 +12,18 @@ export const getGuestDetails = async (id: string) => {
     }
 };
 
+export const getGuestBookings = async (id: string) => {
+    try {
+        const response = await guest.get(`/bookings`, {
+            withCredentials: true
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch guest bookings: ${error}`);
+        throw error;
+    }
+};
+
 export const updateGuestDetails = async (id: string, data: string[]) => {
     try {
         const response = await guest.put(`/${id}`, {

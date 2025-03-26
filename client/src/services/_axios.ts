@@ -23,6 +23,14 @@ export const guest = axios.create({
     withCredentials: true
 });
 
+export const staff = axios.create({
+    baseURL: `${import.meta.env.VITE_API_URL}/api/staff`,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true
+});
+
 export const booking = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}/booking`,
     headers: {
@@ -65,6 +73,14 @@ export const area = axios.create({
 
 export const amenity = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}/property`,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true
+});
+
+export const transaction = axios.create({
+    baseURL: `${import.meta.env.VITE_API_URL}/transaction`,
     headers: {
         'Content-Type': 'application/json',
     },

@@ -3,14 +3,15 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
+import useTokenHandler from "./hooks/useTokenHandler";
 import AdminLayout from "./layout/admin/AdminLayout";
 import Footer from "./layout/Footer";
 import Navbar from "./layout/Navbar";
-import useTokenHandler from "./hooks/useTokenHandler";
 
+// Import the new PageTransitionLoader
+const PageTransitionLoader = lazy(() => import("./motions/loaders/PageTransitionLoader"));
 const LoadingHydrate = lazy(() => import("./motions/loaders/LoadingHydrate"));
 const NotFound = lazy(() => import("./pages/_NotFound"));
-const About = lazy(() => import("./pages/About"));
 const Homepage = lazy(() => import("./pages/Homepage"));
 const AvailabilityResults = lazy(() => import("./pages/AvailabilityResults"));
 const ConfirmBooking = lazy(() => import("./pages/ConfirmBooking"));
@@ -22,6 +23,12 @@ const Rooms = lazy(() => import("./pages/Rooms"));
 const Venue = lazy(() => import("./pages/Venue"));
 const GuestProfile = lazy(() => import("./layout/guest/GuestProfile"));
 
+const BookingCalendar = lazy(() => import("./pages/BookingCalendar"));
+const AboutUs = lazy(() => import("./pages/AboutUs"));
+const Availability = lazy(() => import("./pages/Availability"));
+const CancelReservation = lazy(() => import("./pages/CancelReservation"));
+const VenueDetails = lazy(() => import("./pages/VenueDetails"));
+
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const Comments = lazy(() => import("./pages/admin/Comments"));
 const ManageAmenities = lazy(() => import("./pages/admin/ManageAmenities"));
@@ -31,6 +38,14 @@ const ManageRooms = lazy(() => import("./pages/admin/ManageRooms"));
 const ManageStaff = lazy(() => import("./pages/admin/ManageStaff"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
 const Reservations = lazy(() => import("./pages/admin/Reservations"));
+
+// Lazy load guest pages
+const GuestDashboard = lazy(() => import("./pages/guests/GuestDashboard"));
+const GuestBookings = lazy(() => import("./pages/guests/GuestBookings"));
+const GuestReservations = lazy(() => import("./pages/guests/GuestReservations"));
+const GuestCancellations = lazy(() => import("./pages/guests/GuestCancellations"));
+const PaymentHistory = lazy(() => import("./pages/guests/PaymentHistory"));
+const GuestLayout = lazy(() => import("./layout/guest/GuestLayout"));
 
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
@@ -44,50 +59,86 @@ const App = () => {
 
   return (
     <>
+      {/* Main app suspense - for initial app load */}
       <Suspense fallback={<LoadingHydrate />}>
         {!isAdminRoute && <Navbar />}
-        <Routes>
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                role === "admin" || role === "staff" ? (
-                  <Navigate to="/admin" replace />
+
+        {/* Page-level suspense - for page transitions */}
+        <Suspense fallback={<PageTransitionLoader />}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? (
+                  role === "admin" || role === "staff" ? (
+                    <Navigate to="/admin" replace />
+                  ) : (
+                    <Homepage />
+                  )
                 ) : (
                   <Homepage />
                 )
-              ) : (
-                <Homepage />
-              )
-            }
-          />
+              }
+            />
 
-          <Route path="/confirm-booking" element={<ConfirmBooking />} />
-          <Route path="/registration" element={<RegistrationFlow />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/guest/:id" element={<GuestProfile />} />
-          <Route path="/venues" element={<Venue />} />
-          <Route path="/rooms" element={<Rooms />} />
-          <Route path="/rooms/:id" element={<RoomDetails />} />
-          <Route path="/availability" element={<AvailabilityResults />} />
-          <Route path="/my-booking" element={<MyBooking />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
-          {/* Protected admin routes */}
-          <Route element={<ProtectedRoute requiredRole="admin" />}>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="bookings" element={<ManageBookings />} />
-              <Route path="reservations" element={<Reservations />} />
-              <Route path="areas" element={<ManageAreas />} />
-              <Route path="rooms" element={<ManageRooms />} />
-              <Route path="amenities" element={<ManageAmenities />} />
-              <Route path="staff" element={<ManageStaff />} />
-              <Route path="comments" element={<Comments />} />
-              <Route path="reports" element={<Reports />} />
+            <Route path="/confirm-booking" element={<ConfirmBooking />} />
+            <Route path="/registration" element={<RegistrationFlow />} />
+
+            {/* Legacy guest profile route for compatibility */}
+            <Route path="/guest/:id" element={<GuestProfile />} />
+
+            <Route path="/venues" element={<Venue />} />
+            <Route path="/venues/:id" element={<VenueDetails />} />
+            <Route path="/rooms" element={<Rooms />} />
+            <Route path="/rooms/:id" element={<RoomDetails />} />
+            <Route path="/booking/:roomId" element={<BookingCalendar />} />
+            <Route path="/availability" element={<Availability />} />
+            <Route path="/availability/results" element={<AvailabilityResults />} />
+
+            {/* Redirect from MyBooking to the GuestBookings page */}
+            <Route
+              path="/my-booking"
+              element={
+                isAuthenticated ?
+                  <Navigate to="/guest/bookings" replace /> :
+                  <MyBooking />
+              }
+            />
+
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/cancel-reservation" element={<CancelReservation />} />
+
+            {/* Protected guest routes with GuestLayout */}
+            <Route element={<ProtectedRoute requiredRole="guest" />}>
+              <Route path="/guest" element={<GuestLayout />}>
+                <Route index element={<GuestDashboard />} />
+                <Route path="bookings" element={<GuestBookings />} />
+                <Route path="reservations" element={<GuestReservations />} />
+                <Route path="cancellations" element={<GuestCancellations />} />
+                <Route path="payments" element={<PaymentHistory />} />
+                <Route path="reviews" element={<GuestDashboard />} /> {/* Placeholder for future reviews page */}
+              </Route>
             </Route>
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+
+            {/* Protected admin routes */}
+            <Route element={<ProtectedRoute requiredRole="admin" />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="bookings" element={<ManageBookings />} />
+                <Route path="reservations" element={<Reservations />} />
+                <Route path="areas" element={<ManageAreas />} />
+                <Route path="rooms" element={<ManageRooms />} />
+                <Route path="amenities" element={<ManageAmenities />} />
+                <Route path="staff" element={<ManageStaff />} />
+                <Route path="comments" element={<Comments />} />
+                <Route path="reports" element={<Reports />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+
         {!isAdminRoute && <Footer />}
       </Suspense>
     </>

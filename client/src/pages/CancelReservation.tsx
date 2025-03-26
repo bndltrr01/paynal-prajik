@@ -12,12 +12,10 @@ const CancelReservation = () => {
     const [isConfirmed, setIsConfirmed] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
 
-    // Cancel booking mutation
     const cancelMutation = useMutation({
         mutationFn: (cancelData: { bookingId: string, reason: string }) =>
             cancelBooking(cancelData.bookingId, cancelData.reason),
         onSuccess: () => {
-            // Redirect to my-booking page with cancelled flag
             navigate('/my-booking?cancelled=true');
         },
         onError: (error: any) => {
@@ -27,11 +25,7 @@ const CancelReservation = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Reset error
         setFormError(null);
-
-        // Validate form
         if (!bookingId.trim()) {
             setFormError('Please enter your booking ID');
             return;
@@ -56,8 +50,6 @@ const CancelReservation = () => {
             setFormError('Please confirm that you want to cancel your reservation');
             return;
         }
-
-        // Submit the cancellation
         cancelMutation.mutate({ bookingId, reason });
     };
 

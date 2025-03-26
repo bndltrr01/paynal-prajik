@@ -35,6 +35,16 @@ interface FormattedBooking {
   roomDetails?: {
     room_image?: string;
   };
+  userDetails?: {
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+  };
+  specialRequest?: string;
+  validId?: string;
+  bookingDate?: string;
+  cancellationReason?: string;
+  cancellationDate?: string;
 }
 
 interface RoomData {
@@ -51,6 +61,17 @@ interface BookingData {
   check_out_date: string;
   status: string;
   room: RoomData;
+  user?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_number?: string;
+  };
+  special_request?: string;
+  valid_id?: string;
+  created_at: string;
+  cancellation_reason?: string;
+  cancellation_date?: string;
 }
 
 const BookingData = ({ bookingId }: BookingDataProps) => {
@@ -89,6 +110,16 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
         status: bookingData.status || "pending",
         bookingId: bookingData.id,
         roomDetails: bookingData.room,
+        userDetails: bookingData.user ? {
+          fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
+          email: bookingData.user.email,
+          phoneNumber: bookingData.user.phone_number
+        } : undefined,
+        specialRequest: bookingData.special_request,
+        validId: bookingData.valid_id,
+        bookingDate: bookingData.created_at ? new Date(bookingData.created_at).toLocaleDateString() : undefined,
+        cancellationReason: bookingData.cancellation_reason,
+        cancellationDate: bookingData.cancellation_date ? new Date(bookingData.cancellation_date).toLocaleDateString() : undefined
       };
 
       setBookingsToShow([formattedBooking]);
@@ -108,6 +139,16 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
           status: booking.status || "pending",
           bookingId: booking.id,
           roomDetails: booking.room,
+          userDetails: booking.user ? {
+            fullName: `${booking.user.first_name} ${booking.user.last_name}`,
+            email: booking.user.email,
+            phoneNumber: booking.user.phone_number
+          } : undefined,
+          specialRequest: booking.special_request,
+          validId: booking.valid_id,
+          bookingDate: booking.created_at ? new Date(booking.created_at).toLocaleDateString() : undefined,
+          cancellationReason: booking.cancellation_reason,
+          cancellationDate: booking.cancellation_date ? new Date(booking.cancellation_date).toLocaleDateString() : undefined
         };
       });
 

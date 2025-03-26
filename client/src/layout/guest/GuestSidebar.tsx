@@ -1,108 +1,115 @@
-import { faSignOut, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FC, useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import Modal from "../../components/Modal";
+import { FC, ChangeEvent, Suspense, lazy } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { getGuestDetails, updateProfileImage } from "../../services/Guest";
 import { useUserContext } from "../../contexts/AuthContext";
-import { logout } from "../../services/Auth";
-import { guestMenuItems } from "../../constants/GuestMenuSidebar";
+import { Ban, Calendar, CreditCard, Home, ImageUp } from "lucide-react";
+import { NavLink } from "react-router-dom";
+
+const LoadingHydrate = lazy(() => import("../../motions/loaders/LoadingHydrate"));
+const Error = lazy(() => import("../../pages/_ErrorBoundary"));
 
 const GuestSidebar: FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [notification, setNotification] = useState<{
-    message: string;
-    type: "success" | "error" | "info" | "warning";
-    icon: string;
-  } | null>(null);
   const navigate = useNavigate();
-  const { setIsAuthenticated, setRole } = useUserContext();
+  const queryClient = useQueryClient();
+  const { userDetails, profileImage } = useUserContext();
 
-  const handleLogout = async () => {
-    setLoading(true);
-    try {
-      const response = await logout();
-      if (response.status === 200) {
-        setIsAuthenticated(false);
-        setRole("");
-        setNotification({
-          message: "Logged out successfully",
-          type: "success",
-          icon: "fas fa-check-circle",
-        });
-        setIsModalOpen(false);
-        navigate("/", { replace: true });
-      }
-    } catch (error) {
-      console.error(`Failed to logout: ${error}`);
-    } finally {
-      setLoading(false);
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ["guest", userDetails?.id],
+    queryFn: () => getGuestDetails(userDetails?.id as string),
+    enabled: !!userDetails?.id,
+  });
+
+  const mutation = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("profile_image", file);
+      return updateProfileImage(formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guest", userDetails?.id] });
+    },
+  });
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      mutation.mutate(e.target.files[0]);
     }
   };
 
+  if (isLoading) return <Suspense fallback={<LoadingHydrate />} />;
+  if (error) return <Suspense fallback={<Error />} />;
+
+  const menuItems = [
+    { icon: <Home size={18} />, label: "Dashboard", link: "/guest/dashboard" },
+    { icon: <Calendar size={18} />, label: "Bookings", link: "/guest/bookings" },
+    { icon: <Calendar size={18} />, label: "Reservations", link: "/guest/reservations" },
+    { icon: <Ban size={18} />, label: "Cancellations", link: "/guest/cancellations" },
+    { icon: <CreditCard size={18} />, label: "Payment History", link: "/guest/payments" },
+  ];
+
   return (
     <>
-      {notification && (
-        <div className="fixed top-0 right-0 m-4">
-          <div className="bg-green-500 text-white p-2 rounded flex items-center">
-            <i className={notification.icon + " mr-2"}></i>
-            {notification.message}
-          </div>
-        </div>
-      )}
+      <aside className="min-h-screen flex flex-col p-4 bg-white text-black w-60">
 
-      <aside className="h-screen w-64 bg-gray-800 text-white p-6">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">Guest Dashboard</h1>
+        {/* User Profile Section */}
+        <div className="flex space-x-3 items-center border-b border-b-gray-200 p-2 mb-4">
+          <div className="relative group flex justify-center items-center rounded-full bg-blue-400 w-12 h-12">
+            <img
+              src={profile?.data?.profile_image || profileImage}
+              alt="Profile"
+              className="w-full h-full rounded-full object-cover"
+            />
+            <label className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <ImageUp size={16} className="text-white" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+          <ul className="flex flex-col justify-center">
+            <li className="text-gray-700 font-black tracking-wide text-xl">
+              {profile?.data?.first_name} {profile?.data?.last_name}
+            </li>
+          </ul>
         </div>
-        <nav>
+
+        {/* Menu Items */}
+        <div className="flex-grow overflow-y-auto p-2">
           <ul className="space-y-4">
-            {guestMenuItems.map((item, index) => (
+            {menuItems.map((item, index) => (
               <li key={index}>
                 <NavLink
                   to={item.link}
-                  className="flex items-center p-2 hover:bg-gray-700 rounded transition-colors"
+                  end={item.link === "/guest-dashboard"}
+                  className={({ isActive }) =>
+                    `flex items-center space-x-2 p-2 rounded-md cursor-pointer ${isActive
+                      ? "border-r-3 border-blue-600 bg-blue-100/80 text-blue-700 font-bold"
+                      : "hover:bg-black/15"
+                    }`
+                  }
                 >
-                  <FontAwesomeIcon icon={item.icon} className="w-5 h-5 mr-3" />
-                  {item.label}
+                  <span className="text-lg">{item.icon}</span>
+                  <span className="text-md">{item.label}</span>
                 </NavLink>
               </li>
             ))}
-            <li>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center p-2 hover:bg-gray-700 rounded transition-colors w-full text-left"
-              >
-                <FontAwesomeIcon icon={faSignOut} spin={loading} className="w-5 h-5 mr-3" />
-                Logout
-              </button>
-            </li>
           </ul>
-        </nav>
-      </aside>
+        </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        icon="fa fa-sign-out-alt"
-        title="Log Out"
-        description="Are you sure you want to log out?"
-        cancel={() => setIsModalOpen(false)}
-        onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-        loading={loading}
-        confirmText={
-          loading ? (
-            <>
-              <FontAwesomeIcon icon={faSpinner} spin className="mr-2" /> Logging out...
-            </>
-          ) : (
-            "Log Out"
-          )
-        }
-        cancelText="Cancel"
-      />
+        {/* Logout Button */}
+        <div className="px-3 py-2 border-t border-gray-200 pt-4">
+          <button
+            onClick={() => navigate("/")}
+            className="w-full flex items-center space-x-3 py-2 px-3 rounded-md transition-all duration-300 text-red-600 hover:bg-black/15 cursor-pointer"
+          >
+            <h1>&larr; Go To Homepage</h1>
+          </button>
+        </div>
+      </aside>
     </>
   );
 };

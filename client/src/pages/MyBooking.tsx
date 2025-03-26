@@ -37,7 +37,7 @@ const MyBooking = () => {
           <div className="mb-6 max-w-3xl mx-auto">
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
               <strong className="font-bold">Success!</strong>
-              <span className="block sm:inline"> Your booking has been confirmed. Details are shown below.</span>
+              <span className="block sm:inline"> Your booking has been confirmed. Click "View Details" below to see your personal information and booking details.</span>
             </div>
           </div>
         )}

@@ -343,7 +343,7 @@ const ConfirmBooking = () => {
             {/* Name Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="firstName" className="block text-md font-medium text-gray-700 mb-1">
                   First name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -357,7 +357,7 @@ const ConfirmBooking = () => {
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="lastName" className="block text-md font-medium text-gray-700 mb-1">
                   Last name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -375,7 +375,7 @@ const ConfirmBooking = () => {
             {/* Contact Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="phoneNumber" className="block text-md font-medium text-gray-700 mb-1">
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -389,7 +389,7 @@ const ConfirmBooking = () => {
                 />
               </div>
               <div>
-                <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="emailAddress" className="block text-md font-medium text-gray-700 mb-1">
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -407,7 +407,7 @@ const ConfirmBooking = () => {
             {/* Address and Valid ID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="validId" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="validId" className="block text-md font-medium text-gray-700 mb-1">
                   Valid ID <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -454,14 +454,14 @@ const ConfirmBooking = () => {
             {/* Check-in/out Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
-                <label htmlFor="checkIn" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="checkIn" className="block text-md font-medium text-gray-700 mb-1">
                   Check in <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   id="checkIn"
                   name="checkIn"
-                  required
+                  disabled
                   value={selectedArrival}
                   onChange={(e) => setSelectedArrival(e.target.value)}
                   min={today}
@@ -469,14 +469,14 @@ const ConfirmBooking = () => {
                 />
               </div>
               <div>
-                <label htmlFor="checkOut" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="checkOut" className="block text-md font-medium text-gray-700 mb-1">
                   Check Out <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
                   id="checkOut"
                   name="checkOut"
-                  required
+                  disabled
                   value={selectedDeparture}
                   onChange={(e) => setSelectedDeparture(e.target.value)}
                   min={selectedArrival || today}
@@ -487,7 +487,7 @@ const ConfirmBooking = () => {
 
             {/* Special Requests */}
             <div className="mb-6">
-              <label htmlFor="specialRequests" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="specialRequests" className="block text-md font-medium text-gray-700 mb-1">
                 Special requests to hotel
               </label>
               <textarea
@@ -496,7 +496,7 @@ const ConfirmBooking = () => {
                 value={formData.specialRequests}
                 onChange={handleInputChange}
                 rows={10}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100 resize-none"
               ></textarea>
             </div>
 
@@ -535,18 +535,18 @@ const ConfirmBooking = () => {
                 className="w-full h-40 object-cover rounded-md"
               />
             </div>
-            <h3 className="text-xl font-semibold mb-4">{roomData?.room_name || "Room"}</h3>
+            <h3 className="text-2xl font-semibold mb-4">{roomData?.room_name || "Room"}</h3>
 
             {/* Amenities */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Room Amenities</h4>
+              <h4 className="text-md font-semibold text-gray-700 mb-2">Room Amenities</h4>
               {roomData?.amenities && roomData.amenities.length > 0 ? (
                 roomData.amenities.map((amenity) => (
                   <div key={`amenity-${amenity.id}`} className="flex items-center">
                     <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-sm text-gray-600">{amenity.description}</span>
+                    <span className="text-md text-gray-600">{amenity.description}</span>
                   </div>
                 ))
               ) : (
@@ -561,35 +561,35 @@ const ConfirmBooking = () => {
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <p className="text-sm text-gray-600">Check-in</p>
+                <p className="text-lg text-gray-800 font-semibold">Check-in :</p>
                 <p className="font-semibold">{formattedArrivalDate}</p>
-                <p className="text-xs text-gray-500">From 12:00 PM</p>
+                <p className="text-md text-gray-500">From 12:00 PM</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Check-out</p>
+                <p className="text-lg text-gray-800 font-semibold">Check-out :</p>
                 <p className="font-semibold">{formattedDepartureDate}</p>
-                <p className="text-xs text-gray-500">Until 02:00 PM</p>
+                <p className="text-md text-gray-500">Until 02:00 PM</p>
               </div>
             </div>
 
             <div className="mb-2">
-              <p className="text-sm font-medium">{roomData?.room_name || "Deluxe Room"}</p>
-              <p className="text-xs text-gray-600">{nights} night{nights > 1 ? 's' : ''}</p>
+              <p className="text-md font-medium">{roomData?.room_name || "Deluxe Room"}</p>
+              <p className="text-md text-gray-600">{nights} night{nights > 1 ? 's' : ''}</p>
             </div>
           </div>
 
           {/* Pricing Summary */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h3 className="text-lg font-semibold mb-4">Pricing Summary</h3>
-            <div className="text-sm mb-2">
+            <h3 className="text-xl font-semibold mb-4">Pricing Summary</h3>
+            <div className="text-md mb-2">
               <p className="text-gray-600">1 room x {nights} night{nights > 1 ? 's' : ''}</p>
             </div>
-            <div className="text-sm mb-4">
+            <div className="text-md mb-4">
               <p className="font-medium">{roomData?.room_name || "Room"}</p>
             </div>
             <div className="border-t pt-3 flex justify-between items-center">
-              <span className="font-semibold">Total</span>
-              <span className="font-bold text-xl">{roomData?.room_price}</span>
+              <span className="font-semibold text-2xl">Total Price :</span>
+              <span className="font-bold text-2xl">{roomData?.room_price}</span>
             </div>
           </div>
 
