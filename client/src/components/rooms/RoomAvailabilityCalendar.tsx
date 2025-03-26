@@ -68,16 +68,16 @@ const RoomAvailabilityCalendar = () => {
           onClose={() => setAlertInfo(null)}
         />
       )}
-      <div className="bg-gray-100 px-5 mb-10 sm:mb-15 w-full shadow-md drop-shadow-sm inset-shadow-md">
+      <div className="bg-gray-200 px-5 mb-8 sm:mb-15 w-full shadow-md drop-shadow-sm inset-shadow-md">
         <div className="py-3 font-montserrat">
           <div className="flex flex-col justify-around gap-3">
             {/* Header - Hidden on small screens */}
             <div className="hidden sm:flex justify-between items-center">
-              <h1 className="text-sm font-montserrat font-medium text-gray-500">
+              <h1 className="text-base font-montserrat font-semibold text-gray-500">
                 <i className="fas fa-calendar-check text-blue-500 text-lg mr-3"></i>
                 Tell us when — your perfect stay awaits you.
               </h1>
-              <h1 className="text-sm font-montserrat font-medium">
+              <h1 className="text-base font-montserrat font-medium">
                 Find out more &gt;
               </h1>
             </div>
@@ -85,7 +85,7 @@ const RoomAvailabilityCalendar = () => {
             {/* Form Section */}
             <div className="flex flex-col sm:flex-row justify-center items-center gap-3 w-full">
               {/* Arrival Date */}
-              <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow bg-white px-4 py-2">
+              <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow bg-white px-6 py-4">
                 <label
                   htmlFor="arrival"
                   className="text-sm font-medium tracking-tight mb-1"
@@ -97,14 +97,14 @@ const RoomAvailabilityCalendar = () => {
                   selected={arrivalDate}
                   onChange={(date) => setArrivalDate(date)}
                   dateFormat="yyyy-MM-dd"
-                  className="border-b-2 outline-0 italic cursor-pointer text-sm"
+                  className="border-b-2 outline-0 italic cursor-pointer text-lg"
                   placeholderText="Select arrival date"
                   minDate={new Date()} // Disable past dates
                 />
               </div>
 
               {/* Departure Date */}
-              <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow bg-white px-4 py-2">
+              <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow bg-white px-6 py-4">
                 <label
                   htmlFor="departure"
                   className="text-sm font-medium tracking-tight mb-1"
@@ -116,7 +116,7 @@ const RoomAvailabilityCalendar = () => {
                   selected={departureDate}
                   onChange={(date) => setDepartureDate(date)}
                   dateFormat="yyyy-MM-dd"
-                  className="border-b-2 outline-0 italic cursor-pointer text-sm"
+                  className="border-b-2 outline-0 italic cursor-pointer text-lg"
                   placeholderText="Select departure date"
                   minDate={new Date()} // Disable past dates
                 />
@@ -126,7 +126,7 @@ const RoomAvailabilityCalendar = () => {
               <div className="flex flex-col w-full sm:min-w-[150px] sm:flex-grow">
                 <button
                   onClick={handleCheckAvailability}
-                  className="p-3 py-4 flex-1 bg-blue-600 font-medium transition duration-300 cursor-pointer text-sm text-white w-full hover:bg-blue-700"
+                  className="p-3 py-7 flex-1 bg-blue-600 font-medium transition duration-300 cursor-pointer text-lg text-white w-full hover:bg-blue-700"
                 >
                   Check Availability
                 </button>
