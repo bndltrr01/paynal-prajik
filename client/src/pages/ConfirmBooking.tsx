@@ -45,7 +45,6 @@ const ConfirmBooking = () => {
     lastName: '',
     phoneNumber: '',
     emailAddress: '',
-    address: '',
     validId: null as File | null,
     specialRequests: ''
   });
@@ -150,6 +149,11 @@ const ConfirmBooking = () => {
       return;
     }
 
+    if (!formData.validId) {
+      setError('Please upload a valid ID');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -159,8 +163,8 @@ const ConfirmBooking = () => {
         lastName: formData.lastName,
         phoneNumber: formData.phoneNumber,
         emailAddress: formData.emailAddress,
-        address: formData.address,
         specialRequests: formData.specialRequests,
+        validId: formData.validId,
         roomId: roomId,
         checkIn: selectedArrival,
         checkOut: selectedDeparture,
@@ -403,20 +407,6 @@ const ConfirmBooking = () => {
             {/* Address and Valid ID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                  Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100"
-                />
-              </div>
-              <div>
                 <label htmlFor="validId" className="block text-sm font-medium text-gray-700 mb-1">
                   Valid ID <span className="text-red-500">*</span>
                 </label>
@@ -455,6 +445,9 @@ const ConfirmBooking = () => {
                     </button>
                   </div>
                 )}
+              </div>
+              <div>
+                {/* Empty space for layout balance - you can add another field here if needed */}
               </div>
             </div>
 

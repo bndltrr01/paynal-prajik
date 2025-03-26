@@ -59,9 +59,36 @@ const BookingDetailsModal: FC<{
 }> = ({ booking, onClose, onConfirm, onReject, canManage }) => {
   if (!booking) return null;
 
+  const renderValidId = () => {
+    if (!booking.valid_id) {
+      console.log('No valid ID found');
+      return (
+        <div className="text-center py-4 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">No valid ID uploaded</p>
+        </div>
+      );
+    }
+
+    console.log('Rendering valid ID:', booking.valid_id);
+    return (
+      <div className="border rounded-md overflow-hidden">
+        <img
+          src={booking.valid_id}
+          alt="Valid ID"
+          loading="lazy"
+          className="w-full h-auto"
+          onError={(e) => {
+            console.error('Error loading valid ID image:', booking.valid_id);
+            e.currentTarget.src = 'https://via.placeholder.com/400x200?text=ID+Image+Not+Available';
+          }}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
@@ -73,7 +100,7 @@ const BookingDetailsModal: FC<{
           User Booking Details
         </h2>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex justify-between">
             <span className="font-semibold">Fullname:</span>
             <span>{booking.user?.first_name} {booking.user?.last_name}</span>
@@ -83,6 +110,13 @@ const BookingDetailsModal: FC<{
             <span className="font-semibold">Email:</span>
             <span>{booking.user?.email}</span>
           </div>
+
+          {booking.user?.address && (
+            <div className="flex justify-between">
+              <span className="font-semibold">Address:</span>
+              <span>{booking.user?.address}</span>
+            </div>
+          )}
 
           <div className="flex justify-between">
             <span className="font-semibold">Room/Area:</span>
@@ -104,14 +138,16 @@ const BookingDetailsModal: FC<{
             <span>{formatDate(booking.check_out_date)}</span>
           </div>
 
-          {booking.valid_id && (
-            <div className="mt-4">
-              <span className="font-semibold block mb-2">Valid ID:</span>
-              <div className="border rounded-md overflow-hidden">
-                <img src={booking.valid_id} alt="Valid ID" className="w-full h-auto" />
-              </div>
-            </div>
-          )}
+          <div className="flex justify-between">
+            <span className="font-semibold">Status:</span>
+            <BookingStatusBadge status={booking.status} />
+          </div>
+
+          {/* Valid ID Section */}
+          <div className="mt-4">
+            <h3 className="font-semibold mb-2">Valid ID:</h3>
+            {renderValidId()}
+          </div>
         </div>
 
         {canManage && booking.status === "pending" && (
@@ -145,7 +181,25 @@ const ManageBookings: FC = () => {
 
   const { data: bookingsResponse, error, isLoading } = useQuery<{ data: BookingResponse[] }, Error>({
     queryKey: ["admin-bookings"],
-    queryFn: fetchBookings,
+    queryFn: async () => {
+      try {
+        const response = await fetchBookings();
+        console.log('Admin bookings response:', response);
+
+        // Check if any bookings have valid_id field
+        if (response.data && response.data.length > 0) {
+          response.data.forEach((booking, index) => {
+            console.log(`Booking ${index} valid_id:`, booking.valid_id);
+            console.log(`Booking ${index} user details:`, booking.user);
+          });
+        }
+
+        return response;
+      } catch (err) {
+        console.error('Error fetching admin bookings:', err);
+        throw err;
+      }
+    },
   });
 
   const updateBookingStatusMutation = useMutation({
@@ -201,7 +255,6 @@ const ManageBookings: FC = () => {
   };
 
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
-    // Search filter by guest name or email
     const guestName = `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.toLowerCase();
     const email = booking.user?.email?.toLowerCase() || '';
     const roomName = booking.room_details?.room_name?.toLowerCase() || '';
@@ -211,7 +264,6 @@ const ManageBookings: FC = () => {
       email.includes(searchTerm.toLowerCase()) ||
       roomName.includes(searchTerm.toLowerCase());
 
-    // Status filter
     const statusMatch =
       statusFilter === "all" ||
       booking.status?.toLowerCase() === statusFilter.toLowerCase();
