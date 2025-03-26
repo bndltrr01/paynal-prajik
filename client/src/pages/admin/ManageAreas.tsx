@@ -1,33 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-<<<<<<< HEAD
 import { MapPinOff } from "lucide-react";
-import { useState } from "react";
-<<<<<<< HEAD
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { FC, useState } from "react";
 import EditAreaModal, {
   IArea as IEditArea,
 } from "../../components/admin/EditAreaModal";
-=======
-=======
-import { FC, useState } from "react";
->>>>>>> 47f1ee148afc85e9bf039abc77304a88252160f2
-import EditAreaModal, { IArea as IEditArea } from "../../components/admin/EditAreaModal";
->>>>>>> 0686cf5c10fbfc385472e9783fa1a416506af0d9
 import Modal from "../../components/Modal";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
-<<<<<<< HEAD
 import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
 import {
-  fetchAreas,
   addNewArea,
-  editArea,
   deleteArea,
+  editArea,
+  fetchAreas,
 } from "../../services/Admin";
-=======
-import { addNewArea, deleteArea, editArea, fetchAreas } from "../../services/Admin";
->>>>>>> 0686cf5c10fbfc385472e9783fa1a416506af0d9
 import Error from "../_ErrorBoundary";
 
 import { Edit, Eye, MapPin, Trash2 } from "lucide-react";
@@ -77,22 +64,32 @@ const ViewAreaModal: FC<{
           {/* Right Column: Information */}
           <div className="p-6 flex flex-col">
             <h1 className="text-3xl font-bold mb-4">{areaData.area_name}</h1>
-            <p className="text-gray-700 mb-6">{areaData.description || "No description available."}</p>
+            <p className="text-gray-700 mb-6">
+              {areaData.description || "No description available."}
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
-                <span className="block text-gray-600 font-medium">Capacity</span>
-                <span className="text-lg font-semibold">{areaData.capacity} people</span>
+                <span className="block text-gray-600 font-medium">
+                  Capacity
+                </span>
+                <span className="text-lg font-semibold">
+                  {areaData.capacity} people
+                </span>
               </div>
               <div>
                 <span className="block text-gray-600 font-medium">Status</span>
-                <span className="text-lg font-semibold">{areaData.status.toUpperCase()}</span>
+                <span className="text-lg font-semibold">
+                  {areaData.status.toUpperCase()}
+                </span>
               </div>
             </div>
 
             {/* Price + button */}
             <div className="mt-auto">
-              <p className="text-2xl font-bold mb-4">{areaData.price_per_hour.toLocaleString()} per hour</p>
+              <p className="text-2xl font-bold mb-4">
+                {areaData.price_per_hour.toLocaleString()} per hour
+              </p>
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
@@ -121,16 +118,11 @@ const ManageAreas = () => {
   const [loaderText, setLoaderText] = useState<string>("");
   const queryClient = useQueryClient();
 
-<<<<<<< HEAD
-  // Fetch areas; API returns { data: IArea[] }
   const {
     data: areasData,
     isLoading,
     isError,
   } = useQuery<{ data: Area[] }>({
-=======
-  const { data: areasData, isLoading, isError } = useQuery<{ data: Area[] }>({
->>>>>>> 47f1ee148afc85e9bf039abc77304a88252160f2
     queryKey: ["areas"],
     queryFn: fetchAreas,
   });
@@ -153,16 +145,11 @@ const ManageAreas = () => {
     },
   });
 
-<<<<<<< HEAD
-  // Mutation for editing an area
   const editAreaMutation = useMutation<
     AddAreaResponse,
     unknown,
     { areaId: number; formData: FormData }
   >({
-=======
-  const editAreaMutation = useMutation<AddAreaResponse, unknown, { areaId: number; formData: FormData }>({
->>>>>>> 47f1ee148afc85e9bf039abc77304a88252160f2
     mutationFn: ({ areaId, formData }) => editArea(areaId, formData),
     onMutate: () => {
       setLoading(true);
@@ -284,57 +271,18 @@ const ManageAreas = () => {
             {areas.map((area) => (
               <div
                 key={area.id}
-<<<<<<< HEAD
-                className="bg-white shadow-md rounded-lg overflow-hidden"
-=======
                 className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col h-full"
->>>>>>> 47f1ee148afc85e9bf039abc77304a88252160f2
               >
                 <img
                   src={area.area_image}
                   alt={area.area_name}
                   className="w-full h-48 object-cover"
                 />
-<<<<<<< HEAD
-                <div className="p-4 flex flex-col space-y-2">
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {area.area_name}
-                  </h2>
-                  <p className="text-gray-700 text-sm mb-2 line-clamp-2">
-                    {area.description || "No description provided."}
-                  </p>
-                  <p className="text-gray-500">Capacity: {area.capacity}</p>
-                  <p className="text-gray-500">
-                    Price Per Hour: ₱{area.price_per_hour.toLocaleString()}
-                  </p>
-                  <span
-                    className={`px-2 py-1 mt-2 text-sm font-semibold text-white rounded-full ${
-                      area.status === "available"
-                        ? "bg-green-500"
-                        : area.status === "occupied"
-                        ? "bg-red-500"
-                        : "bg-yellow-500"
-                    }`}
-                  >
-                    {area.status.charAt(0).toUpperCase() + area.status.slice(1)}
-                  </span>
-                  <div className="flex justify-end space-x-2 mt-4">
-                    <button
-                      onClick={() => handleEdit(area)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(area.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                    >
-                      Delete
-                    </button>
-=======
                 <div className="p-4 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xl font-bold text-gray-900">{area.area_name}</h2>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {area.area_name}
+                    </h2>
                     <span className="text-sm font-semibold text-blue-600 uppercase">
                       {area.status}
                     </span>
@@ -370,7 +318,6 @@ const ManageAreas = () => {
                         <Trash2 />
                       </button>
                     </div>
->>>>>>> 47f1ee148afc85e9bf039abc77304a88252160f2
                   </div>
                 </div>
               </div>
