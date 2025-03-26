@@ -77,10 +77,6 @@ const BookingDetailsModal: FC<{
           alt="Valid ID"
           loading="lazy"
           className="w-full h-auto"
-          onError={(e) => {
-            console.error('Error loading valid ID image:', booking.valid_id);
-            e.currentTarget.src = 'https://via.placeholder.com/400x200?text=ID+Image+Not+Available';
-          }}
         />
       </div>
     );

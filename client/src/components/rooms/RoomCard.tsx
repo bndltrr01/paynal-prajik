@@ -32,7 +32,7 @@ const RoomCard: FC<RoomCardProps> = ({
           : "bg-blue-500";
 
   const handleReserveClick = () => {
-    navigate(`/confirm-booking?roomId=${id}`);
+    navigate(`/booking/${id}`);
   };
 
   return (

@@ -70,3 +70,11 @@ export const amenity = axios.create({
     },
     withCredentials: true
 });
+
+export const transaction = axios.create({
+    baseURL: `${import.meta.env.VITE_API_URL}/transaction`,
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true
+});
