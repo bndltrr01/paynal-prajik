@@ -1,6 +1,6 @@
-import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
-import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
 import { slides } from "../constants/HomepageHeroSlides";
 
 const Hero = () => {
@@ -17,8 +17,21 @@ const Hero = () => {
           <SwiperSlide key={slide.id}>
             <div
               className="h-screen bg-cover bg-center relative before:absolute before:inset-0 before:bg-black/60 before:z-0"
-              style={{ backgroundImage: `url(${slide.image})` }}
+              style={{
+                backgroundImage: `url(${slide.image})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                willChange: 'transform'
+              }}
             >
+              {/* Preload next image */}
+              <link
+                rel="preload"
+                as="image"
+                href={slide.image}
+                type="image/jpeg"
+              />
+
               <div className="flex flex-col justify-center items-center h-screen z-10 relative text-center px-6 sm:px-12 md:px-20">
                 <div className="text-white max-w-4xl">
                   <h1 className="font-playfair mb-4 text-6xl leading-tight">
