@@ -12,20 +12,21 @@ from user_roles.models import CustomUsers
 from property.models import Rooms, Amenities, Areas
 from property.serializers import RoomSerializer, AmenitySerializer, AreaSerializer
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from booking.serializers import BookingSerializer
 
 # Create your views here.
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_admin_details(request):
     try:
-        admin_details = AdminDetails.objects.get(email="admin@gmail.com")
+        admin_details = request.user
     except AdminDetails.DoesNotExist:
         return Response({"error": "Admin not found"}, status=status.HTTP_404_NOT_FOUND)
     
     data = {
-        "name": admin_details.name,
-        "email": admin_details.email,
-        "profile_pic": admin_details.profile_pic.url if admin_details.profile_pic else None
+        "name": admin_details.first_name + " " + admin_details.last_name,
+        "role": admin_details.role,
+        "profile_pic": admin_details.profile_image.url if admin_details.profile_image else None
     }
     
     return Response({
@@ -257,7 +258,7 @@ def delete_area(request,area_id):
 @api_view(['GET'])
 def fetch_amenities(request):
     try:
-        amenities = Amenities.objects.all()
+        amenities = Amenities.objects.all().order_by('id')
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 15)
         
@@ -371,12 +372,169 @@ def delete_amenity(request, pk):
 # CRUD Users
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def manage_users(request):
+def fetch_all_staff(request):
     try:
-        users = CustomUsers.objects.filter(is_admin=False)
+        users = CustomUsers.objects.filter(is_staff=True)
         serializer = CustomUserSerializer(users, many=True)
         return Response({
             "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_new_staff(request):
+    try:
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        
+        if not all([first_name, last_name, email, password, confirm_password]):
+            return Response({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if password != confirm_password:
+            return Response({"error": "Passwords do not match"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if CustomUsers.objects.filter(email=email).exists():
+            return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user = CustomUsers.objects.create_user(
+            username=email,
+            email=email, 
+            first_name=first_name, 
+            last_name=last_name, 
+            password=password, 
+            is_staff=True
+        )
+        user.save()
+        
+        serializer = CustomUserSerializer(user)
+        
+        return Response({
+            "message": "Staff added successfully",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def show_staff_details(request, staff_id):
+    try:
+        user = CustomUsers.objects.get(id=staff_id, is_staff=True)
+        serializer = CustomUserSerializer(user)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except CustomUsers.DoesNotExist:
+        return Response({"error": "Staff not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def edit_staff(request, staff_id):
+    try:
+        user = CustomUsers.objects.get(id=staff_id, is_staff=True)
+    except CustomUsers.DoesNotExist:
+        return Response({"error": "Staff not found"}, status=status.HTTP_404_NOT_FOUND)
+    try:
+        serializer = CustomUserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Staff updated successfully"
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "error": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def archive_staff(request, staff_id):
+    try:
+        user = CustomUsers.objects.get(id=staff_id, is_staff=True)
+        user.is_staff = False
+        user.save()
+        return Response({
+            "message": "Staff archived successfully"
+        }, status=status.HTTP_200_OK)
+    except CustomUsers.DoesNotExist:
+        return Response({"error": "Staff not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+# Bookings Management
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_bookings(request):
+    try:
+        bookings = Bookings.objects.all().order_by('-created_at')
+        serializer = BookingSerializer(bookings, many=True)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def booking_detail(request, booking_id):
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+        booking_serializer = BookingSerializer(booking)
+        data = booking_serializer.data
+        
+        room_serializer = RoomSerializer(booking.room)
+        data['room'] = room_serializer.data
+        
+        return Response({
+            "data": data
+        }, status=status.HTTP_200_OK)
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_booking_status(request, booking_id):
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({"error": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate status transition based on rules
+        valid_statuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'no_show']
+        if new_status not in valid_statuses:
+            return Response({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+        
+        # Apply status change
+        booking.status = new_status
+        booking.save()
+        
+        # If cancelled, add cancellation info
+        if new_status == 'cancelled':
+            reason = request.data.get('reason', 'Cancelled by admin')
+            booking.cancellation_reason = reason
+            booking.cancellation_date = timezone.now().date()
+            booking.save()
+        
+        return Response({
+            "message": f"Booking status updated to {new_status}",
+            "booking_id": booking_id
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

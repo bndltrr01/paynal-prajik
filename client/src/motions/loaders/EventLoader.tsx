@@ -7,7 +7,7 @@ interface LoaderProps {
   className?: string;
 }
 
-const ManageRoomLoader: FC<LoaderProps> = ({ size = "80px", color = "currentColor", text, className = "" }) => {
+const EventLoader: FC<LoaderProps> = ({ size = "80px", color = "currentColor", text, className = "" }) => {
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <div
@@ -78,4 +78,4 @@ const ManageRoomLoader: FC<LoaderProps> = ({ size = "80px", color = "currentColo
   );
 };
 
-export default ManageRoomLoader;
+export default EventLoader;

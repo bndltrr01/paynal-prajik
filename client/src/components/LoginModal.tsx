@@ -53,13 +53,13 @@ const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal }) => {
         setUserDetails(user);
         setProfileImage(user.profile_image || "");
         setIsAuthenticated(true);
-        setRole(user.role);
+        setRole(user.role || "guest");
         setNotification({
           message: "Logged in successfully",
           type: "success",
           icon: "fas fa-check-circle",
         });
-        if (user.role === "admin") {
+        if (user.role === "admin" || user.role === "staff") {
           navigate("/admin");
         } else {
           navigate("/");

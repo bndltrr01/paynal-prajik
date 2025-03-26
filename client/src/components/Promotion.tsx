@@ -2,7 +2,7 @@ import resort from "../assets/resort.jpg";
 
 const Promotion = () => {
   return (
-    <div className=" bg-gray-50">
+    <div className=" bg-gray-50 p-5 py-10">
       <div className="flex flex-col md:flex-row items-center p-8 mx-4 sm:mx-6 md:mx-8 lg:mx-12 xl:mx-16 2xl:mx-20">
         {/* Image - Fluid Scaling */}
         <div className="w-full md:w-[750px] md:h-[620px] flex justify-center mb-8 md:mb-0 md:mr-8">
@@ -10,6 +10,9 @@ const Promotion = () => {
             src={resort}
             alt="Luxury Hotel Experience"
             className="rounded-lg shadow-md w-full md:w-auto h-auto object-cover"
+            loading="lazy"
+            width="750"
+            height="620"
           />
         </div>
 

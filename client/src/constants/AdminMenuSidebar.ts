@@ -37,17 +37,17 @@ export const menuItems = [
   },
   {
     icon: faUsers,
-    label: "Manage Users",
-    link: '/admin/users'
+    label: "Manage Staff",
+    link: '/admin/staff'
   },
   {
     icon: faComment,
-    label: "Comments/Feedback",
+    label: "Comments",
     link: '/admin/comments'
   },
   {
     icon: faChartLine,
-    label: "Reports & Analytics",
+    label: "Reports",
     link: '/admin/reports'
   },
 ];

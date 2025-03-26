@@ -20,3 +20,5 @@ swiper
 aos
 --save @types/aos
 react-datepicker
+react-toastify
+date-fns

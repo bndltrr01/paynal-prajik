@@ -3,7 +3,7 @@ import { FC } from "react";
 
 interface AdminData {
     name: string;
-    email: string;
+    role: string;
     profile_pic: string;
 }
 
@@ -26,7 +26,7 @@ const AdminProfile: FC<AdminProfileProps> = ({ admin }) => {
                     {admin.name}
                 </li>
                 <li className="relative flex items-center text-gray-600 font-medium tracking-wide text-base">
-                    {admin.email}
+                    {admin.role.toUpperCase()}
                 </li>
             </ul>
         </div>

@@ -14,11 +14,17 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({ requiredRole, children }) => 
     return <Navigate to="/" replace />;
   }
 
-  if (role.toLowerCase() !== requiredRole.toLowerCase()) {
-    return <Navigate to={role === 'admin' ? '/admin' : '/'} replace />;
+  if (requiredRole.toLowerCase() === "admin") {
+    if (!(role.toLowerCase() === "admin" || role.toLowerCase() === "staff")) {
+      return <Navigate to="/" replace />;
+    }
+  } else {
+    if (role.toLowerCase() !== requiredRole.toLowerCase()) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return children ? <>{children}</> : <Outlet />;
-}
+};
 
 export default ProtectedRoute;

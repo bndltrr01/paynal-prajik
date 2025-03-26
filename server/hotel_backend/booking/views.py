@@ -3,8 +3,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import Reservations, Bookings
 from property.models import Rooms, Areas
-from property.serializers import RoomSerializer, AreaSerializer
-from .serializers import ReservationSerializer, BookingSerializer
+from property.serializers import AreaSerializer
+from .serializers import (
+    ReservationSerializer, 
+    BookingSerializer, 
+    BookingRequestSerializer,
+    RoomSerializer
+)
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime
 
@@ -35,7 +40,7 @@ def fetch_availability(request):
     available_rooms = Rooms.objects.filter(status='available')
     available_areas = Areas.objects.filter(status='available')
     
-    room_serializer = RoomSerializer(available_rooms, many=True)
+    room_serializer = RoomSerializer(available_rooms, many=True, context={'request': request})
     area_serializer = AreaSerializer(available_areas, many=True)
     
     return Response({
@@ -48,22 +53,44 @@ def fetch_availability(request):
 def bookings_list(request):
     try:
         if request.method == 'GET':
-            bookings = Bookings.objects.all().order_by('-created_at')
+            print(f"Fetching all bookings, user: {request.user.email}")
+            bookings = Bookings.objects.all().order_by('-created_at').select_related('user', 'room')
+            
+            # Log valid_id URLs for debugging
+            for booking in bookings:
+                print(f"Booking {booking.id} - Valid ID URL: {booking.valid_id.url if booking.valid_id else None}")
+            
             serializer = BookingSerializer(bookings, many=True)
+            
+            # Debug the serialized data
+            for booking_data in serializer.data:
+                print(f"Serialized booking {booking_data.get('id')} - Valid ID: {booking_data.get('valid_id')}")
+            
             return Response({
                 "data": serializer.data
             }, status=status.HTTP_200_OK)
         elif request.method == 'POST':
-            serializer = BookingSerializer(data=request.data)
+            print(f"Creating booking for authenticated user: {request.user.username} (ID: {request.user.id})")
+            serializer = BookingRequestSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
-                serializer.save()
+                booking = serializer.save()
+                booking_data = BookingSerializer(booking).data
+                
+                # Debug the created booking
+                print(f"Booking created successfully for user ID: {booking.user.id}")
+                print(f"Booking valid_id: {booking.valid_id}")
+                
                 return Response({
-                    "data": serializer.data
+                    "id": booking.id,
+                    "message": "Booking created successfully",
+                    "data": booking_data
                 }, status=status.HTTP_201_CREATED)
+                
             return Response({
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print(f"Error in bookings_list: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
@@ -71,12 +98,25 @@ def bookings_list(request):
 def booking_detail(request, booking_id):
     try:
         booking = Bookings.objects.get(id=booking_id)
+        print(f"Accessing booking detail for ID: {booking_id}")
+        
+        # Log the valid_id URL for debugging
+        print(f"Valid ID URL for booking {booking_id}: {booking.valid_id.url if booking.valid_id else None}")
     except Bookings.DoesNotExist:
         return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    
     if request.method == 'GET':
-        serializer = BookingSerializer(booking)
+        booking_serializer = BookingSerializer(booking)
+        data = booking_serializer.data
+        
+        # Debug the serialized data
+        print(f"Serialized booking {booking_id} - Valid ID: {data.get('valid_id')}")
+        
+        room_serializer = RoomSerializer(booking.room)
+        data['room'] = room_serializer.data
+        
         return Response({
-            "data": serializer.data
+            "data": data
         }, status=status.HTTP_200_OK)
     elif request.method == 'PUT':
         serializer = BookingSerializer(booking, data=request.data)
@@ -159,5 +199,86 @@ def area_reservations(request):
             return Response({
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def room_detail(request, room_id):
+    try:
+        room = Rooms.objects.get(id=room_id)
+        serializer = RoomSerializer(room, context={'request': request})
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Rooms.DoesNotExist:
+        return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_bookings(request):
+    try:
+        user = request.user
+        print(f"Fetching bookings for user: {user.id} - {user.email}")
+        bookings = Bookings.objects.filter(user=user).order_by('-created_at')
+        
+        # Create a list of booking data with the related room info
+        booking_data = []
+        for booking in bookings:
+            # Get room details
+            room = booking.room
+            room_serializer = RoomSerializer(room)
+            
+            # Create booking data
+            booking_serializer = BookingSerializer(booking)
+            data = booking_serializer.data
+            data['room'] = room_serializer.data
+            
+            # Debug output
+            print(f"Booking ID: {booking.id}, Valid ID: {booking.valid_id}")
+            
+            # Ensure valid_id is included
+            if booking.valid_id:
+                data['valid_id'] = booking.valid_id.url
+                print(f"Added valid_id URL: {data['valid_id']}")
+            
+            booking_data.append(data)
+        
+        return Response({
+            "data": booking_data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Error in user_bookings: {str(e)}")
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cancel_booking(request, booking_id):
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+        
+        if booking.user != request.user:
+            return Response({"error": "You can only cancel your own bookings"}, status=status.HTTP_403_FORBIDDEN)
+        
+        if booking.status not in ['pending', 'confirmed']:
+            return Response({
+                "error": f"Cannot cancel booking with status: {booking.status}"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        reason = request.data.get('reason', '')
+        
+        booking.status = 'cancelled'
+        booking.cancellation_reason = reason
+        booking.cancellation_date = datetime.now().date()
+        booking.save()
+        
+        return Response({
+            "message": "Booking cancelled successfully",
+            "booking_id": booking_id
+        }, status=status.HTTP_200_OK)
+        
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

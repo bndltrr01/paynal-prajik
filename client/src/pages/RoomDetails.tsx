@@ -1,14 +1,10 @@
-import { useParams, useNavigate } from "react-router-dom";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
 import { lazy } from "react";
-import { fetchRoomDetail } from "../services/Room";
+import { Link, useParams } from "react-router-dom";
+import withSuspense from '../hoc/withSuspense';
 import { fetchAmenities } from "../services/Admin";
-import RoomImage from "../components/RoomImage";
-import RoomDetailsHero from "../layout/RoomDetailsHero";
-import RoomDescription from "../components/RoomDescription";
-import RoomAmenities from "../components/RoomAmenities";
-import RoomRule from "../components/RoomRule";
-import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
+import { fetchRoomDetail } from "../services/Room";
 
 const LoadingDashboard = lazy(
   () => import("../motions/skeletons/AdminDashboardSkeleton")
@@ -17,7 +13,6 @@ const Error = lazy(() => import("./_ErrorBoundary"));
 
 const RoomDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
   const {
     data: roomData,
@@ -47,109 +42,101 @@ const RoomDetails = () => {
   }
 
   const allAmenities = allAmenitiesData?.data || [];
-  const getAmenityDescription = (amenityId) => {
-    const found = allAmenities.find((a) => a.id === amenityId);
+  const getAmenityDescription = (amenityId: any) => {
+    const found = allAmenities.find((a: any) => a.id === amenityId);
     return found ? found.description : `ID: ${amenityId}`;
   };
 
   return (
-    <div className="container min-h-screen mt-[120px] min-w-screen overflow-x-hidden">
-      <RoomDetailsHero />
-      <div className="grid grid-cols-1 2xl:grid-cols-2 px-4 md:px-10 lg:grid-cols-2">
-        <div className="w-full">
-          <RoomImage />
-        </div>
-        <div className="grid grid-cols-1 gap-4 py-6 md:py-10 lg:py-20">
-          <RoomDescription />
-          <RoomAmenities />
-          <RoomRule />
-        </div>
-      </div>
-
-      {/* <button
-        onClick={() => navigate("/rooms")}
-        className="mt-4 text-blue-600 hover:text-blue-800 focus:outline-none cursor-pointer"
-      >
-        &larr; Back to Rooms
-      </button>
-
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="w-full h-64 md:h-auto flex justify-center">
-            <img
-              src={roomDetail.room_image}
-              alt={roomDetail.room_name}
-              className="w-full h-full object-cover rounded-md"
-            />
+    <div className="container mx-auto py-10 px-4">
+      <section className="container mx-auto min-h-screen mt-[100px] overflow-x-hidden">
+        {/* Hero Banner */}
+        <div
+          className="h-[400px] w-full overflow-hidden bg-cover bg-center relative before:absolute before:inset-0 before:bg-black/60 before:z-0 text-white"
+          style={{ backgroundImage: `url(${roomDetail.room_image})` }}
+        >
+          <div className="absolute top-5 left-5 flex items-center gap-x-3 z-11 cursor-pointer">
+            <Link
+              to="/rooms"
+              className="flex items-center gap-x-3 text-white hover:text-white/80"
+            >
+              <i className="fa fa-arrow-left text-xl"></i>
+              <span className="text-xl">Back to Rooms</span>
+            </Link>
           </div>
-          <div className="p-6 flex flex-col">
-            <h1 className="text-2xl md:text-3xl font-bold mb-4">
-              {roomDetail.room_name}
-            </h1>
-            <p className="text-gray-700 text-sm md:text-base mb-6">
-              {roomDetail.description}
-            </p>
+          <div className="relative z-10 flex h-full items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-4xl md:text-5xl lg:text-7xl font-montserrat font-bold tracking-wider uppercase">
+                {roomDetail.room_name}
+              </h1>
+            </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Room Type
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomDetail.room_type}
-                </span>
+        {/* Room Details Section */}
+        <div className="py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column - Room Image */}
+            <div className="w-full">
+              <div className="bg-white rounded-lg overflow-hidden shadow-lg">
+                <img
+                  src={roomDetail.room_image}
+                  alt={roomDetail.room_name}
+                  className="w-full h-auto object-cover"
+                />
               </div>
-              <div>
-                <span className="block text-gray-600 font-medium">Status</span>
-                <span className="text-lg font-semibold">
-                  {roomDetail.status.toUpperCase()}
-                </span>
+            </div>
+
+            {/* Right Column - Room Details */}
+            <div className="flex flex-col space-y-8">
+              {/* Room Description */}
+              <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
+                <h2 className="font-playfair text-3xl font-semibold mb-4">
+                  Room Description
+                </h2>
+                <hr className="border-gray-300 mb-4" />
+                <p className="text-lg font-playfair">
+                  {roomDetail.description}
+                </p>
               </div>
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Capacity
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomDetail.capacity}
-                </span>
-              </div>
-              <div>
-                <span className="block text-gray-600 font-medium">
+
+              {/* Amenities */}
+              <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
+                <h2 className="text-3xl font-playfair font-semibold mb-4">
                   Amenities
-                </span>
+                </h2>
+                <hr className="border-gray-300 mb-4" />
                 {isLoadingAmenities ? (
                   <p className="text-sm text-gray-500">Loading amenities...</p>
                 ) : amenitiesError ? (
-                  <p className="text-sm text-red-500">
-                    Failed to load amenities.
-                  </p>
+                  <p className="text-sm text-red-500">Failed to load amenities.</p>
                 ) : roomDetail.amenities.length === 0 ? (
                   <span className="text-lg font-semibold">None</span>
                 ) : (
-                  <ul className="list-disc list-inside mt-1 text-gray-700 text-sm md:text-base">
-                    {roomDetail.amenities.map((amenityId) => (
-                      <li key={amenityId}>
+                  <ul className="list-disc pl-5 text-gray-700">
+                    {roomDetail.amenities.map((amenityId: any) => (
+                      <li key={amenityId} className="mb-2">
                         {getAmenityDescription(amenityId)}
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
-            </div>
 
-            <div className="mt-auto text-center md:text-left">
-              <p className="text-xl md:text-2xl font-bold mb-4">
-                {roomDetail.room_price.toLocaleString()}
-              </p>
-              <button className="w-full md:w-auto bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700 transition">
-                Reserve Now
-              </button>
+              {/* Book Now Button */}
+              <div className="mt-4">
+                <Link to={`/booking/${roomDetail.id}`}>
+                  <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                    Book Now
+                  </button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
-      </div> */}
+      </section>
     </div>
   );
 };
 
-export default RoomDetails;
+export default withSuspense(RoomDetails, { loaderType: "card", count: 1 });

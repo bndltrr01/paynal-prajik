@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchAmenities,
-  createAmenity,
-  updateAmenity,
-  deleteAmenity,
-} from "../../services/Admin";
-import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
-import Error from "../_ErrorBoundary";
 import EditAmenityModal, { IAmenity } from "../../components/admin/EditAmenityModal";
 import Modal from "../../components/Modal";
-import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
+import ManageRoomLoader from "../../motions/loaders/EventLoader";
+import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
+import {
+  createAmenity,
+  deleteAmenity,
+  fetchAmenities,
+  updateAmenity,
+} from "../../services/Admin";
+import { Edit, Trash2 } from "lucide-react";
+import Error from "../_ErrorBoundary";
 
 interface Amenity {
   id: number;
@@ -60,7 +61,7 @@ const ManageAmenities = () => {
       setLoaderText("Creating amenity...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["amenities"]});
+      queryClient.invalidateQueries({ queryKey: ["amenities"] });
       setShowFormModal(false);
     },
     onSettled: () => {
@@ -205,7 +206,7 @@ const ManageAmenities = () => {
             >
               <div className="p-4 flex flex-col space-y-2">
                 {/* Display description as main text */}
-                <p className="text-gray-700 text-sm mb-2 line-clamp-4">
+                <p className="text-gray-700 text-lg mb-2 line-clamp-4">
                   {amenity.description || "No description provided."}
                 </p>
                 {/* Action Buttons */}
@@ -213,15 +214,15 @@ const ManageAmenities = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditAmenity(amenity)}
-                      className="px-3 py-1 uppercase font-semibold bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-300"
                     >
-                      Edit
+                      <Edit size={22} />
                     </button>
                     <button
                       onClick={() => handleDeleteAmenity(amenity.id)}
-                      className="px-3 py-1 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
                     >
-                      Delete
+                      <Trash2 size={22} />
                     </button>
                   </div>
                 </div>

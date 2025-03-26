@@ -1,8 +1,8 @@
 import { Suspense, lazy } from "react";
-import AboutUs from "./AboutUs";
 import Promotion from "../components/Promotion";
 import Values from "../components/Values";
 import Hero from "../layout/Hero";
+import AboutUs from "./AboutUs";
 
 const LoadingHydrate = lazy(() => import("../motions/loaders/LoadingHydrate"));
 

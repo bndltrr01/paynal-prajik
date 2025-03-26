@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap");
+
 @import "tailwindcss";
 
 @import "swiper/css";
@@ -10,6 +12,7 @@
   html,
   body {
     overflow-x: hidden;
+    scroll-behavior: smooth;
   }
 
   ::selection {
@@ -54,5 +57,13 @@
   * {
     scrollbar-width: thin;
     scrollbar-color: #1447e6 #d5dee8;
+  }
+  
+  .font-playfair {
+    font-family: "Playfair Display", serif;
+  }
+  
+  .font-montserrat {
+    font-family: "Montserrat", sans-serif;
   }
 }
