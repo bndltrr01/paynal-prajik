@@ -470,7 +470,7 @@ const ConfirmBooking = () => {
                   </div>
                   <div className="mt-2 md:mt-0">
                     <span className="text-blue-800 font-medium">Duration:</span>
-                    <span className="ml-2 text-blue-700">{nights} night{nights !== 1 ? 's' : ''}</span>
+                    <span className="ml-2 text-blue-700">{nights} day{nights !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
                 <div className="mt-2">
@@ -749,18 +749,16 @@ const ConfirmBooking = () => {
               <div>
                 <p className="text-lg text-gray-800 font-semibold">Check-in :</p>
                 <p className="font-semibold">{formattedArrivalDate}</p>
-                <p className="text-md text-gray-500">From 12:00 PM</p>
               </div>
               <div>
                 <p className="text-lg text-gray-800 font-semibold">Check-out :</p>
                 <p className="font-semibold">{formattedDepartureDate}</p>
-                <p className="text-md text-gray-500">Until 02:00 PM</p>
               </div>
             </div>
 
             <div className="mb-2">
               <p className="text-md font-medium">{roomData?.room_name || "Deluxe Room"}</p>
-              <p className="text-md text-gray-600">{nights} night{nights > 1 ? 's' : ''}</p>
+              <p className="text-md text-gray-600">{nights} day{nights > 1 ? 's' : ''}</p>
             </div>
           </div>
 
@@ -768,12 +766,12 @@ const ConfirmBooking = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 className="text-xl font-semibold mb-4">Pricing Summary</h3>
             <div className="text-md mb-2">
-              <p className="text-gray-600">1 room x {nights} night{nights > 1 ? 's' : ''}</p>
+              <p className="text-gray-600">1 room x {nights} day{nights > 1 ? 's' : ''}</p>
             </div>
             <div className="text-md mb-4">
               <p className="font-medium">{roomData?.room_name || "Room"}</p>
               <p className="text-sm text-gray-600">
-                {roomData?.room_price} per night
+                {roomData?.room_price} per day
               </p>
             </div>
             <div className="border-t pt-3 flex justify-between items-center">

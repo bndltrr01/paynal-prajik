@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MapPinOff } from "lucide-react";
 import { FC, useState } from "react";
 import EditAreaModal, {
   IArea as IEditArea,
@@ -8,7 +7,6 @@ import EditAreaModal, {
 import Modal from "../../components/Modal";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
-import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
 import {
   addNewArea,
   deleteArea,

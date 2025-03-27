@@ -297,10 +297,10 @@ const VenueBookingCalendar = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-xl font-bold mb-4">Select Your Booking Date & Time</h3>
+                        <h3 className="text-2xl font-bold mb-4">Select Your Booking Date & Time</h3>
 
                         {/* Selected Date & Time */}
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 p-4 bg-gray-50 rounded-lg">
+                        <div className="flex flex-col text-lg md:flex-row md:items-center md:justify-between mb-6 p-4 bg-gray-50 rounded-lg">
                             <div>
                                 <span className="text-gray-600">Selected Date:</span>
                                 <span className="ml-2 font-semibold">
@@ -424,7 +424,7 @@ const VenueBookingCalendar = () => {
                             <h4 className="font-semibold text-lg mb-4">Select Time & Duration</h4>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                                    <label className="block text-md font-medium text-gray-700 mb-1">Start Time</label>
                                     <select
                                         value={selectedStartTime}
                                         onChange={handleStartTimeChange}
@@ -444,7 +444,7 @@ const VenueBookingCalendar = () => {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Duration (hours)</label>
+                                    <label className="block text-md font-medium text-gray-700 mb-1">Duration (hours)</label>
                                     <select
                                         value={duration}
                                         onChange={handleDurationChange}
@@ -458,7 +458,7 @@ const VenueBookingCalendar = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">End Time (auto-calculated)</label>
+                                    <label className="block text-md font-medium text-gray-700 mb-1">End Time (auto-calculated)</label>
                                     <input
                                         type="text"
                                         value={selectedEndTime}
@@ -540,44 +540,39 @@ const VenueBookingCalendar = () => {
                                     className="w-full h-48 object-cover rounded-lg"
                                 />
                             </div>
-                            <h3 className="text-xl font-bold mb-2">{areaData.area_name}</h3>
-                            <div className="flex items-center mb-2">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-xl font-bold mb-2">{areaData.area_name}</h3>
                                 <span className={`px-2 py-1 ${areaData.status === 'available'
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-red-100 text-red-800'
-                                    } text-sm font-medium rounded-full`}>
+                                    } text-md font-medium rounded-full`}>
                                     {areaData.status.toUpperCase()}
                                 </span>
                             </div>
                             <p className="text-lg font-semibold text-blue-600 mb-3">{areaData.price_per_hour} / hour</p>
 
-                            <div className="flex items-center text-gray-600 mb-3">
+                            <div className="flex items-center text-gray-600 text-lg mb-3">
                                 <span className="mr-2">👥</span>
                                 <span>Capacity: {areaData.capacity} pax</span>
-                            </div>
-
-                            <div className="border-t border-gray-200 pt-3 mt-3">
-                                <h4 className="font-medium mb-2">Description</h4>
-                                <p className="text-gray-700 text-sm">{areaData.description || "No description available."}</p>
                             </div>
 
                             {selectedDate && selectedStartTime && selectedEndTime && (
                                 <div className="border-t border-gray-200 pt-3 mt-3">
                                     <h4 className="font-medium mb-2">Your Selection</h4>
                                     <div className="bg-gray-50 p-3 rounded-md space-y-2">
-                                        <div className="flex justify-between text-sm">
+                                        <div className="flex justify-between text-lg">
                                             <span>Date:</span>
                                             <span className="font-medium">{format(selectedDate, 'EEE, MMM dd, yyyy')}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm">
+                                        <div className="flex justify-between text-lg">
                                             <span>Time:</span>
                                             <span className="font-medium">{selectedStartTime} - {selectedEndTime}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm">
+                                        <div className="flex justify-between text-lg">
                                             <span>Duration:</span>
                                             <span className="font-medium">{duration} {duration === 1 ? 'hour' : 'hours'}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm font-semibold text-blue-600 pt-2 border-t border-gray-200">
+                                        <div className="flex justify-between text-2xl font-semibold text-blue-600 pt-2 border-t border-gray-200">
                                             <span>Total Price:</span>
                                             <span>₱{price.toLocaleString()}</span>
                                         </div>

@@ -326,30 +326,25 @@ const BookingCalendar = () => {
                                     className="w-full h-48 object-cover rounded-lg"
                                 />
                             </div>
-                            <h3 className="text-xl font-bold mb-2">{roomData.room_name}</h3>
-                            <div className="flex items-center mb-2">
-                                <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-xl font-bold mb-2">{roomData.room_name}</h3>
+                                <span className="px-2 py-1 uppercase bg-blue-100 text-blue-800 text-md font-medium rounded-full">
                                     {roomData.room_type}
                                 </span>
                             </div>
                             <p className="text-lg font-semibold text-blue-600 mb-3">{roomData.room_price}</p>
 
-                            <div className="flex items-center text-gray-600 mb-3">
+                            <div className="flex items-center text-lg text-gray-600 mb-3">
                                 <span className="mr-2">👥</span>
                                 <span>Capacity: {roomData.capacity}</span>
                             </div>
 
-                            <div className="border-t border-gray-200 pt-3 mt-3">
-                                <h4 className="font-medium mb-2">Description</h4>
-                                <p className="text-gray-700 text-sm">{roomData.description}</p>
-                            </div>
-
                             {roomData.amenities && roomData.amenities.length > 0 && (
-                                <div className="border-t border-gray-200 pt-3 mt-3">
+                                <div className="border-t text-lg border-gray-200 pt-3 mt-3">
                                     <h4 className="font-medium mb-2">Amenities</h4>
                                     <ul className="grid grid-cols-1 gap-1">
                                         {roomData.amenities.map(amenity => (
-                                            <li key={amenity.id} className="flex items-center text-sm">
+                                            <li key={amenity.id} className="flex items-center text-md">
                                                 <svg className="h-4 w-4 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                                                 </svg>
@@ -364,17 +359,17 @@ const BookingCalendar = () => {
                                 <div className="border-t border-gray-200 pt-3 mt-3">
                                     <h4 className="font-medium mb-2">Your Selection</h4>
                                     <div className="bg-gray-50 p-3 rounded-md space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span>Check-in:</span>
+                                        <div className="flex justify-between text-md">
+                                            <span>Check-in :</span>
                                             <span className="font-medium">{format(selectedCheckIn, 'EEE, MMM dd, yyyy')}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span>Check-out:</span>
+                                        <div className="flex justify-between text-md">
+                                            <span>Check-out :</span>
                                             <span className="font-medium">{format(selectedCheckOut, 'EEE, MMM dd, yyyy')}</span>
                                         </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span>Duration:</span>
-                                            <span className="font-medium">{Math.round((selectedCheckOut.getTime() - selectedCheckIn.getTime()) / (1000 * 60 * 60 * 24))} days</span>
+                                        <div className="flex justify-between text-md">
+                                            <span>Duration (days) :</span>
+                                            <span className="font-medium">{Math.round((selectedCheckOut.getTime() - selectedCheckIn.getTime()) / (1000 * 60 * 60 * 24))}</span>
                                         </div>
                                     </div>
                                 </div>
