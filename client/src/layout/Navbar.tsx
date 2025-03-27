@@ -1,12 +1,13 @@
 import {
   faCalendarCheck,
+  faChevronDown,
   faCircleUser,
   faRightToBracket,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { FC, useEffect, useState } from "react";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import DefaultImg from "../assets/Default_pfp.jpg";
 import hotelLogo from "../assets/hotel_logo.png";
 import Dropdown from "../components/Dropdown";
@@ -21,7 +22,6 @@ import { logout } from "../services/Auth";
 import { getGuestDetails } from "../services/Guest";
 
 const Navbar: FC = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [loginModal, setLoginModal] = useState(false);
   const [registerModal, setRegisterModal] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -124,28 +124,28 @@ const Navbar: FC = () => {
         />
       )}
 
-      <nav className="fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75 bg-gray-300 shadow-sm text-black">
-        <div className="max-w-7xl mx-auto flex items-center">
+      <nav className="fixed top-0 left-0 w-full z-40 transition-all duration-75 bg-gray-300 shadow-sm text-semibold font-playfair">
+        <div className="container mx-auto flex items-center justify-between h-16 sm:h-18 md:h-20 px-4 sm:px-6 lg:px-10">
           {/* Left Section */}
-          <div className="flex flex-1 items-center">
+          <div className="flex items-center">
             <Link to="/">
               <img
                 loading="lazy"
                 src={hotelLogo}
                 alt="Hotel Logo"
-                className="h-12 w-auto cursor-pointer"
+                className="h-8 sm:h-10 w-auto cursor-pointer"
               />
             </Link>
           </div>
 
           {/* Center Section */}
-          <div className="hidden lg:flex flex-1 justify-center">
-            <ul className="flex items-center space-x-8">
+          <div className="hidden lg:flex justify-center">
+            <ul className="flex items-center space-x-6 xl:space-x-8">
               {navLinks.map((link, index) => (
                 <SlotNavButton
                   key={index}
                   to={link.link}
-                  className="text-black  hover:text-purple-600"
+                  className="text-black hover:text-purple-600"
                 >
                   <i className={link.icon}></i> {link.text}
                 </SlotNavButton>
@@ -154,23 +154,23 @@ const Navbar: FC = () => {
           </div>
 
           {/* Right Section */}
-          <div className="hidden lg:flex flex-1 items-center justify-end">
+          <div className="hidden lg:flex items-center">
             {!isAuthenticated ? (
-              <>
+              <div className="flex items-center space-x-4">
                 <button
-                  className="px-6 py-3 text-lg font-bold border-2 rounded-md hover:border-violet-600 hover:text-violet-600 transition duration-300 focus:ring-2 focus:ring-violet-400 active:scale-95"
+                  className="py-2 px-3 text-base font-bold border-2 rounded-md hover:border-violet-600 hover:text-violet-600 transition duration-300 focus:ring-2 focus:ring-violet-400 active:scale-95 cursor-pointer"
                   onClick={toggleLoginModal}
                 >
                   <FontAwesomeIcon icon={faRightToBracket} /> Login
                 </button>
 
                 <button
-                  className="ml-8 px-6 py-3 text-lg font-bold border-2 rounded-md hover:border-violet-600 hover:text-violet-600 transition duration-300 focus:ring-2 focus:ring-violet-400 active:scale-95"
+                  className="py-2 px-3 text-base font-bold border-2 rounded-md hover:border-violet-600 hover:text-violet-600 transition duration-300 focus:ring-2 focus:ring-violet-400 active:scale-95 cursor-pointer"
                   onClick={toggleRegisterModal}
                 >
-                  Sign Up
+                  Register
                 </button>
-              </>
+              </div>
             ) : (
               <Dropdown
                 options={[
@@ -193,24 +193,30 @@ const Navbar: FC = () => {
                 position="bottom"
               >
                 {imageLoading ? (
-                  <div className="h-16 w-16 flex items-center justify-center">
+                  <div className="h-10 w-10 flex items-center justify-center">
                     <i className="fa fa-spinner fa-spin"></i>
                   </div>
                 ) : (
-                  <img
-                    loading="lazy"
-                    src={profileImage || DefaultImg}
-                    alt="Profile"
-                    className="h-14 w-14 rounded-full object-cover cursor-pointer"
-                  />
+                  <div className="flex items-center bg-white rounded-full px-2 py-1 border hover:border-violet-500 transition-all duration-200">
+                    <img
+                      loading="lazy"
+                      src={profileImage || DefaultImg}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      className="ml-2 text-gray-700"
+                    />
+                  </div>
                 )}
               </Dropdown>
             )}
           </div>
 
           {/* Mobile Menu */}
-          <div className="lg:hidden">
-            <button onClick={() => setMenuOpen(true)} className="text-2xl">
+          <div className="lg:hidden flex items-center">
+            <button onClick={() => setMenuOpen(true)} className="text-2xl p-2">
               <i className="fa fa-bars"></i>
             </button>
           </div>
@@ -249,8 +255,7 @@ const Navbar: FC = () => {
                 <NavLink
                   to={link.link}
                   className={({ isActive }) =>
-                    `flex items-center ${
-                      isActive ? "text-purple-600 font-bold" : ""
+                    `flex items-center ${isActive ? "text-purple-600 font-bold" : ""
                     }`
                   }
                 >
@@ -297,9 +302,8 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
-          loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         loading={loading}
         confirmText={
           loading ? (

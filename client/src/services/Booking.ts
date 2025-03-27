@@ -56,6 +56,7 @@ export interface BookingFormData {
     checkIn: string | null;
     checkOut: string | null;
     status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out';
+    totalPrice?: number;
 }
 
 export interface ReservationFormData {
@@ -131,6 +132,10 @@ export const createBooking = async (bookingData: BookingFormData) => {
         formData.append('checkIn', bookingData.checkIn || '');
         formData.append('checkOut', bookingData.checkOut || '');
         formData.append('status', bookingData.status || 'pending');
+        
+        if (bookingData.totalPrice !== undefined) {
+            formData.append('totalPrice', bookingData.totalPrice.toString());
+        }
         
         const response = await booking.post('/bookings', formData, {
             headers: {

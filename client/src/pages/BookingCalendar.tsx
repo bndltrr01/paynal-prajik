@@ -183,7 +183,7 @@ const BookingCalendar = () => {
                             </div>
                             {selectedCheckIn && selectedCheckOut && (
                                 <div className="mt-2 md:mt-0 bg-blue-100 px-3 py-1 rounded-full text-blue-800 text-sm font-semibold">
-                                    {Math.round((selectedCheckOut.getTime() - selectedCheckIn.getTime()) / (1000 * 60 * 60 * 24))} nights
+                                    {Math.round((selectedCheckOut.getTime() - selectedCheckIn.getTime()) / (1000 * 60 * 60 * 24))} days
                                 </div>
                             )}
                         </div>
@@ -374,7 +374,7 @@ const BookingCalendar = () => {
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span>Duration:</span>
-                                            <span className="font-medium">{Math.round((selectedCheckOut.getTime() - selectedCheckIn.getTime()) / (1000 * 60 * 60 * 24))} nights</span>
+                                            <span className="font-medium">{Math.round((selectedCheckOut.getTime() - selectedCheckIn.getTime()) / (1000 * 60 * 60 * 24))} days</span>
                                         </div>
                                     </div>
                                 </div>

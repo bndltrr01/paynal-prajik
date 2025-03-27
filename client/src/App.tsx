@@ -16,7 +16,6 @@ const AvailabilityResults = lazy(() => import("./pages/AvailabilityResults"));
 const ConfirmBooking = lazy(() => import("./pages/ConfirmBooking"));
 const ConfirmVenueBooking = lazy(() => import("./pages/ConfirmVenueBooking"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const MyBooking = lazy(() => import("./pages/MyBooking"));
 const RegistrationFlow = lazy(() => import("./pages/RegistrationFlow"));
 const RoomDetails = lazy(() => import("./pages/RoomDetails"));
 const Rooms = lazy(() => import("./pages/Rooms"));
@@ -99,7 +98,7 @@ const App = () => {
               element={
                 isAuthenticated ?
                   <Navigate to="/guest/bookings" replace /> :
-                  <MyBooking />
+                  <GuestBookings />
               }
             />
 

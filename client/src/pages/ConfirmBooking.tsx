@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { addDays, format, isAfter, isBefore, isSameDay } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
 import { useUserContext } from '../contexts/AuthContext';
 import { BookingFormData, createBooking, fetchRoomById } from '../services/Booking';
 
-// Define room data interface
 interface Amenity {
   id: number;
   description: string;
@@ -23,6 +23,11 @@ interface RoomData {
   amenities: Amenity[];
 }
 
+interface UnavailableDate {
+  checkIn: string;
+  checkOut: string;
+}
+
 const ConfirmBooking = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -33,13 +38,14 @@ const ConfirmBooking = () => {
   const arrival = searchParams.get('arrival');
   const departure = searchParams.get('departure');
 
-  // Date selection state (when dates are not provided in URL)
   const [selectedArrival, setSelectedArrival] = useState(arrival || '');
   const [selectedDeparture, setSelectedDeparture] = useState(departure || '');
   const [dateSelectionCompleted, setDateSelectionCompleted] = useState(!!arrival && !!departure);
   const [dateError, setDateError] = useState<string | null>(null);
+  const [unavailableDates, setUnavailableDates] = useState<UnavailableDate[]>([]);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [calculatedTotalPrice, setCalculatedTotalPrice] = useState<number>(0);
 
-  // Form state
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -49,14 +55,12 @@ const ConfirmBooking = () => {
     specialRequests: ''
   });
 
-  // Add state for the ID preview
   const [validIdPreview, setValidIdPreview] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Get today's date for date input min attribute
   const today = new Date().toISOString().split('T')[0];
 
   // Fetch room data
@@ -65,6 +69,36 @@ const ConfirmBooking = () => {
     queryFn: () => fetchRoomById(roomId),
     enabled: !!roomId
   });
+
+  // Fetch room availability
+  const { data: availabilityData, isLoading: isLoadingAvailability } = useQuery({
+    queryKey: ['roomAvailability', roomId],
+    queryFn: async () => {
+      try {
+        // In a real implementation, call your backend API to get unavailable dates
+        // const response = await fetchRoomAvailability(roomId);
+        // return response.data;
+
+        // For now, using mock data
+        console.log(`Fetching availability for room ${roomId}`);
+        const mockUnavailableDates: UnavailableDate[] = [
+          { checkIn: '2023-12-24', checkOut: '2023-12-26' },
+          { checkIn: '2024-01-01', checkOut: '2024-01-03' }
+        ];
+        return { unavailableDates: mockUnavailableDates };
+      } catch (error) {
+        console.error('Error fetching room availability:', error);
+        throw error;
+      }
+    },
+    enabled: !!roomId
+  });
+
+  useEffect(() => {
+    if (availabilityData?.unavailableDates) {
+      setUnavailableDates(availabilityData.unavailableDates);
+    }
+  }, [availabilityData]);
 
   useEffect(() => {
     if (!isLoading && !roomData) {
@@ -77,6 +111,21 @@ const ConfirmBooking = () => {
       navigate('/');
     }
   }, [roomId, navigate]);
+
+  // Calculate price when dates or room data changes
+  useEffect(() => {
+    if (roomData && selectedArrival && selectedDeparture) {
+      const nights = calculateNights();
+
+      // Parse the room price from string
+      const priceString = roomData.room_price.replace(/[₱,]/g, '');
+      const roomPrice = parseFloat(priceString);
+
+      if (!isNaN(roomPrice)) {
+        setCalculatedTotalPrice(roomPrice * nights);
+      }
+    }
+  }, [roomData, selectedArrival, selectedDeparture]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -109,6 +158,80 @@ const ConfirmBooking = () => {
     };
   }, [validIdPreview]);
 
+  // Check if a date is unavailable
+  const isDateUnavailable = (dateStr: string): boolean => {
+    const date = new Date(dateStr);
+
+    // Past dates are unavailable
+    if (isBefore(date, new Date(today))) {
+      return true;
+    }
+
+    // Check against booked dates
+    return unavailableDates.some(unavailable => {
+      const checkIn = new Date(unavailable.checkIn);
+      const checkOut = new Date(unavailable.checkOut);
+
+      // If the date is within any booked range
+      return (
+        (isSameDay(date, checkIn) || isAfter(date, checkIn)) &&
+        (isBefore(date, checkOut) || isSameDay(date, checkOut))
+      );
+    });
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
+    if (name === 'arrival-date') {
+      // If the selected date is unavailable, show error
+      if (isDateUnavailable(value)) {
+        setDateError('This date is not available. Please select another date.');
+        return;
+      }
+
+      setSelectedArrival(value);
+
+      // If departure date is before new arrival date, reset it
+      if (selectedDeparture && isBefore(new Date(selectedDeparture), new Date(value))) {
+        setSelectedDeparture('');
+      }
+
+      setDateError(null);
+    } else if (name === 'departure-date') {
+      // If the selected date is unavailable, show error
+      if (isDateUnavailable(value)) {
+        setDateError('This date is not available. Please select another date.');
+        return;
+      }
+
+      // Check if there are any unavailable dates between arrival and departure
+      if (selectedArrival) {
+        const start = new Date(selectedArrival);
+        const end = new Date(value);
+
+        let hasUnavailableDate = false;
+        let currentDate = addDays(start, 1); // Start checking from the day after arrival
+
+        while (isBefore(currentDate, end)) {
+          if (isDateUnavailable(format(currentDate, 'yyyy-MM-dd'))) {
+            hasUnavailableDate = true;
+            break;
+          }
+          currentDate = addDays(currentDate, 1);
+        }
+
+        if (hasUnavailableDate) {
+          setDateError('There are unavailable dates in your selected range. Please choose a different range.');
+          return;
+        }
+      }
+
+      setSelectedDeparture(value);
+      setDateError(null);
+    }
+  };
+
   const handleDateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -122,6 +245,23 @@ const ConfirmBooking = () => {
 
     if (departureDate <= arrivalDate) {
       setDateError('Check-out date must be after check-in date');
+      return;
+    }
+
+    // Check for unavailable dates in range
+    let hasUnavailableDate = false;
+    let currentDate = arrivalDate;
+
+    while (isBefore(currentDate, departureDate)) {
+      if (isDateUnavailable(format(currentDate, 'yyyy-MM-dd'))) {
+        hasUnavailableDate = true;
+        break;
+      }
+      currentDate = addDays(currentDate, 1);
+    }
+
+    if (hasUnavailableDate) {
+      setDateError('There are unavailable dates in your selected range. Please choose a different range.');
       return;
     }
 
@@ -168,7 +308,8 @@ const ConfirmBooking = () => {
         roomId: roomId,
         checkIn: selectedArrival,
         checkOut: selectedDeparture,
-        status: 'pending'
+        status: 'pending',
+        totalPrice: calculatedTotalPrice
       };
 
       // Call API to create booking
@@ -221,7 +362,7 @@ const ConfirmBooking = () => {
   const formattedArrivalDate = formatDate(selectedArrival);
   const formattedDepartureDate = formatDate(selectedDeparture);
 
-  if (isLoading) {
+  if (isLoading || isLoadingAvailability) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-7xl mt-16">
         <h1 className="text-2xl md:text-3xl font-bold text-center mb-8">Confirm Booking</h1>
@@ -258,6 +399,21 @@ const ConfirmBooking = () => {
           </div>
         </div>
 
+        {/* Unavailable Dates Information */}
+        {unavailableDates.length > 0 && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-300 text-yellow-800 rounded max-w-2xl mx-auto">
+            <h3 className="font-semibold mb-2">Unavailable Dates</h3>
+            <p className="text-sm mb-2">The following dates are already booked:</p>
+            <ul className="list-disc pl-5 text-sm">
+              {unavailableDates.map((period, index) => (
+                <li key={index}>
+                  {format(new Date(period.checkIn), 'MMM dd, yyyy')} to {format(new Date(period.checkOut), 'MMM dd, yyyy')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {dateError && (
           <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded max-w-2xl mx-auto">
             <p>{dateError}</p>
@@ -274,11 +430,14 @@ const ConfirmBooking = () => {
                 <input
                   type="date"
                   id="arrival-date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  name="arrival-date"
+                  className={`w-full px-3 py-2 border ${hoveredDate === 'arrival' ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
                   required
                   value={selectedArrival}
-                  onChange={(e) => setSelectedArrival(e.target.value)}
+                  onChange={handleDateChange}
                   min={today}
+                  onMouseEnter={() => setHoveredDate('arrival')}
+                  onMouseLeave={() => setHoveredDate(null)}
                 />
               </div>
               <div>
@@ -288,14 +447,40 @@ const ConfirmBooking = () => {
                 <input
                   type="date"
                   id="departure-date"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  name="departure-date"
+                  className={`w-full px-3 py-2 border ${hoveredDate === 'departure' ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500`}
                   required
                   value={selectedDeparture}
-                  onChange={(e) => setSelectedDeparture(e.target.value)}
+                  onChange={handleDateChange}
                   min={selectedArrival || today}
+                  onMouseEnter={() => setHoveredDate('departure')}
+                  onMouseLeave={() => setHoveredDate(null)}
                 />
               </div>
             </div>
+
+            {selectedArrival && selectedDeparture && (
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex flex-col md:flex-row md:justify-between">
+                  <div>
+                    <span className="text-blue-800 font-medium">Selected Stay:</span>
+                    <span className="ml-2 text-blue-700">
+                      {format(new Date(selectedArrival), 'MMM dd, yyyy')} to {format(new Date(selectedDeparture), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                  <div className="mt-2 md:mt-0">
+                    <span className="text-blue-800 font-medium">Duration:</span>
+                    <span className="ml-2 text-blue-700">{nights} night{nights !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <span className="text-blue-800 font-medium">Estimated Price:</span>
+                  <span className="ml-2 text-blue-700 font-semibold">
+                    ₱{calculatedTotalPrice.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-between items-center">
               <button
@@ -307,7 +492,10 @@ const ConfirmBooking = () => {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`px-6 py-2 ${!selectedArrival || !selectedDeparture || !!dateError
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                disabled={!selectedArrival || !selectedDeparture || !!dateError}
               >
                 Continue to Booking
               </button>
@@ -464,8 +652,6 @@ const ConfirmBooking = () => {
                   name="checkIn"
                   disabled
                   value={selectedArrival}
-                  onChange={(e) => setSelectedArrival(e.target.value)}
-                  min={today}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100"
                 />
               </div>
@@ -479,8 +665,6 @@ const ConfirmBooking = () => {
                   name="checkOut"
                   disabled
                   value={selectedDeparture}
-                  onChange={(e) => setSelectedDeparture(e.target.value)}
-                  min={selectedArrival || today}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-100"
                 />
               </div>
@@ -588,10 +772,13 @@ const ConfirmBooking = () => {
             </div>
             <div className="text-md mb-4">
               <p className="font-medium">{roomData?.room_name || "Room"}</p>
+              <p className="text-sm text-gray-600">
+                {roomData?.room_price} per night
+              </p>
             </div>
             <div className="border-t pt-3 flex justify-between items-center">
               <span className="font-semibold text-2xl">Total Price :</span>
-              <span className="font-bold text-2xl">{roomData?.room_price}</span>
+              <span className="font-bold text-2xl">₱{calculatedTotalPrice.toLocaleString()}</span>
             </div>
           </div>
 

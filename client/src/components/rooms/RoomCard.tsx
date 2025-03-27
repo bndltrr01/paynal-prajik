@@ -1,6 +1,6 @@
-import { Book, BookmarkPlus, Eye } from "lucide-react";
+import { Book, Eye } from "lucide-react";
 import { FC } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface RoomCardProps {
   id: string | number;
@@ -77,13 +77,6 @@ const RoomCard: FC<RoomCardProps> = ({
             >
               <Book size={16} /> <span>Book</span>
             </button>
-            <Link to={`/availability?roomId=${id}`}>
-              <button
-                className="bg-purple-600 text-white text-sm px-3 py-2 rounded-md hover:bg-purple-700 transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <BookmarkPlus size={16} /> <span>Reserve</span>
-              </button>
-            </Link>
           </div>
         </div>
       </div>

@@ -95,8 +95,8 @@ class BookingSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         
-        # Format total_price with peso sign if it's a venue booking
-        if instance.is_venue_booking and instance.total_price is not None:
+        # Format total_price with peso sign for all bookings
+        if instance.total_price is not None:
             try:
                 representation['total_price'] = f"₱{float(instance.total_price):,.2f}"
             except (ValueError, TypeError):
@@ -210,7 +210,8 @@ class BookingRequestSerializer(serializers.Serializer):
                     status=validated_data.get('status', 'pending'),
                     valid_id=valid_id_url,
                     special_request=validated_data.get('specialRequests', ''),
-                    is_venue_booking=False
+                    is_venue_booking=False,
+                    total_price=validated_data.get('totalPrice')
                 )
                 print(f"Booking created successfully: ID {booking.id}, Valid ID: {booking.valid_id}")
                 

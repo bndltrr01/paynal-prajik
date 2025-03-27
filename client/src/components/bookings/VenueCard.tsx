@@ -1,9 +1,9 @@
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { motion } from "framer-motion";
-import { Book, BookmarkPlus, Eye } from "lucide-react";
+import { Book, Eye } from "lucide-react";
 import { FC } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface AreaCardProps {
   id: number;
@@ -97,12 +97,6 @@ const VenueCard: FC<AreaCardProps> = ({
             >
               <Book size={16} /> <span>Book</span>
             </button>
-
-            <Link to={`/venue-booking/${id}`} onClick={(e) => e.stopPropagation()}>
-              <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-purple-700 transition cursor-pointer flex items-center gap-1">
-                <BookmarkPlus size={16} /> <span>Reserve</span>
-              </button>
-            </Link>
           </div>
         </div>
       </div>

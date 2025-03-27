@@ -79,7 +79,7 @@ const Dropdown: FC<CustomDropdownProps> = ({
                             {options.map((option, index) => (
                                 <li key={`${option.label}-${index}`}>
                                     <button
-                                        className="flex w-full items-center px-4 py-2 text-sm hover:bg-gray-100 text-left"
+                                        className="flex w-full items-center px-4 py-2 text-md cursor-pointer font-semibold hover:bg-gray-100 text-left"
                                         onClick={() => handleOptionClick(option.onClick)}
                                     >
                                         {option.icon && (

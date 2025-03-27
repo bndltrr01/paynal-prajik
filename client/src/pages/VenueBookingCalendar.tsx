@@ -24,9 +24,7 @@ const VenueBookingCalendar = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
-    // Get arrival and departure dates from URL if available
     const arrivalParam = searchParams.get("arrival");
-    const departureParam = searchParams.get("departure");
 
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -36,18 +34,15 @@ const VenueBookingCalendar = () => {
     const [unavailableTimes, setUnavailableTimes] = useState<UnavailableTime[]>([]);
     const [duration, setDuration] = useState<number>(1); // Duration in hours
     const [price, setPrice] = useState<number>(0);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // If arrival date is in the URL, use it as the selected date
     useEffect(() => {
         if (arrivalParam) {
             try {
                 const parsedDate = parseISO(arrivalParam);
                 setSelectedDate(parsedDate);
-
-                // Also adjust the currentMonth to show the month containing the arrival date
                 setCurrentMonth(parsedDate);
-
-                console.log(`Setting selected date from URL: ${format(parsedDate, 'yyyy-MM-dd')}`);
+                fetchUnavailableTimes(parsedDate);
             } catch (error) {
                 console.error('Error parsing arrival date from URL:', error);
             }
@@ -71,7 +66,33 @@ const VenueBookingCalendar = () => {
         enabled: !!areaId
     });
 
-    // Calculate price whenever duration or area data changes
+    // Mock function to fetch unavailable times - replace with actual API call
+    const fetchUnavailableTimes = async (date: Date) => {
+        try {
+            const formattedDate = format(date, 'yyyy-MM-dd');
+
+            // This is where you would make an API call to get booked time slots for this date and area
+            // For example:
+            // const response = await booking.get(`/area-bookings/${areaId}`, {
+            //   params: { date: formattedDate },
+            //   withCredentials: true
+            // });
+            // setUnavailableTimes(response.data.unavailableTimes);
+
+            // For now, let's use mock data for demonstration
+            console.log(`Fetching unavailable times for ${formattedDate} and area ${areaId}`);
+
+            const mockUnavailableTimes: UnavailableTime[] = [
+                { start_time: '10:00', end_time: '12:00' },
+                { start_time: '15:30', end_time: '17:30' }
+            ];
+            setUnavailableTimes(mockUnavailableTimes);
+        } catch (error) {
+            console.error('Error fetching unavailable times:', error);
+            setErrorMessage('Failed to load booked time slots. Some times may not be available.');
+        }
+    };
+
     useEffect(() => {
         if (areaData) {
             const hourlyPrice = Number(areaData.price_per_hour.replace(/[^\d.]/g, ''));
@@ -88,20 +109,63 @@ const VenueBookingCalendar = () => {
             const startDate = new Date();
             startDate.setHours(hour, minute, 0, 0);
             const endDate = new Date(startDate.getTime() + Number(e.target.value) * 60 * 60 * 1000);
-            setSelectedEndTime(`${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`);
+            const newEndTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+            setSelectedEndTime(newEndTime);
+
+            // Validate if the new time range overlaps with unavailable times
+            validateTimeSelection(selectedStartTime, newEndTime);
+        }
+    };
+
+    // Validate if selected time overlaps with unavailable times
+    const validateTimeSelection = (startTime: string, endTime: string) => {
+        if (!startTime || !endTime) return;
+
+        // Convert selected times to comparable format (minutes since midnight)
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const [endHour, endMinute] = endTime.split(':').map(Number);
+
+        const selectionStartMinutes = startHour * 60 + startMinute;
+        const selectionEndMinutes = endHour * 60 + endMinute;
+
+        // Check if selection overlaps with any unavailable time slot
+        const overlaps = unavailableTimes.some(slot => {
+            const [unavailStartHour, unavailStartMinute] = slot.start_time.split(':').map(Number);
+            const [unavailEndHour, unavailEndMinute] = slot.end_time.split(':').map(Number);
+
+            const unavailStartMinutes = unavailStartHour * 60 + unavailStartMinute;
+            const unavailEndMinutes = unavailEndHour * 60 + unavailEndMinute;
+
+            // Check for overlap
+            return (
+                (selectionStartMinutes < unavailEndMinutes && selectionEndMinutes > unavailStartMinutes) ||
+                (unavailStartMinutes < selectionEndMinutes && unavailEndMinutes > selectionStartMinutes)
+            );
+        });
+
+        if (overlaps) {
+            setErrorMessage('Selected time conflicts with an existing booking. Please choose another time.');
+        } else {
+            setErrorMessage(null);
         }
     };
 
     // Handle start time change
     const handleStartTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedStartTime(e.target.value);
+        const newStartTime = e.target.value;
+        setSelectedStartTime(newStartTime);
+
         // Auto-calculate end time based on selected start time and duration
-        if (e.target.value) {
-            const [hour, minute] = e.target.value.split(':').map(Number);
+        if (newStartTime) {
+            const [hour, minute] = newStartTime.split(':').map(Number);
             const startDate = new Date();
             startDate.setHours(hour, minute, 0, 0);
             const endDate = new Date(startDate.getTime() + duration * 60 * 60 * 1000);
-            setSelectedEndTime(`${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`);
+            const newEndTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+            setSelectedEndTime(newEndTime);
+
+            // Validate the time selection
+            validateTimeSelection(newStartTime, newEndTime);
         }
     };
 
@@ -126,15 +190,19 @@ const VenueBookingCalendar = () => {
             return;
         }
         setSelectedDate(date);
+        fetchUnavailableTimes(date);
     };
 
     const handleDateHover = (date: Date) => {
-        setHoveredDate(date);
+        if (!isDateUnavailable(date)) {
+            setHoveredDate(date);
+        }
     };
 
     const getDateCellClass = (date: Date) => {
         const isUnavailable = isDateUnavailable(date);
         const isSelected = selectedDate && isSameDay(date, selectedDate);
+        const isHovered = hoveredDate && isSameDay(date, hoveredDate);
         const isToday = isSameDay(date, new Date());
 
         let className = "h-10 w-10 flex items-center justify-center text-sm";
@@ -143,6 +211,8 @@ const VenueBookingCalendar = () => {
             className += " bg-gray-400 text-gray-100 cursor-not-allowed";
         } else if (isSelected) {
             className += " bg-blue-600 text-white cursor-pointer";
+        } else if (isHovered) {
+            className += " bg-blue-100 border border-blue-300 cursor-pointer";
         } else {
             className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
         }
@@ -167,10 +237,42 @@ const VenueBookingCalendar = () => {
         return slots;
     };
 
-    const timeSlots = generateTimeSlots();
+    // Filter time slots based on unavailable times
+    const getAvailableTimeSlots = () => {
+        const allSlots = generateTimeSlots();
+
+        // If we're not using unavailable times yet, return all slots
+        if (unavailableTimes.length === 0) return allSlots;
+
+        return allSlots.filter(timeSlot => {
+            // Check if this start time would result in an overlap
+            const [hour, minute] = timeSlot.split(':').map(Number);
+            const startMinutes = hour * 60 + minute;
+            const endMinutes = startMinutes + (duration * 60);
+
+            // Check against all unavailable times
+            return !unavailableTimes.some(slot => {
+                const [unavailStartHour, unavailStartMinute] = slot.start_time.split(':').map(Number);
+                const [unavailEndHour, unavailEndMinute] = slot.end_time.split(':').map(Number);
+
+                const unavailStartMinutes = unavailStartHour * 60 + unavailStartMinute;
+                const unavailEndMinutes = unavailEndHour * 60 + unavailEndMinute;
+
+                // Check for overlap
+                return (startMinutes < unavailEndMinutes && endMinutes > unavailStartMinutes);
+            });
+        });
+    };
+
+    const availableTimeSlots = getAvailableTimeSlots();
 
     const handleProceed = () => {
         if (selectedDate && selectedStartTime && selectedEndTime) {
+            // Do a final validation
+            if (errorMessage) {
+                return; // Don't proceed if there's an error
+            }
+
             const dateStr = format(selectedDate, 'yyyy-MM-dd');
             const startTime = `${dateStr}T${selectedStartTime}:00`;
             const endTime = `${dateStr}T${selectedEndTime}:00`;
@@ -214,6 +316,13 @@ const VenueBookingCalendar = () => {
                                 </span>
                             </div>
                         </div>
+
+                        {/* Error Message */}
+                        {errorMessage && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                                <p>{errorMessage}</p>
+                            </div>
+                        )}
 
                         {arrivalParam ? (
                             // If we have arrival date from URL, focus on time selection
@@ -293,6 +402,7 @@ const VenueBookingCalendar = () => {
                                                                     className={getDateCellClass(day)}
                                                                     onClick={() => handleDateClick(day)}
                                                                     onMouseEnter={() => handleDateHover(day)}
+                                                                    onMouseLeave={() => setHoveredDate(null)}
                                                                 >
                                                                     {format(day, 'd')}
                                                                 </div>
@@ -321,12 +431,17 @@ const VenueBookingCalendar = () => {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="">Select start time</option>
-                                        {timeSlots.map((time) => (
+                                        {availableTimeSlots.map((time) => (
                                             <option key={time} value={time}>
                                                 {time}
                                             </option>
                                         ))}
                                     </select>
+                                    {unavailableTimes.length > 0 && availableTimeSlots.length < generateTimeSlots().length && (
+                                        <p className="text-xs text-orange-700 mt-1">
+                                            Some time slots are not available due to existing bookings.
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Duration (hours)</label>
@@ -354,6 +469,20 @@ const VenueBookingCalendar = () => {
                             </div>
                         </div>
 
+                        {/* Unavailable Times Display */}
+                        {selectedDate && unavailableTimes.length > 0 && (
+                            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                                <h4 className="font-medium text-yellow-800 mb-2">Already Booked Time Slots</h4>
+                                <ul className="list-disc list-inside">
+                                    {unavailableTimes.map((slot, index) => (
+                                        <li key={index} className="text-yellow-700">
+                                            {slot.start_time} - {slot.end_time}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         {/* Calendar Legend - only show if calendar is visible */}
                         {!arrivalParam && (
                             <div className="mt-6 border-t pt-4">
@@ -375,6 +504,10 @@ const VenueBookingCalendar = () => {
                                         <div className="h-6 w-6 border-2 border-blue-500 bg-white mr-2"></div>
                                         <span className="text-sm">Today</span>
                                     </div>
+                                    <div className="flex items-center">
+                                        <div className="h-6 w-6 bg-blue-100 border border-blue-300 mr-2"></div>
+                                        <span className="text-sm">Hovered Date</span>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -383,8 +516,8 @@ const VenueBookingCalendar = () => {
                         <div className="flex justify-end mt-6">
                             <button
                                 onClick={handleProceed}
-                                disabled={!selectedDate || !selectedStartTime || !selectedEndTime}
-                                className={`px-6 py-2 rounded-md font-semibold ${selectedDate && selectedStartTime && selectedEndTime
+                                disabled={!selectedDate || !selectedStartTime || !selectedEndTime || !!errorMessage}
+                                className={`px-6 py-2 rounded-md font-semibold ${selectedDate && selectedStartTime && selectedEndTime && !errorMessage
                                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                     }`}
@@ -446,7 +579,7 @@ const VenueBookingCalendar = () => {
                                         </div>
                                         <div className="flex justify-between text-sm font-semibold text-blue-600 pt-2 border-t border-gray-200">
                                             <span>Total Price:</span>
-                                            <span>{price.toLocaleString()}</span>
+                                            <span>₱{price.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>

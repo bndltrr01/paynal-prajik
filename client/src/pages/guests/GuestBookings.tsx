@@ -264,13 +264,12 @@ const GuestBookings: FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBookings.map((booking: any) => {
                     const isVenueBooking = booking.is_venue_booking;
-
                     let itemName, itemType, itemImage, totalAmount;
 
                     if (isVenueBooking) {
@@ -279,7 +278,6 @@ const GuestBookings: FC = () => {
                       itemImage = booking.area_image || booking.area_details?.area_image;
                       totalAmount = booking.total_price || 0;
                     } else {
-                      // Room booking
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemType = booking.room_type || booking.room_details?.room_type || "Standard";
                       itemImage = booking.room_image || booking.room_details?.room_image;
