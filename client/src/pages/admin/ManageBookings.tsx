@@ -41,15 +41,12 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
   }
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${bgColor}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bgColor}`}>
       {formattedStatus.replace("_", " ")}
     </span>
   );
 };
 
-// User Booking Details Modal
 const BookingDetailsModal: FC<{
   booking: BookingResponse | null;
   onClose: () => void;
@@ -59,9 +56,10 @@ const BookingDetailsModal: FC<{
 }> = ({ booking, onClose, onConfirm, onReject, canManage }) => {
   if (!booking) return null;
 
+  const isVenueBooking = booking.is_venue_booking;
+
   const renderValidId = () => {
     if (!booking.valid_id) {
-      console.log('No valid ID found');
       return (
         <div className="text-center py-4 bg-gray-50 rounded-lg">
           <p className="text-gray-500">No valid ID uploaded</p>
@@ -69,7 +67,6 @@ const BookingDetailsModal: FC<{
       );
     }
 
-    console.log('Rendering valid ID:', booking.valid_id);
     return (
       <div className="border rounded-md overflow-hidden">
         <img
@@ -115,9 +112,30 @@ const BookingDetailsModal: FC<{
           )}
 
           <div className="flex justify-between">
-            <span className="font-semibold">Room/Area:</span>
-            <span>{booking.room_details?.room_name}</span>
+            <span className="font-semibold">Property Type:</span>
+            <span>
+              {isVenueBooking ? (
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Venue</span>
+              ) : (
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Room</span>
+              )}
+            </span>
           </div>
+
+          <div className="flex justify-between">
+            <span className="font-semibold">{isVenueBooking ? "Venue:" : "Room:"}</span>
+            <span>{isVenueBooking
+              ? (booking.area_details?.area_name || "Unknown Venue")
+              : (booking.room_details?.room_name || "Unknown Room")}
+            </span>
+          </div>
+
+          {isVenueBooking && booking.area_details?.capacity && (
+            <div className="flex justify-between">
+              <span className="font-semibold">Capacity:</span>
+              <span>{booking.area_details.capacity} people</span>
+            </div>
+          )}
 
           <div className="flex justify-between">
             <span className="font-semibold">Date of Reservation:</span>
@@ -132,6 +150,15 @@ const BookingDetailsModal: FC<{
           <div className="flex justify-between">
             <span className="font-semibold">Check-out:</span>
             <span>{formatDate(booking.check_out_date)}</span>
+          </div>
+
+          <div className="flex justify-between">
+            <span className="font-semibold">Price:</span>
+            <span className="font-medium">
+              {isVenueBooking
+                ? booking.total_price
+                : booking.room_details?.room_price}
+            </span>
           </div>
 
           <div className="flex justify-between">
@@ -187,6 +214,11 @@ const ManageBookings: FC = () => {
           response.data.forEach((booking, index) => {
             console.log(`Booking ${index} valid_id:`, booking.valid_id);
             console.log(`Booking ${index} user details:`, booking.user);
+            console.log(`Booking ${index} is venue booking:`, booking.is_venue_booking);
+            if (booking.is_venue_booking) {
+              console.log(`Booking ${index} area details:`, booking.area_details);
+              console.log(`Booking ${index} total price:`, booking.total_price);
+            }
           });
         }
 
@@ -253,12 +285,16 @@ const ManageBookings: FC = () => {
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
     const guestName = `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.toLowerCase();
     const email = booking.user?.email?.toLowerCase() || '';
-    const roomName = booking.room_details?.room_name?.toLowerCase() || '';
+
+    // Get property name based on if it's a venue booking or room booking
+    const propertyName = booking.is_venue_booking
+      ? booking.area_details?.area_name?.toLowerCase() || ''
+      : booking.room_details?.room_name?.toLowerCase() || '';
 
     const searchMatch = searchTerm === '' ||
       guestName.includes(searchTerm.toLowerCase()) ||
       email.includes(searchTerm.toLowerCase()) ||
-      roomName.includes(searchTerm.toLowerCase());
+      propertyName.includes(searchTerm.toLowerCase());
 
     const statusMatch =
       statusFilter === "all" ||
@@ -326,7 +362,7 @@ const ManageBookings: FC = () => {
                   Email
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Room / Area
+                  Property
                 </th>
                 <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Check-in
@@ -347,51 +383,68 @@ const ManageBookings: FC = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                      {formatDate(booking.created_at)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                      {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                      {booking.user?.email || ''}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                      {booking.room_details?.room_name || ''}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                      {formatDate(booking.check_in_date)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                      {formatDate(booking.check_out_date)}
-                    </td>
-                    <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
-                      <BookingStatusBadge status={booking.status} />
-                    </td>
-                    <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
-                      {booking.room_details?.room_price || ''}
-                    </td>
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleViewBooking(booking)}
-                          className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                          title="View Details"
-                        >
-                          <Eye size={25} />
-                        </button>
-                        <button
-                          className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                          title="Edit Booking"
-                        >
-                          <FileEdit size={25} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                filteredBookings.map((booking) => {
+                  const isVenueBooking = booking.is_venue_booking;
+                  const propertyName = isVenueBooking
+                    ? booking.area_details?.area_name || "Unknown Venue"
+                    : booking.room_details?.room_name || "Unknown Room";
+                  const price = isVenueBooking
+                    ? booking.total_price
+                    : booking.room_details?.room_price || '';
+
+                  return (
+                    <tr key={booking.id} className="hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.created_at)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                        {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                        {booking.user?.email || ''}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span>{propertyName}</span>
+                          {isVenueBooking ? (
+                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.check_in_date)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.check_out_date)}
+                      </td>
+                      <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
+                        <BookingStatusBadge status={booking.status} />
+                      </td>
+                      <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
+                        {price}
+                      </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center space-x-2">
+                          <button
+                            onClick={() => handleViewBooking(booking)}
+                            className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
+                            title="View Details"
+                          >
+                            <Eye size={25} />
+                          </button>
+                          <button
+                            className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
+                            title="Edit Booking"
+                          >
+                            <FileEdit size={25} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={9} className="py-6 text-center text-gray-500">

@@ -11,7 +11,7 @@ export interface BookingResponse {
         address?: string;
         phone_number?: string;
     };
-    room_details: {
+    room_details?: {
         id: number;
         room_name: string;
         room_type: string;
@@ -24,6 +24,17 @@ export interface BookingResponse {
             description: string;
         }>;
     };
+    area_details?: {
+        id: number;
+        area_name: string;
+        area_image?: string;
+        description?: string;
+        price_per_hour?: string;
+        capacity?: number;
+        status?: string;
+    };
+    is_venue_booking?: boolean;
+    total_price?: string | number;
     check_in_date: string;
     check_out_date: string;
     status: string;
@@ -40,11 +51,27 @@ export interface BookingFormData {
     emailAddress: string;
     address?: string;
     specialRequests?: string;
-    validId?: File;
+    validId: File | null;
     roomId: string | null;
     checkIn: string | null;
     checkOut: string | null;
     status?: 'pending' | 'confirmed' | 'cancelled' | 'checked_in' | 'checked_out';
+}
+
+export interface ReservationFormData {
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    emailAddress: string;
+    address?: string;
+    specialRequests?: string;
+    validId: File | null;
+    areaId: string | null;
+    startTime: string | null;
+    endTime: string | null;
+    totalPrice: number;
+    status?: 'pending' | 'confirmed' | 'cancelled';
+    isVenueBooking?: boolean;
 }
 
 export const fetchBookings = async (): Promise<{ data: BookingResponse[] }> => {
@@ -111,9 +138,68 @@ export const createBooking = async (bookingData: BookingFormData) => {
             },
             withCredentials: true
         });
+        
         return response.data;
     } catch (error) {
         console.error(`Failed to create booking: ${error}`);
+        throw error;
+    }
+};
+
+export const createReservation = async (reservationData: ReservationFormData) => {
+    try {
+        const formData = new FormData();
+
+        formData.append('firstName', reservationData.firstName);
+        formData.append('lastName', reservationData.lastName);
+        formData.append('phoneNumber', reservationData.phoneNumber);
+        formData.append('emailAddress', reservationData.emailAddress);
+        formData.append('address', reservationData.address || '');
+        formData.append('specialRequests', reservationData.specialRequests || '');
+
+        if (reservationData.validId) {
+            formData.append('validId', reservationData.validId);
+        }
+        
+        formData.append('roomId', reservationData.areaId || '');
+        
+        if (reservationData.startTime) {
+            const startDate = new Date(reservationData.startTime);
+            const formattedStartDate = startDate.toISOString().split('T')[0];
+            formData.append('checkIn', formattedStartDate);
+        }
+        
+        if (reservationData.endTime) {
+            const endDate = new Date(reservationData.endTime);
+            const formattedEndDate = endDate.toISOString().split('T')[0];
+            formData.append('checkOut', formattedEndDate);
+        }
+        
+        formData.append('status', reservationData.status || 'pending');
+        formData.append('isVenueBooking', 'true');
+        
+        if (reservationData.totalPrice) {
+            formData.append('totalPrice', reservationData.totalPrice.toString());
+        }
+        
+        for (const [key, value] of formData.entries()) {
+            if (key === 'validId') {
+                console.log(`${key}: [File data]`);
+            } else {
+                console.log(`${key}: ${value}`);
+            }
+        }
+        
+        const response = await booking.post('/bookings', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            withCredentials: true
+        });
+        
+        return response.data;
+    } catch (error: any) {
+        console.error(`Failed to create reservation: ${error}`);
         throw error;
     }
 };
@@ -131,20 +217,25 @@ export const fetchRoomById = async (roomId: string) => {
     }
 };
 
+export const fetchAreaById = async (areaId: string) => {
+    try {
+        const response = await booking.get(`/areas/${areaId}`, {
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error(`Failed to fetch area details: ${error}`);
+        throw error;
+    }
+};
+
 export const fetchBookingDetail = async (bookingId: string) => {
     try {
         const response = await booking.get(`/bookings/${bookingId}`, {
             headers: { 'Content-Type': 'application/json' },
             withCredentials: true
         });
-        
-        if (response.data.data) {
-            const bookingData = response.data.data;
-            if (!bookingData.valid_id) {
-                console.warn(`Missing valid_id for booking ${bookingId}`);
-            }
-        }
-        
         return response.data.data;
     } catch (error) {
         console.error(`Failed to fetch booking details:`, error);

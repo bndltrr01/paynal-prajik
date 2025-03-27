@@ -106,6 +106,7 @@ const GuestDashboard: FC = () => {
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
                             <img
+                              loading="lazy"
                               src={booking.room_image || "https://placehold.co/100"}
                               alt={booking.room_name}
                               className="h-10 w-10 rounded-full object-cover"

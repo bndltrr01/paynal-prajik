@@ -16,6 +16,7 @@ const AdminProfile: FC<AdminProfileProps> = ({ admin }) => {
         <div className="flex space-x-3 items-center border-b border-b-gray-200 p-2">
             <div className="flex justify-center items-center rounded-full bg-violet-400 w-15 h-15">
                 <img
+                    loading="lazy"
                     src={admin.profile_pic}
                     alt={admin.profile_pic}
                     className="w-full h-full rounded-full object-cover"

@@ -1,5 +1,6 @@
+import { Book, BookmarkPlus, Eye } from "lucide-react";
 import { FC } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface RoomCardProps {
   id: string | number;
@@ -41,7 +42,7 @@ const RoomCard: FC<RoomCardProps> = ({
 
   return (
     <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-transform hover:-translate-y-1 hover:shadow-lg">
-      <img src={image} alt={title} className="w-full h-48 object-cover" />
+      <img loading="lazy" src={image} alt={title} className="w-full h-48 object-cover" />
       <div className="flex flex-col flex-1 p-4">
         <div className="mb-3">
           <div className="flex justify-between items-center">
@@ -59,23 +60,30 @@ const RoomCard: FC<RoomCardProps> = ({
             <span>{capacity}</span>
           </div>
         </div>
-        <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between font-montserrat">
           <span className="text-xl font-semibold text-gray-900">
             {price}
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
+              className="bg-blue-600 text-white text-sm px-3 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer flex items-center gap-1"
               onClick={() => navigate(`/rooms/${id}`)}
             >
-              View Details
+              <Eye size={16} /> <span>View</span>
             </button>
             <button
-              className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer"
+              className="bg-green-600 text-white text-sm px-3 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer flex items-center gap-1"
               onClick={handleReserveClick}
             >
-              Reserve Now
+              <Book size={16} /> <span>Book</span>
             </button>
+            <Link to={`/availability?roomId=${id}`}>
+              <button
+                className="bg-purple-600 text-white text-sm px-3 py-2 rounded-md hover:bg-purple-700 transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <BookmarkPlus size={16} /> <span>Reserve</span>
+              </button>
+            </Link>
           </div>
         </div>
       </div>

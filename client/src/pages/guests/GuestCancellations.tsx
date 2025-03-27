@@ -122,6 +122,7 @@ const GuestCancellations: FC = () => {
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               <img
+                                loading="lazy"
                                 src={booking.room_image || "https://placehold.co/100"}
                                 alt={booking.room_name}
                                 className="h-10 w-10 rounded-md object-cover"
@@ -191,6 +192,7 @@ const GuestCancellations: FC = () => {
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               <img
+                                loading="lazy"
                                 src={reservation.venue_image || "https://placehold.co/100"}
                                 alt={reservation.venue_name}
                                 className="h-10 w-10 rounded-md object-cover"

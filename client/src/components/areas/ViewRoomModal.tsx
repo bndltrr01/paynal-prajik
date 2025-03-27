@@ -1,5 +1,5 @@
-import { FC, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { FC, useEffect, useState } from "react";
 
 export interface IRoom {
     id: number;

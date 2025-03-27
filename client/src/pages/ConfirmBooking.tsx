@@ -221,7 +221,6 @@ const ConfirmBooking = () => {
   const formattedArrivalDate = formatDate(selectedArrival);
   const formattedDepartureDate = formatDate(selectedDeparture);
 
-  // If loading or no room data yet, show a loading state
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-7xl mt-16">
@@ -246,6 +245,7 @@ const ConfirmBooking = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-6 max-w-2xl mx-auto">
           <div className="flex items-center space-x-4">
             <img
+              loading="lazy"
               src={roomData?.room_image}
               alt={roomData?.room_name || "Room"}
               className="w-24 h-24 object-cover rounded-md"
@@ -425,6 +425,7 @@ const ConfirmBooking = () => {
                   <div className="mt-2 relative">
                     <div className="relative border rounded-md overflow-hidden" style={{ height: '120px' }}>
                       <img
+                        loading="lazy"
                         src={validIdPreview}
                         alt="ID Preview"
                         className="w-full h-full object-contain"
@@ -530,6 +531,7 @@ const ConfirmBooking = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="relative mb-4">
               <img
+                loading="lazy"
                 src={roomData?.room_image}
                 alt={roomData?.room_name || "Room"}
                 className="w-full h-40 object-cover rounded-md"

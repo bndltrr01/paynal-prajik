@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
-import useTokenHandler from "./hooks/useTokenHandler";
 import AdminLayout from "./layout/admin/AdminLayout";
 import Footer from "./layout/Footer";
 import Navbar from "./layout/Navbar";
@@ -15,6 +14,7 @@ const NotFound = lazy(() => import("./pages/_NotFound"));
 const Homepage = lazy(() => import("./pages/Homepage"));
 const AvailabilityResults = lazy(() => import("./pages/AvailabilityResults"));
 const ConfirmBooking = lazy(() => import("./pages/ConfirmBooking"));
+const ConfirmVenueBooking = lazy(() => import("./pages/ConfirmVenueBooking"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const MyBooking = lazy(() => import("./pages/MyBooking"));
 const RegistrationFlow = lazy(() => import("./pages/RegistrationFlow"));
@@ -24,8 +24,8 @@ const Venue = lazy(() => import("./pages/Venue"));
 const GuestProfile = lazy(() => import("./layout/guest/GuestProfile"));
 
 const BookingCalendar = lazy(() => import("./pages/BookingCalendar"));
+const VenueBookingCalendar = lazy(() => import("./pages/VenueBookingCalendar"));
 const AboutUs = lazy(() => import("./pages/AboutUs"));
-const Availability = lazy(() => import("./pages/Availability"));
 const CancelReservation = lazy(() => import("./pages/CancelReservation"));
 const VenueDetails = lazy(() => import("./pages/VenueDetails"));
 
@@ -50,7 +50,6 @@ const GuestLayout = lazy(() => import("./layout/guest/GuestLayout"));
 const App = () => {
   const { isAuthenticated, role } = useUserContext();
   const location = useLocation();
-  useTokenHandler();
 
   const isAdminRoute =
     location.pathname.startsWith("/admin") ||
@@ -59,11 +58,9 @@ const App = () => {
 
   return (
     <>
-      {/* Main app suspense - for initial app load */}
       <Suspense fallback={<LoadingHydrate />}>
         {!isAdminRoute && <Navbar />}
 
-        {/* Page-level suspense - for page transitions */}
         <Suspense fallback={<PageTransitionLoader />}>
           <Routes>
             <Route
@@ -82,6 +79,7 @@ const App = () => {
             />
 
             <Route path="/confirm-booking" element={<ConfirmBooking />} />
+            <Route path="/confirm-venue-booking" element={<ConfirmVenueBooking />} />
             <Route path="/registration" element={<RegistrationFlow />} />
 
             {/* Legacy guest profile route for compatibility */}
@@ -89,11 +87,11 @@ const App = () => {
 
             <Route path="/venues" element={<Venue />} />
             <Route path="/venues/:id" element={<VenueDetails />} />
+            <Route path="/venue-booking/:areaId" element={<VenueBookingCalendar />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:id" element={<RoomDetails />} />
             <Route path="/booking/:roomId" element={<BookingCalendar />} />
-            <Route path="/availability" element={<Availability />} />
-            <Route path="/availability/results" element={<AvailabilityResults />} />
+            <Route path="/availability" element={<AvailabilityResults />} />
 
             {/* Redirect from MyBooking to the GuestBookings page */}
             <Route

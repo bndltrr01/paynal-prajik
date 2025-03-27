@@ -27,10 +27,6 @@ const Navbar: FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
-  const location = useLocation();
-  const isAvailabilityPage = location.pathname === "/availability";
-  const isMyBookingPage = location.pathname === "/mybooking";
-  const isRoomDetailsPage = location.pathname.startsWith("/rooms/");
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -45,7 +41,7 @@ const Navbar: FC = () => {
     profileImage,
     userDetails,
     setProfileImage,
-    clearAuthState
+    clearAuthState,
   } = useUserContext();
 
   const [imageLoading, setImageLoading] = useState<boolean>(false);
@@ -81,14 +77,6 @@ const Navbar: FC = () => {
 
   const toggleLoginModal = () => setLoginModal(!loginModal);
   const toggleRegisterModal = () => setRegisterModal(!registerModal);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -136,20 +124,13 @@ const Navbar: FC = () => {
         />
       )}
 
-      <nav
-        className={`fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75   ${isScrolled ||
-          isAvailabilityPage ||
-          isMyBookingPage ||
-          isRoomDetailsPage
-          ? "bg-gray-200 shadow-md text-black"
-          : "bg-transparent text-white"
-          }`}
-      >
+      <nav className="fixed top-0 left-0 w-full px-10 py-7 z-40 transition-all duration-75 bg-gray-300 shadow-sm text-black">
         <div className="max-w-7xl mx-auto flex items-center">
           {/* Left Section */}
           <div className="flex flex-1 items-center">
             <Link to="/">
               <img
+                loading="lazy"
                 src={hotelLogo}
                 alt="Hotel Logo"
                 className="h-12 w-auto cursor-pointer"
@@ -164,13 +145,7 @@ const Navbar: FC = () => {
                 <SlotNavButton
                   key={index}
                   to={link.link}
-                  className={`${isScrolled ||
-                    isAvailabilityPage ||
-                    isMyBookingPage ||
-                    isRoomDetailsPage
-                    ? "text-black  hover:text-purple-600"
-                    : "bg-transparent text-white hover:text-purple-600"
-                    }`}
+                  className="text-black  hover:text-purple-600"
                 >
                   <i className={link.icon}></i> {link.text}
                 </SlotNavButton>
@@ -183,13 +158,14 @@ const Navbar: FC = () => {
             {!isAuthenticated ? (
               <>
                 <button
-                  className="px-4 py-2 text-lg font-bold border rounded-md hover:bg-gradient-to-r from-[#7300FF] to-[#08D3FC] transition duration-300"
+                  className="px-6 py-3 text-lg font-bold border-2 rounded-md hover:border-violet-600 hover:text-violet-600 transition duration-300 focus:ring-2 focus:ring-violet-400 active:scale-95"
                   onClick={toggleLoginModal}
                 >
                   <FontAwesomeIcon icon={faRightToBracket} /> Login
                 </button>
+
                 <button
-                  className="ml-8 px-4 py-2 text-lg font-bold border rounded-md hover:bg-gradient-to-r from-[#7300FF] to-[#08D3FC] transition duration-300"
+                  className="ml-8 px-6 py-3 text-lg font-bold border-2 rounded-md hover:border-violet-600 hover:text-violet-600 transition duration-300 focus:ring-2 focus:ring-violet-400 active:scale-95"
                   onClick={toggleRegisterModal}
                 >
                   Sign Up
@@ -200,9 +176,7 @@ const Navbar: FC = () => {
                 options={[
                   {
                     label: "Account",
-                    onClick: () => {
-                      navigate(`/guest/${userDetails?.id}`);
-                    },
+                    onClick: () => navigate("/guest/bookings"),
                     icon: <FontAwesomeIcon icon={faCircleUser} />,
                   },
                   {
@@ -224,6 +198,7 @@ const Navbar: FC = () => {
                   </div>
                 ) : (
                   <img
+                    loading="lazy"
                     src={profileImage || DefaultImg}
                     alt="Profile"
                     className="h-14 w-14 rounded-full object-cover cursor-pointer"
@@ -252,6 +227,7 @@ const Navbar: FC = () => {
             <div className="flex justify-between items-center p-7 sm:p-9 md:p-9 bg-gray-200">
               <Link to="/">
                 <img
+                  loading="lazy"
                   src={hotelLogo}
                   alt="Hotel Logo"
                   className="h-12 w-auto cursor-pointer block sm:hidden md:hidden"
@@ -272,7 +248,11 @@ const Navbar: FC = () => {
               >
                 <NavLink
                   to={link.link}
-                  className={({ isActive }) => `flex items-center ${isActive ? 'text-purple-600 font-bold' : ''}`}
+                  className={({ isActive }) =>
+                    `flex items-center ${
+                      isActive ? "text-purple-600 font-bold" : ""
+                    }`
+                  }
                 >
                   <i className={`mr-3 ${link.icon}`}></i> {link.text}
                 </NavLink>
@@ -317,8 +297,9 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
         loading={loading}
         confirmText={
           loading ? (

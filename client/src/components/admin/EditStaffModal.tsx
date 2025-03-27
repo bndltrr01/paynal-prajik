@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChangeEvent, FC, FormEvent, memo, useCallback, useEffect, useState } from "react";
 
-interface IStaff {
+export interface IStaff {
     id: number;
     first_name: string;
     last_name: string;

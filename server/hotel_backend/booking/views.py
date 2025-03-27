@@ -54,11 +54,16 @@ def bookings_list(request):
     try:
         if request.method == 'GET':
             print(f"Fetching all bookings, user: {request.user.email}")
-            bookings = Bookings.objects.all().order_by('-created_at').select_related('user', 'room')
+            bookings = Bookings.objects.all().order_by('-created_at').select_related('user', 'room', 'area')
             
             # Log valid_id URLs for debugging
             for booking in bookings:
                 print(f"Booking {booking.id} - Valid ID URL: {booking.valid_id.url if booking.valid_id else None}")
+                print(f"Booking {booking.id} - Is Venue Booking: {booking.is_venue_booking}")
+                if booking.is_venue_booking:
+                    print(f"Venue booking area: {booking.area.area_name if booking.area else 'No area'}")
+                else:
+                    print(f"Room booking room: {booking.room.room_name if booking.room else 'No room'}")
             
             serializer = BookingSerializer(bookings, many=True)
             
@@ -79,6 +84,7 @@ def bookings_list(request):
                 # Debug the created booking
                 print(f"Booking created successfully for user ID: {booking.user.id}")
                 print(f"Booking valid_id: {booking.valid_id}")
+                print(f"Is venue booking: {booking.is_venue_booking}")
                 
                 return Response({
                     "id": booking.id,
@@ -102,6 +108,7 @@ def booking_detail(request, booking_id):
         
         # Log the valid_id URL for debugging
         print(f"Valid ID URL for booking {booking_id}: {booking.valid_id.url if booking.valid_id else None}")
+        print(f"Is venue booking: {booking.is_venue_booking}")
     except Bookings.DoesNotExist:
         return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -112,8 +119,15 @@ def booking_detail(request, booking_id):
         # Debug the serialized data
         print(f"Serialized booking {booking_id} - Valid ID: {data.get('valid_id')}")
         
-        room_serializer = RoomSerializer(booking.room)
-        data['room'] = room_serializer.data
+        # Add room or area details based on booking type
+        if booking.is_venue_booking and booking.area:
+            area_serializer = AreaSerializer(booking.area)
+            data['area'] = area_serializer.data
+            print(f"Added area details for venue booking")
+        elif booking.room:
+            room_serializer = RoomSerializer(booking.room)
+            data['room'] = room_serializer.data
+            print(f"Added room details for regular booking")
         
         return Response({
             "data": data
@@ -203,6 +217,19 @@ def area_reservations(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+def area_detail(request, area_id):
+    try:
+        area = Areas.objects.get(id=area_id)
+        serializer = AreaSerializer(area)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Areas.DoesNotExist:
+        return Response({"error": "Area not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
 def room_detail(request, room_id):
     try:
         room = Rooms.objects.get(id=room_id)
@@ -223,17 +250,22 @@ def user_bookings(request):
         print(f"Fetching bookings for user: {user.id} - {user.email}")
         bookings = Bookings.objects.filter(user=user).order_by('-created_at')
         
-        # Create a list of booking data with the related room info
+        # Create a list of booking data with the related room/area info
         booking_data = []
         for booking in bookings:
-            # Get room details
-            room = booking.room
-            room_serializer = RoomSerializer(room)
-            
-            # Create booking data
+            # Get booking details using the serializer
             booking_serializer = BookingSerializer(booking)
             data = booking_serializer.data
-            data['room'] = room_serializer.data
+            
+            # Add specific details based on booking type
+            if booking.is_venue_booking and booking.area:
+                area_serializer = AreaSerializer(booking.area)
+                data['area'] = area_serializer.data
+                print(f"Added venue details for booking {booking.id}")
+            elif booking.room:
+                room_serializer = RoomSerializer(booking.room)
+                data['room'] = room_serializer.data
+                print(f"Added room details for booking {booking.id}")
             
             # Debug output
             print(f"Booking ID: {booking.id}, Valid ID: {booking.valid_id}")

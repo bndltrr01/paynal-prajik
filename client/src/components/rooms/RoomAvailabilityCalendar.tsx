@@ -95,7 +95,7 @@ const RoomAvailabilityCalendar = () => {
                 <DatePicker
                   id="arrival"
                   selected={arrivalDate}
-                  onChange={(date) => setArrivalDate(date)}
+                  onChange={(date: Date) => setArrivalDate(date)}
                   dateFormat="yyyy-MM-dd"
                   className="border-b-2 outline-0 italic cursor-pointer text-lg"
                   placeholderText="Select arrival date"
@@ -114,7 +114,7 @@ const RoomAvailabilityCalendar = () => {
                 <DatePicker
                   id="departure"
                   selected={departureDate}
-                  onChange={(date) => setDepartureDate(date)}
+                  onChange={(date: Date) => setDepartureDate(date)}
                   dateFormat="yyyy-MM-dd"
                   className="border-b-2 outline-0 italic cursor-pointer text-lg"
                   placeholderText="Select departure date"

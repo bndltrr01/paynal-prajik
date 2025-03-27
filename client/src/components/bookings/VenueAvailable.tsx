@@ -20,7 +20,7 @@ const VenueAvailable: FC<VenueAvailableProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 flex flex-col">
       {/* Venue Image */}
-      <img src={image} alt={title} className="h-44 w-full object-cover" />
+      <img loading="lazy" src={image} alt={title} className="h-44 w-full object-cover" />
 
       {/* Venue Details */}
       <div className="p-4 space-y-3">
@@ -53,7 +53,7 @@ const VenueAvailable: FC<VenueAvailableProps> = ({
         {/* Price and Button */}
         <div className="flex justify-between items-center mt-2">
           <div className="text-lg font-bold text-gray-900 font-montserrat">
-            ₱{price.toLocaleString()}
+            {price.toLocaleString()}
           </div>
           <button
             onClick={onBookNow}
