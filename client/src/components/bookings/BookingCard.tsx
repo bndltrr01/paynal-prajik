@@ -11,8 +11,15 @@ interface BookingCardProps {
   price: number;
   status: string;
   bookingId: string | number;
+  isVenueBooking?: boolean;
   roomDetails?: {
     room_image?: string;
+  };
+  areaDetails?: {
+    area_image?: string;
+    area_name?: string;
+    price_per_hour?: string;
+    capacity?: number;
   };
   userDetails?: {
     fullName: string;
@@ -24,6 +31,7 @@ interface BookingCardProps {
   bookingDate?: string;
   cancellationReason?: string;
   cancellationDate?: string;
+  totalPrice?: number;
 }
 
 const BookingCard = ({
@@ -34,13 +42,16 @@ const BookingCard = ({
   price,
   status,
   bookingId,
+  isVenueBooking,
   roomDetails,
+  areaDetails,
   userDetails,
   specialRequest,
   validId,
   bookingDate,
   cancellationReason,
   cancellationDate,
+  totalPrice,
 }: BookingCardProps) => {
   const [showCancellationModal, setShowCancellationModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -88,51 +99,52 @@ const BookingCard = ({
       .join(' ');
   };
 
-  // Handle cancel click
-  const handleCancelClick = () => {
-    setShowCancellationModal(true);
-  };
+  const handleCancelClick = () => setShowCancellationModal(true);
 
-  // Handle cancel confirmation
-  const handleConfirmCancel = (reason: string) => {
-    cancelMutation.mutate(reason);
-  };
+  const handleConfirmCancel = (reason: string) => cancelMutation.mutate(reason);
 
-  // Toggle details visibility
-  const toggleDetails = () => {
-    setShowDetails(!showDetails);
-  };
+  const toggleDetails = () => setShowDetails(!showDetails);
 
   return (
     <div className="w-full max-w-7xl mx-auto bg-white shadow-md rounded-lg p-6 flex flex-col gap-6 mb-6">
       {/* Main booking info */}
       <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-56 h-36 flex items-center justify-center overflow-hidden rounded-lg bg-gray-200">
+        <div className="w-full md:w-60 h-auto flex items-center justify-center overflow-hidden rounded-lg bg-gray-200">
           <img
-            src={roomDetails?.room_image || imageUrl}
+            src={isVenueBooking ? (areaDetails?.area_image || imageUrl) : (roomDetails?.room_image || imageUrl)}
             alt={roomType}
+            loading="lazy"
             className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to default image if room image fails to load
-              (e.target as HTMLImageElement).src = imageUrl;
-            }}
           />
         </div>
 
         <div className="flex-grow flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start">
-              <h2 className="text-lg font-semibold">{roomType}</h2>
+              <div>
+                <h2 className="text-2xl font-semibold">{roomType}</h2>
+                {isVenueBooking ? (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">Venue Booking</span>
+                ) : (
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Room Booking</span>
+                )}
+              </div>
               {bookingDate && (
-                <p className="text-sm text-gray-500">Booked on: {bookingDate}</p>
+                <p className="text-md text-gray-500">Booked on: {bookingDate}</p>
               )}
             </div>
-            <p className="text-gray-600">{dates}</p>
-            <p className="text-gray-600 flex items-center">
-              <span className="mr-2">👥</span> Persons: {guests}
+            <p className="text-gray-600 flex items-center my-2">
+              <span className="mr-2">👥</span>{guests} {isVenueBooking ? 'capacity' : 'guests'}
             </p>
             <p className="text-blue-600 font-semibold text-lg">
-              PRICE: {typeof price === 'number' ? price.toLocaleString() : price}
+              {isVenueBooking ? (
+                <>
+                  TOTAL: {typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}
+                  {areaDetails?.price_per_hour && <span className="text-sm text-gray-600 ml-2">({areaDetails.price_per_hour}/hour)</span>}
+                </>
+              ) : (
+                <>PRICE: {typeof price === 'number' ? price.toLocaleString() : price}</>
+              )}
             </p>
 
             {isCancelled && (
@@ -148,7 +160,7 @@ const BookingCard = ({
 
           <div className="flex items-end justify-between mt-4">
             <span
-              className={`px-4 py-1 text-sm font-bold rounded-lg ${styleClass} min-w-[100px] text-center`}
+              className={`px-4 py-2 text-sm font-bold rounded-lg ${styleClass} min-w-[100px] text-center uppercase`}
             >
               {getDisplayStatus()}
             </span>
@@ -181,7 +193,7 @@ const BookingCard = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Guest Information */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg border-b pb-2">Guest Information</h3>
+              <h3 className="font-semibold text-2xl border-b pb-2">Guest Information</h3>
 
               {userDetails ? (
                 <div className="space-y-2">
@@ -207,21 +219,33 @@ const BookingCard = ({
 
             {/* Additional Booking Details */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-lg border-b pb-2">Booking Details</h3>
+              <h3 className="font-semibold text-2xl border-b pb-2">Booking Details</h3>
 
               <div className="space-y-2">
-                <p className="flex justify-between">
-                  <span className="font-medium">Booking ID:</span>
-                  <span>{bookingId}</span>
-                </p>
                 <p className="flex justify-between">
                   <span className="font-medium">Status:</span>
                   <span className={`px-2 py-0.5 rounded text-sm ${styleClass}`}>{getDisplayStatus()}</span>
                 </p>
                 <p className="flex justify-between">
-                  <span className="font-medium">Check-in/out:</span>
+                  <span className="font-medium">{isVenueBooking ? 'Start/End Time:' : 'Check-in/out:'}</span>
                   <span>{dates}</span>
                 </p>
+                {isVenueBooking && areaDetails && (
+                  <>
+                    <p className="flex justify-between">
+                      <span className="font-medium">Capacity:</span>
+                      <span>{areaDetails.capacity} people</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span className="font-medium">Price per hour:</span>
+                      <span>{areaDetails.price_per_hour}</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span className="font-medium">Total Price:</span>
+                      <span>{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice || price.toLocaleString()}</span>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -251,7 +275,7 @@ const BookingCard = ({
             {/* Special Requests (if any) */}
             {specialRequest && specialRequest.trim() !== '' && (
               <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-lg border-b pb-2">Special Requests</h3>
+                <h3 className="font-semibold text-2xl border-b pb-2">Special Requests</h3>
                 <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{specialRequest}</p>
               </div>
             )}
@@ -259,8 +283,8 @@ const BookingCard = ({
             {/* Valid ID (if available) */}
             {validId && (
               <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-lg border-b pb-2">Valid ID</h3>
-                <div className="border rounded-md overflow-hidden">
+                <h3 className="font-semibold text-2xl border-b pb-2">Valid ID</h3>
+                <div className="rounded-md overflow-hidden">
                   <img
                     src={validId}
                     alt="Valid ID"

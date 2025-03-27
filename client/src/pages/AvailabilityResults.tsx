@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/pages/AvailabilityResults.tsx
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
+import { Eye, Book, BookmarkPlus } from "lucide-react";
 import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
@@ -25,6 +24,16 @@ const AvailabilityResults = () => {
   const arrivalLabel = arrival;
   const departureLabel = departure;
 
+  const handleViewVenueDetails = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    navigate(`/venues/${id}`);
+  };
+
+  const handleBookVenue = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    navigate(`/venue-booking/${id}?arrival=${arrival}&departure=${departure}`);
+  };
+
   return (
     <div className="container min-h-screen mx-auto px-4 py-10 mt-[120px] pb-8">
       {/* Page Header */}
@@ -36,11 +45,6 @@ const AvailabilityResults = () => {
         </p>
       </div>
 
-      <div className="w-[80%] mx-auto">
-        <RoomAvailabilityCalendar />
-      </div>
-
-      {/* Loading and Error States */}
       {isLoading && (
         <div className="flex justify-center items-center h-40">
           <p className="text-lg text-gray-600">Loading availability...</p>
@@ -70,6 +74,7 @@ const AvailabilityResults = () => {
                     {/* Room Image (if available) */}
                     {room.room_image && (
                       <img
+                        loading="lazy"
                         src={room.room_image}
                         alt={room.room_name}
                         className="w-full h-40 object-cover mb-3 rounded"
@@ -101,18 +106,24 @@ const AvailabilityResults = () => {
                     <p className="text-gray-800 font-semibold text-lg mb-3">
                       {room.room_price}
                     </p>
-                    <div className="mt-auto flex justify-evenly items-center gap-2">
+                    <div className="mt-auto flex flex-wrap justify-evenly gap-2 font-montserrat">
                       <Link
                         to={`/rooms/${room.id}`}
-                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
                       >
-                        View Room
+                        <Eye size={16} /> <span>View</span>
                       </Link>
                       <Link
                         to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
-                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
                       >
-                        Book Room
+                        <Book size={16} /> <span>Book</span>
+                      </Link>
+                      <Link
+                        to={`/booking/${room.id}`}
+                        className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-1"
+                      >
+                        <BookmarkPlus size={16} /> <span>Reserve</span>
                       </Link>
                     </div>
                   </div>
@@ -140,13 +151,14 @@ const AvailabilityResults = () => {
                     {/* Area Image (if available) */}
                     {area.area_image && (
                       <img
+                        loading="lazy"
                         src={area.area_image}
-                        alt={area.name}
+                        alt={area.area_name}
                         className="w-full h-40 object-cover mb-3 rounded"
                       />
                     )}
                     {/* Area Name & Basic Info */}
-                    <h3 className="text-lg font-bold mb-1">{area.name}</h3>
+                    <h3 className="text-lg font-bold mb-1">{area.area_name}</h3>
                     {/* Additional Details (Capacity, etc.) */}
                     <div className="text-sm text-gray-700 mb-2">
                       {area.capacity && (
@@ -158,11 +170,27 @@ const AvailabilityResults = () => {
                     </div>
                     {/* Price & Action */}
                     <p className="text-gray-800 font-semibold text-lg mb-3">
-                      ₱{Number(area.price_per_hour).toLocaleString()} / hour
+                      {area.price_per_hour} / hour
                     </p>
-                    <button className="mt-auto bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
-                      Reserve Area
-                    </button>
+                    <div className="mt-auto flex flex-wrap justify-evenly gap-2 font-montserrat">
+                      <button
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer flex items-center gap-1"
+                        onClick={(e) => handleViewVenueDetails(e, area.id)}
+                      >
+                        <Eye size={16} /> <span>View</span>
+                      </button>
+                      <button
+                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition cursor-pointer flex items-center gap-1"
+                        onClick={(e) => handleBookVenue(e, area.id)}
+                      >
+                        <Book size={16} /> <span>Book</span>
+                      </button>
+                      <Link to={`/venue-booking/${area.id}?arrival=${arrival}&departure=${departure}`}>
+                        <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition cursor-pointer flex items-center gap-1">
+                          <BookmarkPlus size={16} /> <span>Reserve</span>
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>

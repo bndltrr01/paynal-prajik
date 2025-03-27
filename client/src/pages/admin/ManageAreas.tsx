@@ -50,6 +50,7 @@ const ViewAreaModal: FC<{
           <div className="h-64 md:h-auto">
             {areaData.area_image ? (
               <img
+                loading="lazy"
                 src={areaData.area_image}
                 alt={areaData.area_name}
                 className="w-full h-full object-cover"
@@ -274,6 +275,7 @@ const ManageAreas = () => {
                 className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col h-full"
               >
                 <img
+                  loading="lazy"
                   src={area.area_image}
                   alt={area.area_name}
                   className="w-full h-48 object-cover"

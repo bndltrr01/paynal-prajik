@@ -59,6 +59,7 @@ const ViewRoomModal: FC<{
           <div className="h-64 md:h-auto">
             {roomData.room_image ? (
               <img
+                loading="lazy"
                 src={roomData.room_image}
                 alt={roomData.room_name}
                 className="w-full h-full object-cover"
@@ -327,6 +328,7 @@ const ManageRooms: FC = () => {
               className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col h-full"
             >
               <img
+                loading="lazy"
                 src={room.room_image}
                 alt={room.room_name}
                 className="w-full h-48 object-cover"

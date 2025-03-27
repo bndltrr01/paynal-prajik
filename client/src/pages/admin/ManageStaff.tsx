@@ -30,6 +30,7 @@ const ViewStaffModal: FC<ViewStaffModalProps> = ({ isOpen, onClose, staffData })
           <div className="h-64 md:h-auto">
             {staffData.profile_image ? (
               <img
+                loading="lazy"
                 src={staffData.profile_image}
                 alt={`${staffData.first_name} ${staffData.last_name}`}
                 className="w-full h-full object-cover"
@@ -47,23 +48,13 @@ const ViewStaffModal: FC<ViewStaffModalProps> = ({ isOpen, onClose, staffData })
             <p className="text-gray-700 mb-2">
               <span className="font-medium">Email:</span> {staffData.email}
             </p>
-            <div className="mt-auto flex justify-end">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
-                Close
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
+            >
+              Close
+            </button>
           </div>
-        </div>
-        <div className="flex justify-end p-4 border-t">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>
@@ -230,6 +221,7 @@ const ManageStaff: FC = () => {
                   <tr key={staff.id} className="border">
                     <td className="p-2 text-center">
                       <img
+                        loading="lazy"
                         src={staff.profile_image || DefaultImg}
                         alt={`${staff.first_name} ${staff.last_name}`}
                         className="w-20 h-20 object-cover rounded-full mx-auto"

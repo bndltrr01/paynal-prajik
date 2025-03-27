@@ -14,7 +14,8 @@ class Bookings(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     user = models.ForeignKey(CustomUsers, on_delete=models.CASCADE, related_name='bookings')
-    room = models.ForeignKey(Rooms, on_delete=models.CASCADE, related_name='bookings')
+    room = models.ForeignKey(Rooms, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
+    area = models.ForeignKey(Areas, on_delete=models.CASCADE, related_name='area_bookings', null=True, blank=True)
     check_in_date = models.DateField(null=False, blank=False)
     check_out_date = models.DateField(null=False, blank=False)
     status = models.CharField(
@@ -26,6 +27,8 @@ class Bookings(models.Model):
     special_request = models.TextField(null=True, blank=True)
     cancellation_date = models.DateField(null=True, blank=True)
     cancellation_reason = models.TextField(null=True, blank=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    is_venue_booking = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -42,6 +45,8 @@ class Reservations(models.Model):
     start_time = models.DateTimeField(default=now)
     end_time = models.DateTimeField(default=now)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    valid_id = CloudinaryField('valid_id', null=True, blank=True)
+    special_request = models.TextField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=RESERVATION_STATUS_CHOICES,

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { getGuestDetails, updateProfileImage } from "../../services/Guest";
 import { useUserContext } from "../../contexts/AuthContext";
-import { Ban, Calendar, CreditCard, Home, ImageUp } from "lucide-react";
+import { Ban, Calendar, CreditCard, ImageUp } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const LoadingHydrate = lazy(() => import("../../motions/loaders/LoadingHydrate"));
@@ -41,7 +41,6 @@ const GuestSidebar: FC = () => {
   if (error) return <Suspense fallback={<Error />} />;
 
   const menuItems = [
-    { icon: <Home size={18} />, label: "Dashboard", link: "/guest/dashboard" },
     { icon: <Calendar size={18} />, label: "Bookings", link: "/guest/bookings" },
     { icon: <Calendar size={18} />, label: "Reservations", link: "/guest/reservations" },
     { icon: <Ban size={18} />, label: "Cancellations", link: "/guest/cancellations" },
@@ -56,6 +55,7 @@ const GuestSidebar: FC = () => {
         <div className="flex space-x-3 items-center border-b border-b-gray-200 p-2 mb-4">
           <div className="relative group flex justify-center items-center rounded-full bg-blue-400 w-12 h-12">
             <img
+              loading="lazy"
               src={profile?.data?.profile_image || profileImage}
               alt="Profile"
               className="w-full h-full rounded-full object-cover"
@@ -100,7 +100,6 @@ const GuestSidebar: FC = () => {
           </ul>
         </div>
 
-        {/* Logout Button */}
         <div className="px-3 py-2 border-t border-gray-200 pt-4">
           <button
             onClick={() => navigate("/")}

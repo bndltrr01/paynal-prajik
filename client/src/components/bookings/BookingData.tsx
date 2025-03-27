@@ -32,8 +32,15 @@ interface FormattedBooking {
   price: number;
   status: string;
   bookingId: string | number;
+  isVenueBooking?: boolean;
   roomDetails?: {
     room_image?: string;
+  };
+  areaDetails?: {
+    area_image?: string;
+    area_name?: string;
+    price_per_hour?: string;
+    capacity?: number;
   };
   userDetails?: {
     fullName: string;
@@ -45,6 +52,7 @@ interface FormattedBooking {
   bookingDate?: string;
   cancellationReason?: string;
   cancellationDate?: string;
+  totalPrice?: number;
 }
 
 interface RoomData {
@@ -55,12 +63,25 @@ interface RoomData {
   pax: number;
 }
 
+interface AreaData {
+  id: string;
+  area_name: string;
+  area_image?: string;
+  price_per_hour: string;
+  capacity: number;
+}
+
 interface BookingData {
   id: string | number;
   check_in_date: string;
   check_out_date: string;
   status: string;
-  room: RoomData;
+  room?: RoomData;
+  area?: AreaData;
+  room_details?: RoomData;
+  area_details?: AreaData;
+  is_venue_booking?: boolean;
+  total_price?: number;
   user?: {
     first_name: string;
     last_name: string;
@@ -100,27 +121,57 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
 
   useEffect(() => {
     if (effectiveBookingId && bookingData) {
-      const roomType = bookingData.room?.room_name || "Unknown Room";
+      const isVenueBooking = bookingData.is_venue_booking || false;
       const formattedBooking: FormattedBooking = {
-        roomType: roomType,
-        imageUrl: roomImages[roomType] || deluxe_twin,
-        dates: `${new Date(bookingData.check_in_date).toLocaleDateString()} - ${new Date(bookingData.check_out_date).toLocaleDateString()}`,
-        guests: bookingData.room?.pax || 2,
-        price: bookingData.room?.room_price || 0,
-        status: bookingData.status || "pending",
         bookingId: bookingData.id,
-        roomDetails: bookingData.room,
-        userDetails: bookingData.user ? {
-          fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
-          email: bookingData.user.email,
-          phoneNumber: bookingData.user.phone_number
-        } : undefined,
+        status: bookingData.status || "pending",
+        dates: `${new Date(bookingData.check_in_date).toLocaleDateString()} - ${new Date(bookingData.check_out_date).toLocaleDateString()}`,
         specialRequest: bookingData.special_request,
         validId: bookingData.valid_id,
         bookingDate: bookingData.created_at ? new Date(bookingData.created_at).toLocaleDateString() : undefined,
         cancellationReason: bookingData.cancellation_reason,
-        cancellationDate: bookingData.cancellation_date ? new Date(bookingData.cancellation_date).toLocaleDateString() : undefined
+        cancellationDate: bookingData.cancellation_date ? new Date(bookingData.cancellation_date).toLocaleDateString() : undefined,
+        isVenueBooking: isVenueBooking,
+        roomType: "",
+        imageUrl: "",
+        guests: 0,
+        price: 0
       };
+
+      if (bookingData.user) {
+        formattedBooking.userDetails = {
+          fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
+          email: bookingData.user.email,
+          phoneNumber: bookingData.user.phone_number
+        };
+      }
+
+      if (isVenueBooking) {
+        const areaData = bookingData.area_details || bookingData.area;
+        if (areaData) {
+          formattedBooking.roomType = areaData.area_name || "Venue";
+          formattedBooking.imageUrl = areaData.area_image || "";
+          formattedBooking.guests = areaData.capacity || 0;
+          formattedBooking.price = bookingData.total_price || 0;
+          formattedBooking.totalPrice = bookingData.total_price;
+          formattedBooking.areaDetails = {
+            area_image: areaData.area_image,
+            area_name: areaData.area_name,
+            price_per_hour: areaData.price_per_hour,
+            capacity: areaData.capacity
+          };
+        }
+      } else {
+        const roomData = bookingData.room_details || bookingData.room;
+        if (roomData) {
+          const roomType = roomData.room_name || "Unknown Room";
+          formattedBooking.roomType = roomType;
+          formattedBooking.imageUrl = roomData.room_image || roomImages[roomType] || deluxe_twin;
+          formattedBooking.guests = roomData.pax || 2;
+          formattedBooking.price = roomData.room_price || 0;
+          formattedBooking.roomDetails = roomData;
+        }
+      }
 
       setBookingsToShow([formattedBooking]);
     }
@@ -129,27 +180,59 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
   useEffect(() => {
     if (!effectiveBookingId && userBookings && userBookings.length > 0) {
       const formattedBookings = userBookings.map((booking) => {
-        const roomType = booking.room?.room_name || "Unknown Room";
-        return {
-          roomType: roomType,
-          imageUrl: roomImages[roomType] || deluxe_twin,
-          dates: `${new Date(booking.check_in_date).toLocaleDateString()} - ${new Date(booking.check_out_date).toLocaleDateString()}`,
-          guests: booking.room?.pax || 2,
-          price: booking.room?.room_price || 0,
-          status: booking.status || "pending",
+        const isVenueBooking = booking.is_venue_booking || false;
+        const formattedBooking: FormattedBooking = {
           bookingId: booking.id,
-          roomDetails: booking.room,
-          userDetails: booking.user ? {
-            fullName: `${booking.user.first_name} ${booking.user.last_name}`,
-            email: booking.user.email,
-            phoneNumber: booking.user.phone_number
-          } : undefined,
+          status: booking.status || "pending",
+          dates: `${new Date(booking.check_in_date).toLocaleDateString()} - ${new Date(booking.check_out_date).toLocaleDateString()}`,
           specialRequest: booking.special_request,
           validId: booking.valid_id,
           bookingDate: booking.created_at ? new Date(booking.created_at).toLocaleDateString() : undefined,
           cancellationReason: booking.cancellation_reason,
-          cancellationDate: booking.cancellation_date ? new Date(booking.cancellation_date).toLocaleDateString() : undefined
+          cancellationDate: booking.cancellation_date ? new Date(booking.cancellation_date).toLocaleDateString() : undefined,
+          isVenueBooking: isVenueBooking,
+          roomType: "",
+          imageUrl: "",
+          guests: 0,
+          price: 0
         };
+
+        if (booking.user) {
+          formattedBooking.userDetails = {
+            fullName: `${booking.user.first_name} ${booking.user.last_name}`,
+            email: booking.user.email,
+            phoneNumber: booking.user.phone_number
+          };
+        }
+
+        if (isVenueBooking) {
+          const areaData = booking.area_details || booking.area;
+          if (areaData) {
+            formattedBooking.roomType = areaData.area_name || "Venue";
+            formattedBooking.imageUrl = areaData.area_image || "";
+            formattedBooking.guests = areaData.capacity || 0;
+            formattedBooking.price = booking.total_price || 0;
+            formattedBooking.totalPrice = booking.total_price;
+            formattedBooking.areaDetails = {
+              area_image: areaData.area_image,
+              area_name: areaData.area_name,
+              price_per_hour: areaData.price_per_hour,
+              capacity: areaData.capacity
+            };
+          }
+        } else {
+          const roomData = booking.room_details || booking.room;
+          if (roomData) {
+            const roomType = roomData.room_name || "Unknown Room";
+            formattedBooking.roomType = roomType;
+            formattedBooking.imageUrl = roomData.room_image || roomImages[roomType] || deluxe_twin;
+            formattedBooking.guests = roomData.pax || 2;
+            formattedBooking.price = roomData.room_price || 0;
+            formattedBooking.roomDetails = roomData;
+          }
+        }
+
+        return formattedBooking;
       });
 
       setBookingsToShow(formattedBookings);

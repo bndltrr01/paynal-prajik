@@ -150,6 +150,7 @@ const Navbar: FC = () => {
           <div className="flex flex-1 items-center">
             <Link to="/">
               <img
+                loading="lazy"
                 src={hotelLogo}
                 alt="Hotel Logo"
                 className="h-12 w-auto cursor-pointer"
@@ -200,9 +201,7 @@ const Navbar: FC = () => {
                 options={[
                   {
                     label: "Account",
-                    onClick: () => {
-                      navigate(`/guest/${userDetails?.id}`);
-                    },
+                    onClick: () => navigate("/guest/bookings"),
                     icon: <FontAwesomeIcon icon={faCircleUser} />,
                   },
                   {
@@ -224,6 +223,7 @@ const Navbar: FC = () => {
                   </div>
                 ) : (
                   <img
+                    loading="lazy"
                     src={profileImage || DefaultImg}
                     alt="Profile"
                     className="h-14 w-14 rounded-full object-cover cursor-pointer"
@@ -252,6 +252,7 @@ const Navbar: FC = () => {
             <div className="flex justify-between items-center p-7 sm:p-9 md:p-9 bg-gray-200">
               <Link to="/">
                 <img
+                  loading="lazy"
                   src={hotelLogo}
                   alt="Hotel Logo"
                   className="h-12 w-auto cursor-pointer block sm:hidden md:hidden"

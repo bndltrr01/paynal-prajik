@@ -1,10 +1,21 @@
-import { useEffect } from "react";
+import { FC, useEffect } from "react";
 import CustomerDetailsForm from "./bookings/CustomerDetailsForm";
 
-const VenueModal = ({ isOpen, onClose, venue }) => {
-  // Close modal on ESC key press
+interface VenueModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  venue: {
+    title: string;
+    image: string;
+    capacity: number;
+    price: number;
+    available: boolean;
+  };
+}
+
+const VenueModal: FC<VenueModalProps> = ({ isOpen, onClose, venue }) => {
   useEffect(() => {
-    const handleEsc = (event) => {
+    const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleEsc);
@@ -32,6 +43,7 @@ const VenueModal = ({ isOpen, onClose, venue }) => {
         {/* Modal Content */}
         <div className="p-6 space-y-4">
           <img
+            loading="lazy"
             src={venue.image}
             alt={venue.title}
             className="w-full h-56 object-cover rounded-md"
