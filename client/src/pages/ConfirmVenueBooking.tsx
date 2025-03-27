@@ -123,6 +123,13 @@ const ConfirmVenueBooking = () => {
     setError(null);
 
     try {
+      // Parse the datetime strings to ensure consistent format
+      const parsedStartTime = startTime ? new Date(startTime).toISOString() : null;
+      const parsedEndTime = endTime ? new Date(endTime).toISOString() : null;
+
+      console.log('Parsed start time:', parsedStartTime);
+      console.log('Parsed end time:', parsedEndTime);
+
       const reservationData: ReservationFormData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -131,10 +138,11 @@ const ConfirmVenueBooking = () => {
         specialRequests: formData.specialRequests,
         validId: formData.validId,
         areaId: areaId,
-        startTime: startTime,
-        endTime: endTime,
+        startTime: parsedStartTime,
+        endTime: parsedEndTime,
         totalPrice: parseFloat(totalPrice || '0'),
-        status: 'confirmed'
+        status: 'pending',
+        isVenueBooking: true
       };
 
       console.log('Submitting venue booking data:', reservationData);
@@ -143,17 +151,33 @@ const ConfirmVenueBooking = () => {
       const response = await createReservation(reservationData);
       console.log('Venue booking response:', response);
 
+      if (!response || !response.id) {
+        throw new Error('Invalid response from server');
+      }
+
       // Handle successful booking
       setSuccess(true);
 
       // Redirect to booking confirmation page after 2 seconds
       setTimeout(() => {
-        navigate(`/my-booking?reservationId=${response.id}&success=true`);
+        navigate(`/my-booking?bookingId=${response.id}&success=true`);
       }, 2000);
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating venue booking:', err);
-      setError('Failed to create venue booking. Please try again.');
+      let errorMessage = 'Failed to create venue booking. Please try again.';
+
+      // Extract more detailed error message if available
+      if (err.response && err.response.data && err.response.data.error) {
+        if (typeof err.response.data.error === 'string') {
+          errorMessage = err.response.data.error;
+        } else if (typeof err.response.data.error === 'object') {
+          // If error is an object with multiple fields
+          errorMessage = Object.values(err.response.data.error).join('. ');
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -203,7 +227,7 @@ const ConfirmVenueBooking = () => {
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
             <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
           </div>
-          <p className="mt-2 text-gray-600">Loading venue details...</p>
+          <p className="mt-2 text-gray-600">Loading area details...</p>
         </div>
       </div>
     );
@@ -316,6 +340,7 @@ const ConfirmVenueBooking = () => {
                   <div className="mt-2 relative">
                     <div className="relative border rounded-md overflow-hidden" style={{ height: '120px' }}>
                       <img
+                        loading='lazy'
                         src={validIdPreview}
                         alt="ID Preview"
                         className="w-full h-full object-contain"
@@ -417,6 +442,7 @@ const ConfirmVenueBooking = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="relative mb-4">
               <img
+                loading='lazy'
                 src={areaData?.area_image}
                 alt={areaData?.area_name || "Venue"}
                 className="w-full h-40 object-cover rounded-md"
@@ -471,7 +497,7 @@ const ConfirmVenueBooking = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 className="text-xl font-semibold mb-4">Pricing Summary</h3>
             <div className="text-md mb-2">
-              <p className="text-gray-600">1 venue x {durationHours} hour{durationHours > 1 ? 's' : ''}</p>
+              <p className="text-gray-600">1 area x {durationHours} hour{durationHours > 1 ? 's' : ''}</p>
             </div>
             <div className="text-md mb-4">
               <p className="font-medium">{areaData?.area_name || "Venue"}</p>

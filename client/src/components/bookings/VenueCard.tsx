@@ -49,6 +49,7 @@ const VenueCard: FC<AreaCardProps> = ({
   return (
     <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
       <motion.img
+        loading="lazy"
         src={image}
         alt={title}
         className="w-full h-64 object-cover"

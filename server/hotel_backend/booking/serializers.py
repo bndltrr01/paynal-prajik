@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import Bookings, Reservations, Transactions, Reviews
 from user_roles.models import CustomUsers
-from property.models import Rooms, Amenities
+from property.models import Rooms, Amenities, Areas
 import cloudinary # type: ignore
 from datetime import datetime
+from property.serializers import AreaSerializer
 
 class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -44,6 +45,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class BookingSerializer(serializers.ModelSerializer):
     room_details = RoomSerializer(source='room', read_only=True)
+    area_details = AreaSerializer(source='area', read_only=True)
     user = serializers.SerializerMethodField()
     valid_id = serializers.SerializerMethodField()
     
@@ -54,6 +56,8 @@ class BookingSerializer(serializers.ModelSerializer):
             'user',
             'room',
             'room_details',
+            'area',
+            'area_details',
             'check_in_date',
             'check_out_date',
             'status',
@@ -61,6 +65,8 @@ class BookingSerializer(serializers.ModelSerializer):
             'special_request',
             'cancellation_date',
             'cancellation_reason',
+            'is_venue_booking',
+            'total_price',
             'created_at',
             'updated_at'
         ]
@@ -85,6 +91,18 @@ class BookingSerializer(serializers.ModelSerializer):
                 # If it's already a string URL, return it directly
                 return obj.valid_id
         return None
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        # Format total_price with peso sign if it's a venue booking
+        if instance.is_venue_booking and instance.total_price is not None:
+            try:
+                representation['total_price'] = f"₱{float(instance.total_price):,.2f}"
+            except (ValueError, TypeError):
+                pass
+                
+        return representation
 
 class BookingRequestSerializer(serializers.Serializer):
     firstName = serializers.CharField(max_length=100)
@@ -100,7 +118,6 @@ class BookingRequestSerializer(serializers.Serializer):
     isVenueBooking = serializers.BooleanField(required=False, default=False)
     totalPrice = serializers.DecimalField(required=False, max_digits=10, decimal_places=2)
 
-    
     def create(self, validated_data):
         request = self.context.get('request')
         print(f"Creating booking with data: {validated_data.keys()}")
@@ -129,6 +146,7 @@ class BookingRequestSerializer(serializers.Serializer):
 
         # Check if this is a venue booking
         is_venue_booking = validated_data.get('isVenueBooking', False)
+        print(f"Is venue booking: {is_venue_booking}")
         
         valid_id = validated_data.get('validId')
         if valid_id:
@@ -144,10 +162,9 @@ class BookingRequestSerializer(serializers.Serializer):
             print("Valid ID is missing")
             raise serializers.ValidationError("Valid ID is required")
 
-        # If it's a venue booking, create a Reservation
+        # If it's a venue booking
         if is_venue_booking:
             try:
-                from property.models import Areas
                 area_id = validated_data['roomId']  # Using roomId to store areaId for compatibility
                 try:
                     area = Areas.objects.get(id=area_id)
@@ -156,34 +173,27 @@ class BookingRequestSerializer(serializers.Serializer):
                     print(f"Area not found: {area_id}")
                     raise serializers.ValidationError("Area not found")
                 
-                # Convert the dates to datetime objects for start_time and end_time
-                start_time = datetime.combine(validated_data['checkIn'], datetime.min.time())
-                end_time = datetime.combine(validated_data['checkOut'], datetime.min.time())
-                
                 total_price = validated_data.get('totalPrice', 0)
                 
-                reservation = Reservations.objects.create(
+                # Create a booking record for venue
+                booking = Bookings.objects.create(
                     user=user,
                     area=area,
-                    start_time=start_time,
-                    end_time=end_time,
+                    room=None,
+                    check_in_date=validated_data['checkIn'],
+                    check_out_date=validated_data['checkOut'],
+                    status=validated_data.get('status', 'pending'),
+                    valid_id=valid_id_url,
+                    special_request=validated_data.get('specialRequests', ''),
                     total_price=total_price,
-                    status=validated_data.get('status', 'confirmed')
+                    is_venue_booking=True
                 )
-                print(f"Venue reservation created successfully: ID {reservation.id}")
                 
-                # For compatibility with the existing API, we return a simplified structure
-                # that mimics a Booking object with the necessary fields
-                return {
-                    'id': reservation.id,
-                    'user': user,
-                    'reservation': reservation,
-                    'is_venue_booking': True,
-                    'valid_id': valid_id_url,
-                    'special_request': validated_data.get('specialRequests', '')
-                }
+                print(f"Venue booking created successfully: ID {booking.id}")
+                return booking
+                
             except Exception as e:
-                print(f"Error creating reservation: {str(e)}")
+                print(f"Error creating venue booking: {str(e)}")
                 raise serializers.ValidationError(str(e))
         else:
             # Regular room booking
@@ -194,11 +204,13 @@ class BookingRequestSerializer(serializers.Serializer):
                 booking = Bookings.objects.create(
                     user=user,
                     room=room,
+                    area=None,
                     check_in_date=validated_data['checkIn'],
                     check_out_date=validated_data['checkOut'],
                     status=validated_data.get('status', 'pending'),
                     valid_id=valid_id_url,
-                    special_request=validated_data.get('specialRequests', '')
+                    special_request=validated_data.get('specialRequests', ''),
+                    is_venue_booking=False
                 )
                 print(f"Booking created successfully: ID {booking.id}, Valid ID: {booking.valid_id}")
                 
@@ -231,6 +243,18 @@ class ReservationSerializer(serializers.ModelSerializer):
     
     def get_area_name(self, obj):
         return obj.area.name if obj.area else "Unknown Area"
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        
+        # Format total_price with peso sign
+        if instance.total_price is not None:
+            try:
+                representation['total_price'] = f"₱{float(instance.total_price):,.2f}"
+            except (ValueError, TypeError):
+                pass
+                
+        return representation
 
 class TransactionSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)

@@ -54,6 +54,7 @@ const GuestSidebar: FC = () => {
                 <div className="flex space-x-3 items-center border-b border-b-gray-200 p-2 mb-4">
                     <div className="relative group flex justify-center items-center rounded-full bg-blue-400 w-12 h-12">
                         <img
+                            loading="lazy"
                             src={profile?.data?.profile_image || profileImage}
                             alt="Profile"
                             className="w-full h-full rounded-full object-cover"

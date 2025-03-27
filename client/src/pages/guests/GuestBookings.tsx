@@ -108,7 +108,9 @@ const GuestBookings: FC = () => {
 
   const filteredBookings = bookings.filter((booking: any) => {
     const matchesSearch =
-      (booking.room_name || booking.room_details?.room_name || '')
+      (booking.is_venue_booking
+        ? (booking.area_name || booking.area_details?.area_name || '')
+        : (booking.room_name || booking.room_details?.room_name || ''))
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       (booking.room_type || booking.room_details?.room_type || '')
@@ -257,23 +259,38 @@ const GuestBookings: FC = () => {
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area / Room</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBookings.map((booking: any) => {
-                    const roomName = booking.room_name || booking.room_details?.room_name;
-                    const roomType = booking.room_type || booking.room_details?.room_type;
-                    const roomImage = booking.room_image || booking.room_details?.room_image;
+                    const isVenueBooking = booking.is_venue_booking;
+
+                    // Get room or area details based on booking type
+                    let itemName, itemType, itemImage, totalAmount;
+
+                    if (isVenueBooking) {
+                      // Venue booking
+                      itemName = booking.area_name || booking.area_details?.area_name || "Venue";
+                      itemType = "Venue";
+                      itemImage = booking.area_image || booking.area_details?.area_image;
+                      totalAmount = booking.total_price || 0;
+                    } else {
+                      // Room booking
+                      itemName = booking.room_name || booking.room_details?.room_name || "Room";
+                      itemType = booking.room_type || booking.room_details?.room_type || "Standard";
+                      itemImage = booking.room_image || booking.room_details?.room_image;
+                      totalAmount = booking.total_amount || booking.room_details?.room_price || 0;
+                    }
+
                     const checkInDate = booking.check_in_date;
                     const checkOutDate = booking.check_out_date;
                     const status = booking.status.toUpperCase();
-                    const totalAmount = booking.total_amount || booking.room_details?.room_price;
                     const id = booking.id;
 
                     return (
@@ -282,14 +299,20 @@ const GuestBookings: FC = () => {
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               <img
-                                src={roomImage}
-                                alt={roomName}
+                                loading="lazy"
+                                src={itemImage}
+                                alt={itemName}
                                 className="h-10 w-10 rounded-md object-cover"
                               />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{roomName}</div>
-                              <div className="text-sm text-gray-500">{roomType}</div>
+                              <div className="text-sm font-medium text-gray-900">{itemName}</div>
+                              <div className="text-sm text-gray-500">{itemType}</div>
+                              {isVenueBooking ? (
+                                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded inline-block mt-1">Venue</div>
+                              ) : (
+                                <div className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded inline-block mt-1">Room</div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -305,7 +328,7 @@ const GuestBookings: FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {totalAmount}
+                          {typeof totalAmount === 'number' ? totalAmount.toLocaleString() : totalAmount}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">

@@ -151,13 +151,36 @@ export const createReservation = async (reservationData: ReservationFormData) =>
         }
         
         formData.append('roomId', reservationData.areaId || '');
-        formData.append('checkIn', reservationData.startTime || '');
-        formData.append('checkOut', reservationData.endTime || '');
+        
+        if (reservationData.startTime) {
+            const startDate = new Date(reservationData.startTime);
+            const formattedStartDate = startDate.toISOString().split('T')[0];
+            formData.append('checkIn', formattedStartDate);
+            console.log('Formatted checkIn date:', formattedStartDate);
+        }
+        
+        if (reservationData.endTime) {
+            const endDate = new Date(reservationData.endTime);
+            const formattedEndDate = endDate.toISOString().split('T')[0];
+            formData.append('checkOut', formattedEndDate);
+            console.log('Formatted checkOut date:', formattedEndDate);
+        }
+        
         formData.append('status', reservationData.status || 'pending');
         formData.append('isVenueBooking', 'true');
-        formData.append('totalPrice', reservationData.totalPrice.toString());
         
-        console.log('Sending venue booking data to server:', Object.fromEntries(formData));
+        if (reservationData.totalPrice) {
+            formData.append('totalPrice', reservationData.totalPrice.toString());
+        }
+        
+        console.log('Sending venue booking data to server:');
+        for (const [key, value] of formData.entries()) {
+            if (key === 'validId') {
+                console.log(`${key}: [File data]`);
+            } else {
+                console.log(`${key}: ${value}`);
+            }
+        }
         
         const response = await booking.post('/bookings', formData, {
             headers: {
@@ -166,9 +189,15 @@ export const createReservation = async (reservationData: ReservationFormData) =>
             withCredentials: true
         });
         
+        console.log('Successful venue booking response:', response.data);
         return response.data;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Failed to create reservation: ${error}`);
+        if (error.response) {
+            console.error('Server response data:', error.response.data);
+            console.error('Server response status:', error.response.status);
+            console.error('Server response headers:', error.response.headers);
+        }
         throw error;
     }
 };

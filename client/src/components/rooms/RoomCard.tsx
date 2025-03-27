@@ -41,7 +41,7 @@ const RoomCard: FC<RoomCardProps> = ({
 
   return (
     <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-transform hover:-translate-y-1 hover:shadow-lg">
-      <img src={image} alt={title} className="w-full h-48 object-cover" />
+      <img loading="lazy" src={image} alt={title} className="w-full h-48 object-cover" />
       <div className="flex flex-col flex-1 p-4">
         <div className="mb-3">
           <div className="flex justify-between items-center">

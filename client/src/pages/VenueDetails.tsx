@@ -92,6 +92,7 @@ const VenueDetails = () => {
                         <div className="w-full">
                             <div className="bg-white rounded-lg overflow-hidden shadow-lg">
                                 <img
+                                    loading="lazy"
                                     src={venueDetail.area_image}
                                     alt={venueDetail.area_name}
                                     className="w-full h-auto object-cover"

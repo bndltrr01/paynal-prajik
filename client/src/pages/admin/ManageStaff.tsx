@@ -30,6 +30,7 @@ const ViewStaffModal: FC<ViewStaffModalProps> = ({ isOpen, onClose, staffData })
           <div className="h-64 md:h-auto">
             {staffData.profile_image ? (
               <img
+                loading="lazy"
                 src={staffData.profile_image}
                 alt={`${staffData.first_name} ${staffData.last_name}`}
                 className="w-full h-full object-cover"
@@ -220,6 +221,7 @@ const ManageStaff: FC = () => {
                   <tr key={staff.id} className="border">
                     <td className="p-2 text-center">
                       <img
+                        loading="lazy"
                         src={staff.profile_image || DefaultImg}
                         alt={`${staff.first_name} ${staff.last_name}`}
                         className="w-20 h-20 object-cover rounded-full mx-auto"

@@ -11,8 +11,15 @@ interface BookingCardProps {
   price: number;
   status: string;
   bookingId: string | number;
+  isVenueBooking?: boolean;
   roomDetails?: {
     room_image?: string;
+  };
+  areaDetails?: {
+    area_image?: string;
+    area_name?: string;
+    price_per_hour?: string;
+    capacity?: number;
   };
   userDetails?: {
     fullName: string;
@@ -24,6 +31,7 @@ interface BookingCardProps {
   bookingDate?: string;
   cancellationReason?: string;
   cancellationDate?: string;
+  totalPrice?: number;
 }
 
 const BookingCard = ({
@@ -34,13 +42,16 @@ const BookingCard = ({
   price,
   status,
   bookingId,
+  isVenueBooking,
   roomDetails,
+  areaDetails,
   userDetails,
   specialRequest,
   validId,
   bookingDate,
   cancellationReason,
   cancellationDate,
+  totalPrice,
 }: BookingCardProps) => {
   const [showCancellationModal, setShowCancellationModal] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -100,7 +111,7 @@ const BookingCard = ({
       <div className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-60 h-auto flex items-center justify-center overflow-hidden rounded-lg bg-gray-200">
           <img
-            src={roomDetails?.room_image || imageUrl}
+            src={isVenueBooking ? (areaDetails?.area_image || imageUrl) : (roomDetails?.room_image || imageUrl)}
             alt={roomType}
             loading="lazy"
             className="w-full h-full object-cover"
@@ -110,16 +121,30 @@ const BookingCard = ({
         <div className="flex-grow flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start">
-              <h2 className="text-2xl font-semibold">{roomType}</h2>
+              <div>
+                <h2 className="text-2xl font-semibold">{roomType}</h2>
+                {isVenueBooking ? (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">Venue Booking</span>
+                ) : (
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Room Booking</span>
+                )}
+              </div>
               {bookingDate && (
                 <p className="text-md text-gray-500">Booked on: {bookingDate}</p>
               )}
             </div>
             <p className="text-gray-600 flex items-center my-2">
-              <span className="mr-2">👥</span>{guests}
+              <span className="mr-2">👥</span>{guests} {isVenueBooking ? 'capacity' : 'guests'}
             </p>
             <p className="text-blue-600 font-semibold text-lg">
-              PRICE: {typeof price === 'number' ? price.toLocaleString() : price}
+              {isVenueBooking ? (
+                <>
+                  TOTAL: ₱{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}
+                  {areaDetails?.price_per_hour && <span className="text-sm text-gray-600 ml-2">({areaDetails.price_per_hour}/hour)</span>}
+                </>
+              ) : (
+                <>PRICE: ₱{typeof price === 'number' ? price.toLocaleString() : price}</>
+              )}
             </p>
 
             {isCancelled && (
@@ -202,9 +227,25 @@ const BookingCard = ({
                   <span className={`px-2 py-0.5 rounded text-sm ${styleClass}`}>{getDisplayStatus()}</span>
                 </p>
                 <p className="flex justify-between">
-                  <span className="font-medium">Check-in/out:</span>
+                  <span className="font-medium">{isVenueBooking ? 'Start/End Time:' : 'Check-in/out:'}</span>
                   <span>{dates}</span>
                 </p>
+                {isVenueBooking && areaDetails && (
+                  <>
+                    <p className="flex justify-between">
+                      <span className="font-medium">Capacity:</span>
+                      <span>{areaDetails.capacity} people</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span className="font-medium">Price per hour:</span>
+                      <span>{areaDetails.price_per_hour}</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span className="font-medium">Total Price:</span>
+                      <span>₱{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice || price.toLocaleString()}</span>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 

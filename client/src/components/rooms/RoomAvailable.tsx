@@ -24,7 +24,7 @@ const RoomAvailable: FC<RoomAvailableProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 flex flex-col">
       {/* Room Image */}
-      <img src={image} alt={title} className="h-44 w-full object-cover" />
+      <img loading="lazy" src={image} alt={title} className="h-44 w-full object-cover" />
 
       {/* Room Details */}
       <div className="p-4 space-y-3">

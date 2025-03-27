@@ -320,6 +320,7 @@ const BookingCalendar = () => {
                         <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
                             <div className="mb-4">
                                 <img
+                                    loading="lazy"
                                     src={roomData.room_image}
                                     alt={roomData.room_name}
                                     className="w-full h-48 object-cover rounded-lg"

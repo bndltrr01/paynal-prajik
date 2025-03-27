@@ -4,7 +4,7 @@ import hotel_logo from "../assets/hotel_logo.png";
 const Footer = () => {
   return (
     <footer className="relative bg-gray-100 px-6 md:px-15 py-5 font-montserrat">
-      <img src={hotel_logo} className="h-10 w-auto cursor-pointer mb-3" />
+      <img loading="lazy" src={hotel_logo} className="h-10 w-auto cursor-pointer mb-3" />
       <div className="px-5">
         <i className="fa-solid fa-location-dot text-violet-600"></i>
         <h6 className="inline-block ml-1 text-sm italic mb-5">

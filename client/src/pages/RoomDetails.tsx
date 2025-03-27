@@ -80,6 +80,7 @@ const RoomDetails = () => {
             <div className="w-full">
               <div className="bg-white rounded-lg overflow-hidden shadow-lg">
                 <img
+                  loading="lazy"
                   srcSet={`${roomDetail.room_image} 1x, ${roomDetail.room_image} 2x`}
                   src={roomDetail.room_image}
                   alt={roomDetail.room_name}

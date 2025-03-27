@@ -9,6 +9,7 @@ const AboutUs = () => {
       <div className="max-w-[90%] lg:max-w-[85%] mx-auto flex flex-col md:flex-row-reverse gap-12 items-stretch mb-16">
         <div className="w-full md:w-1/2 flex justify-center">
           <img
+            loading="lazy"
             src={aboutUs_bg}
             alt="About Us"
             className="w-[90%] sm:w-[90%] md:w-full lg:w-[90%] xl:w-[85%] h-full object-cover rounded-2xl shadow-lg transition-all duration-300"
@@ -37,6 +38,7 @@ const AboutUs = () => {
       <div className="max-w-[90%] lg:max-w-[85%] mx-auto flex flex-col md:flex-row gap-12 items-stretch">
         <div className="w-full md:w-1/2 flex justify-center">
           <img
+            loading="lazy"
             src={philosophy}
             alt="Our Philosophy"
             className="w-[90%] sm:w-[90%] md:w-full lg:w-[90%] xl:w-[85%] h-full object-cover rounded-2xl shadow-lg transition-all duration-300"

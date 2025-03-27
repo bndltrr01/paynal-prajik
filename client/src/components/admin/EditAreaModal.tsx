@@ -262,6 +262,7 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                     />
                     {previewUrl && (
                       <img
+                        loading="lazy"
                         src={previewUrl}
                         alt="Preview"
                         className="w-full h-48 object-cover border border-gray-200 mt-2"
