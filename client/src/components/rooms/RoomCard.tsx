@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 interface RoomCardProps {
   id: string | number;
@@ -59,23 +59,30 @@ const RoomCard: FC<RoomCardProps> = ({
             <span>{capacity}</span>
           </div>
         </div>
-        <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="mt-auto pt-4 border-t border-gray-200 flex items-center justify-between font-montserrat">
           <span className="text-xl font-semibold text-gray-900">
             {price}
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
+              className="bg-blue-600 text-white text-sm px-3 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer"
               onClick={() => navigate(`/rooms/${id}`)}
             >
               View Details
             </button>
             <button
-              className="bg-green-600 text-white text-sm px-4 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer"
+              className="bg-green-600 text-white text-sm px-3 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer"
               onClick={handleReserveClick}
             >
-              Reserve Now
+              Book Now
             </button>
+            <Link to={`/availability?roomId=${id}`}>
+              <button
+                className="bg-purple-600 text-white text-sm px-3 py-2 rounded-md hover:bg-purple-700 transition-colors cursor-pointer"
+              >
+                Reserve Room
+              </button>
+            </Link>
           </div>
         </div>
       </div>

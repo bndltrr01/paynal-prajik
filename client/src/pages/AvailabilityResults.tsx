@@ -25,6 +25,19 @@ const AvailabilityResults = () => {
   const arrivalLabel = arrival;
   const departureLabel = departure;
 
+  // Handle navigation to venue details
+  const handleViewVenueDetails = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    navigate(`/venues/${id}`);
+  };
+
+  // Handle navigation to venue booking
+  const handleBookVenue = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    console.log(`Navigating to venue booking for area ID: ${id}`);
+    navigate(`/venue-booking/${id}?arrival=${arrival}&departure=${departure}`);
+  };
+
   return (
     <div className="container min-h-screen mx-auto px-4 py-10 mt-[120px] pb-8">
       {/* Page Header */}
@@ -70,6 +83,7 @@ const AvailabilityResults = () => {
                     {/* Room Image (if available) */}
                     {room.room_image && (
                       <img
+                        loading="lazy"
                         src={room.room_image}
                         alt={room.room_name}
                         className="w-full h-40 object-cover mb-3 rounded"
@@ -101,18 +115,24 @@ const AvailabilityResults = () => {
                     <p className="text-gray-800 font-semibold text-lg mb-3">
                       {room.room_price}
                     </p>
-                    <div className="mt-auto flex justify-evenly items-center gap-2">
+                    <div className="mt-auto flex flex-wrap justify-end gap-2 font-montserrat">
                       <Link
                         to={`/rooms/${room.id}`}
-                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition"
                       >
                         View Room
                       </Link>
                       <Link
                         to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
-                        className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition"
                       >
                         Book Room
+                      </Link>
+                      <Link
+                        to={`/booking/${room.id}`}
+                        className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition"
+                      >
+                        Reserve Room
                       </Link>
                     </div>
                   </div>
@@ -140,13 +160,14 @@ const AvailabilityResults = () => {
                     {/* Area Image (if available) */}
                     {area.area_image && (
                       <img
+                        loading="lazy"
                         src={area.area_image}
-                        alt={area.name}
+                        alt={area.area_name}
                         className="w-full h-40 object-cover mb-3 rounded"
                       />
                     )}
                     {/* Area Name & Basic Info */}
-                    <h3 className="text-lg font-bold mb-1">{area.name}</h3>
+                    <h3 className="text-lg font-bold mb-1">{area.area_name}</h3>
                     {/* Additional Details (Capacity, etc.) */}
                     <div className="text-sm text-gray-700 mb-2">
                       {area.capacity && (
@@ -158,11 +179,27 @@ const AvailabilityResults = () => {
                     </div>
                     {/* Price & Action */}
                     <p className="text-gray-800 font-semibold text-lg mb-3">
-                      ₱{Number(area.price_per_hour).toLocaleString()} / hour
+                      {area.price_per_hour} / hour
                     </p>
-                    <button className="mt-auto bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">
-                      Reserve Area
-                    </button>
+                    <div className="mt-auto flex flex-wrap justify-end gap-2 font-montserrat">
+                      <button
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer"
+                        onClick={(e) => handleViewVenueDetails(e, area.id)}
+                      >
+                        View Details
+                      </button>
+                      <button
+                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer"
+                        onClick={(e) => handleBookVenue(e, area.id)}
+                      >
+                        Book Area
+                      </button>
+                      <Link to={`/venue-booking/${area.id}?arrival=${arrival}&departure=${departure}`}>
+                        <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-purple-700 transition cursor-pointer">
+                          Reserve Venue
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -221,7 +221,6 @@ const ConfirmBooking = () => {
   const formattedArrivalDate = formatDate(selectedArrival);
   const formattedDepartureDate = formatDate(selectedDeparture);
 
-  // If loading or no room data yet, show a loading state
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-7xl mt-16">

@@ -45,8 +45,6 @@ const BookingCalendar = () => {
         queryKey: ['availability', roomId],
         queryFn: async () => {
             try {
-                // In a real implementation, this would call your backend API
-                // For now, return an empty array of unavailable dates so all dates are available
                 return {
                     unavailable_dates: [] as UnavailableDate[]
                 };

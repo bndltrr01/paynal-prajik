@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { getGuestDetails, updateProfileImage } from "../../services/Guest";
 import { useUserContext } from "../../contexts/AuthContext";
-import { Ban, Calendar, CreditCard, Home, ImageUp } from "lucide-react";
+import { Ban, Calendar, CreditCard, ImageUp } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const LoadingHydrate = lazy(() => import("../../motions/loaders/LoadingHydrate"));
@@ -41,7 +41,6 @@ const GuestSidebar: FC = () => {
   if (error) return <Suspense fallback={<Error />} />;
 
   const menuItems = [
-    { icon: <Home size={18} />, label: "Dashboard", link: "/guest/dashboard" },
     { icon: <Calendar size={18} />, label: "Bookings", link: "/guest/bookings" },
     { icon: <Calendar size={18} />, label: "Reservations", link: "/guest/reservations" },
     { icon: <Ban size={18} />, label: "Cancellations", link: "/guest/cancellations" },
@@ -100,7 +99,6 @@ const GuestSidebar: FC = () => {
           </ul>
         </div>
 
-        {/* Logout Button */}
         <div className="px-3 py-2 border-t border-gray-200 pt-4">
           <button
             onClick={() => navigate("/")}

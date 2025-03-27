@@ -47,23 +47,13 @@ const ViewStaffModal: FC<ViewStaffModalProps> = ({ isOpen, onClose, staffData })
             <p className="text-gray-700 mb-2">
               <span className="font-medium">Email:</span> {staffData.email}
             </p>
-            <div className="mt-auto flex justify-end">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
-                Close
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
+            >
+              Close
+            </button>
           </div>
-        </div>
-        <div className="flex justify-end p-4 border-t">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

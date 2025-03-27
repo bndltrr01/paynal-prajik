@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Calendar, CreditCard, Home, ImageUp } from "lucide-react";
+import { Ban, Calendar, CreditCard, ImageUp } from "lucide-react";
 import { ChangeEvent, FC, Suspense, lazy } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useUserContext } from "../../contexts/AuthContext";
@@ -40,7 +40,6 @@ const GuestSidebar: FC = () => {
     if (error) return <Suspense fallback={<Error />} />;
 
     const menuItems = [
-        { icon: <Home size={18} />, label: "Dashboard", link: "/guest/dashboard" },
         { icon: <Calendar size={18} />, label: "Bookings", link: "/guest/bookings" },
         { icon: <Calendar size={18} />, label: "Reservations", link: "/guest/reservations" },
         { icon: <Ban size={18} />, label: "Cancellations", link: "/guest/cancellations" },

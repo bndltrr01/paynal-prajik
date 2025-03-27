@@ -73,7 +73,34 @@ def bookings_list(request):
             print(f"Creating booking for authenticated user: {request.user.username} (ID: {request.user.id})")
             serializer = BookingRequestSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
-                booking = serializer.save()
+                result = serializer.save()
+                
+                # Check if this is a venue booking (result is a dict with is_venue_booking flag)
+                if isinstance(result, dict) and result.get('is_venue_booking'):
+                    reservation = result.get('reservation')
+                    # Return simplified response for venue booking
+                    return Response({
+                        "id": result.get('id'),
+                        "message": "Venue reservation created successfully",
+                        "data": {
+                            "id": reservation.id,
+                            "user": {
+                                "id": request.user.id,
+                                "first_name": request.user.first_name,
+                                "last_name": request.user.last_name,
+                                "email": request.user.email
+                            },
+                            "area_id": reservation.area.id,
+                            "start_time": reservation.start_time,
+                            "end_time": reservation.end_time,
+                            "status": reservation.status,
+                            "total_price": reservation.total_price,
+                            "created_at": reservation.created_at,
+                        }
+                    }, status=status.HTTP_201_CREATED)
+                
+                # Regular booking response
+                booking = result  # For regular bookings, result is a Booking object
                 booking_data = BookingSerializer(booking).data
                 
                 # Debug the created booking
@@ -199,6 +226,19 @@ def area_reservations(request):
             return Response({
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def area_detail(request, area_id):
+    try:
+        area = Areas.objects.get(id=area_id)
+        serializer = AreaSerializer(area)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Areas.DoesNotExist:
+        return Response({"error": "Area not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 

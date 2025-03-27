@@ -28,6 +28,11 @@ const VenueCard: FC<AreaCardProps> = ({
     navigate(`/venues/${id}`);
   };
 
+  const handleBookNow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/venue-booking/${id}`);
+  };
+
   const getStatusBadgeColor = (status: string): string => {
     switch (status.toLowerCase()) {
       case 'available':
@@ -73,20 +78,27 @@ const VenueCard: FC<AreaCardProps> = ({
 
         {/* Price and Button */}
         <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-          <span className="font-bold text-lg font-montserrat">
+          <span className="font-semibold text-lg font-montserrat">
             {priceRange}
           </span>
-          <div className="flex gap-3">
+          <div className="flex gap-2 flex-wrap justify-end font-montserrat">
             <button
-              className="bg-blue-600 text-sm text-white px-4 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer"
+              className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer"
               onClick={handleViewDetails}
             >
               View Details
             </button>
 
-            <Link to={`/availability?venueId=${id}`} onClick={(e) => e.stopPropagation()}>
-              <button className="bg-green-600 text-sm text-white px-4 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer">
-                Book Now
+            <button
+              className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer"
+              onClick={handleBookNow}
+            >
+              Book Now
+            </button>
+
+            <Link to={`/venue-booking/${id}`} onClick={(e) => e.stopPropagation()}>
+              <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-purple-700 transition cursor-pointer">
+                Reserve Venue
               </button>
             </Link>
           </div>

@@ -68,7 +68,7 @@ const RoomAvailabilityCalendar = () => {
           onClose={() => setAlertInfo(null)}
         />
       )}
-      <div className="bg-gray-100 px-5 mb-10 sm:mb-15 w-full shadow-md drop-shadow-sm inset-shadow-md">
+      <div className="bg-gray-100 px-5 mb-10 sm:mb-15 w-full shadow-md drop-shadow-sm rounded-md inset-shadow-md">
         <div className="py-3 font-montserrat">
           <div className="flex flex-col justify-around gap-3">
             {/* Header - Hidden on small screens */}
@@ -76,9 +76,6 @@ const RoomAvailabilityCalendar = () => {
               <h1 className="text-sm font-montserrat font-medium text-gray-500">
                 <i className="fas fa-calendar-check text-blue-500 text-lg mr-3"></i>
                 Tell us when — your perfect stay awaits you.
-              </h1>
-              <h1 className="text-sm font-montserrat font-medium">
-                Find out more &gt;
               </h1>
             </div>
 
@@ -95,7 +92,7 @@ const RoomAvailabilityCalendar = () => {
                 <DatePicker
                   id="arrival"
                   selected={arrivalDate}
-                  onChange={(date) => setArrivalDate(date)}
+                  onChange={(date: Date) => setArrivalDate(date)}
                   dateFormat="yyyy-MM-dd"
                   className="border-b-2 outline-0 italic cursor-pointer text-sm"
                   placeholderText="Select arrival date"
@@ -114,7 +111,7 @@ const RoomAvailabilityCalendar = () => {
                 <DatePicker
                   id="departure"
                   selected={departureDate}
-                  onChange={(date) => setDepartureDate(date)}
+                  onChange={(date: Date) => setDepartureDate(date)}
                   dateFormat="yyyy-MM-dd"
                   className="border-b-2 outline-0 italic cursor-pointer text-sm"
                   placeholderText="Select departure date"

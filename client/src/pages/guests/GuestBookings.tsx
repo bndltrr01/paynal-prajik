@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Search, XCircle } from "lucide-react";
 import { FC, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import BookingData from "../../components/bookings/BookingData";
 import { useUserContext } from "../../contexts/AuthContext";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
@@ -17,7 +17,8 @@ const GuestBookings: FC = () => {
   const [cancelReason, setCancelReason] = useState("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
-  const navigate = useNavigate();
+
+  // const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const isSuccess = searchParams.get('success') === 'true';
@@ -27,58 +28,43 @@ const GuestBookings: FC = () => {
   const userBookingsQuery = useQuery({
     queryKey: ['userBookings'],
     queryFn: fetchUserBookings,
-    retry: 1,
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const guestBookingsQuery = useQuery({
     queryKey: ['guestBookings', userDetails?.id],
     queryFn: () => getGuestBookings(userDetails?.id || ''),
     enabled: !!userDetails?.id && userBookingsQuery.isError,
-    retry: 1,
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Query to fetch booking details when a booking ID is selected
   const bookingDetailsQuery = useQuery({
     queryKey: ['bookingDetails', bookingId],
     queryFn: () => fetchBookingDetail(bookingId || ''),
     enabled: !!bookingId,
-    retry: 1,
-    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Mutation for cancelling a booking
   const cancelBookingMutation = useMutation({
-    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) =>
-      cancelBooking(bookingId, reason),
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) => cancelBooking(bookingId, reason),
     onSuccess: () => {
-      // Update search params to show cancellation success message
       searchParams.set('cancelled', 'true');
       setSearchParams(searchParams);
 
-      // Reset the cancellation form
       setShowCancelModal(false);
       setCancellationBookingId(null);
       setCancelReason("");
 
-      // Invalidate queries to refetch data
       queryClient.invalidateQueries({ queryKey: ['userBookings'] });
       queryClient.invalidateQueries({ queryKey: ['guestBookings'] });
     }
   });
 
-  // Combine the bookings from both sources
   const bookings = userBookingsQuery.data ||
     (guestBookingsQuery.data?.data || []);
 
-  // Check if we're loading data
   const isLoading = userBookingsQuery.isPending ||
     (guestBookingsQuery.isPending && userBookingsQuery.isError) ||
     (bookingDetailsQuery.isPending && !!bookingId) ||
     cancelBookingMutation.isPending;
 
-  // Check for errors
   const errorMessage = (userBookingsQuery.isError && guestBookingsQuery.isError)
     ? "Failed to load bookings. Please try again later."
     : (bookingDetailsQuery.isError && !!bookingId)
@@ -120,7 +106,6 @@ const GuestBookings: FC = () => {
   if (isLoading) return <LoadingHydrate />;
   if (errorMessage) return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">{errorMessage}</div>;
 
-  // Filter the bookings based on search and status filter
   const filteredBookings = bookings.filter((booking: any) => {
     const matchesSearch =
       (booking.room_name || booking.room_details?.room_name || '')
@@ -171,7 +156,6 @@ const GuestBookings: FC = () => {
     }
   };
 
-  // If a booking is selected, show its details
   if (bookingId) {
     return (
       <div className="space-y-6">
@@ -181,11 +165,10 @@ const GuestBookings: FC = () => {
             onClick={backToBookingsList}
             className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
           >
-            <span className="mr-2">←</span> Back to Bookings
+            <span className="mr-2">&larr;</span> Back to Bookings
           </button>
         </div>
 
-        {/* Success message when redirected from booking confirmation */}
         {isSuccess && (
           <div className="mb-6">
             <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
@@ -195,7 +178,6 @@ const GuestBookings: FC = () => {
           </div>
         )}
 
-        {/* Cancellation success message */}
         {isCancelled && (
           <div className="mb-6">
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -205,7 +187,6 @@ const GuestBookings: FC = () => {
           </div>
         )}
 
-        {/* Booking details component */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <BookingData bookingId={bookingId} />
         </div>
@@ -273,14 +254,12 @@ const GuestBookings: FC = () => {
         <div className="p-6">
           {filteredBookings.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking Ref</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Area / Room</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -288,28 +267,22 @@ const GuestBookings: FC = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBookings.map((booking: any) => {
-                    // Normalize the booking data structure between different API responses
-                    const bookingRef = booking.booking_reference || booking.id;
                     const roomName = booking.room_name || booking.room_details?.room_name;
                     const roomType = booking.room_type || booking.room_details?.room_type;
                     const roomImage = booking.room_image || booking.room_details?.room_image;
                     const checkInDate = booking.check_in_date;
                     const checkOutDate = booking.check_out_date;
-                    const guestsCount = booking.guests_count || booking.guest_count || 'N/A';
-                    const status = booking.status;
+                    const status = booking.status.toUpperCase();
                     const totalAmount = booking.total_amount || booking.room_details?.room_price;
                     const id = booking.id;
 
                     return (
                       <tr key={id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          {bookingRef}
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               <img
-                                src={roomImage || "https://placehold.co/100"}
+                                src={roomImage}
                                 alt={roomName}
                                 className="h-10 w-10 rounded-md object-cover"
                               />
@@ -326,16 +299,13 @@ const GuestBookings: FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(checkOutDate)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {guestsCount}
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
                             {status}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${totalAmount}
+                          {totalAmount}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">

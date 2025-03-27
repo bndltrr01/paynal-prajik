@@ -3,6 +3,7 @@ from .models import Bookings, Reservations, Transactions, Reviews
 from user_roles.models import CustomUsers
 from property.models import Rooms, Amenities
 import cloudinary # type: ignore
+from datetime import datetime
 
 class AmenitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,7 +78,12 @@ class BookingSerializer(serializers.ModelSerializer):
         
     def get_valid_id(self, obj):
         if obj.valid_id:
-            return obj.valid_id.url
+            # Handle both CloudinaryField objects and string URLs
+            if hasattr(obj.valid_id, 'url'):
+                return obj.valid_id.url
+            else:
+                # If it's already a string URL, return it directly
+                return obj.valid_id
         return None
 
 class BookingRequestSerializer(serializers.Serializer):
@@ -91,6 +97,8 @@ class BookingRequestSerializer(serializers.Serializer):
     checkIn = serializers.DateField()
     checkOut = serializers.DateField()
     status = serializers.CharField(default='pending')
+    isVenueBooking = serializers.BooleanField(required=False, default=False)
+    totalPrice = serializers.DecimalField(required=False, max_digits=10, decimal_places=2)
 
     
     def create(self, validated_data):
@@ -119,50 +127,96 @@ class BookingRequestSerializer(serializers.Serializer):
                 )
                 print(f"Created new user: {user.email}")
 
-        try:
-            room = Rooms.objects.get(id=validated_data['roomId'])
-            print(f"Found room: {room.room_name} (ID: {room.id})")
-            
-            valid_id = validated_data.get('validId')
-            if valid_id:
-                print(f"Uploading valid ID file: {valid_id.name}, size: {valid_id.size}")
-                try:
-                    upload_result = cloudinary.uploader.upload(valid_id)
-                    valid_id_url = upload_result['secure_url']
-                    print(f"Valid ID uploaded successfully: {valid_id_url}")
-                except Exception as e:
-                    print(f"Error uploading to Cloudinary: {str(e)}")
-                    raise serializers.ValidationError(f"Error uploading ID: {str(e)}")
-            else:
-                print("Valid ID is missing")
-                raise serializers.ValidationError("Valid ID is required")
+        # Check if this is a venue booking
+        is_venue_booking = validated_data.get('isVenueBooking', False)
+        
+        valid_id = validated_data.get('validId')
+        if valid_id:
+            print(f"Uploading valid ID file: {valid_id.name}, size: {valid_id.size}")
+            try:
+                upload_result = cloudinary.uploader.upload(valid_id)
+                valid_id_url = upload_result['secure_url']
+                print(f"Valid ID uploaded successfully: {valid_id_url}")
+            except Exception as e:
+                print(f"Error uploading to Cloudinary: {str(e)}")
+                raise serializers.ValidationError(f"Error uploading ID: {str(e)}")
+        else:
+            print("Valid ID is missing")
+            raise serializers.ValidationError("Valid ID is required")
 
-            booking = Bookings.objects.create(
-                user=user,
-                room=room,
-                check_in_date=validated_data['checkIn'],
-                check_out_date=validated_data['checkOut'],
-                status=validated_data.get('status', 'pending'),
-                valid_id=valid_id_url,
-                special_request=validated_data.get('specialRequests', '')
-            )
-            print(f"Booking created successfully: ID {booking.id}, Valid ID: {booking.valid_id}")
-            
-            # Verify the URL is accessible
-            if booking.valid_id:
+        # If it's a venue booking, create a Reservation
+        if is_venue_booking:
+            try:
+                from property.models import Areas
+                area_id = validated_data['roomId']  # Using roomId to store areaId for compatibility
                 try:
-                    url = booking.valid_id.url
-                    print(f"Valid ID URL is accessible: {url}")
-                except Exception as e:
-                    print(f"Error accessing valid_id URL: {str(e)}")
-            
-            return booking
-        except Rooms.DoesNotExist:
-            print(f"Room not found: {validated_data.get('roomId')}")
-            raise serializers.ValidationError("Room not found")
-        except Exception as e:
-            print(f"Error creating booking: {str(e)}")
-            raise serializers.ValidationError(str(e))
+                    area = Areas.objects.get(id=area_id)
+                    print(f"Found area: {area.area_name} (ID: {area.id})")
+                except Areas.DoesNotExist:
+                    print(f"Area not found: {area_id}")
+                    raise serializers.ValidationError("Area not found")
+                
+                # Convert the dates to datetime objects for start_time and end_time
+                start_time = datetime.combine(validated_data['checkIn'], datetime.min.time())
+                end_time = datetime.combine(validated_data['checkOut'], datetime.min.time())
+                
+                total_price = validated_data.get('totalPrice', 0)
+                
+                reservation = Reservations.objects.create(
+                    user=user,
+                    area=area,
+                    start_time=start_time,
+                    end_time=end_time,
+                    total_price=total_price,
+                    status=validated_data.get('status', 'confirmed')
+                )
+                print(f"Venue reservation created successfully: ID {reservation.id}")
+                
+                # For compatibility with the existing API, we return a simplified structure
+                # that mimics a Booking object with the necessary fields
+                return {
+                    'id': reservation.id,
+                    'user': user,
+                    'reservation': reservation,
+                    'is_venue_booking': True,
+                    'valid_id': valid_id_url,
+                    'special_request': validated_data.get('specialRequests', '')
+                }
+            except Exception as e:
+                print(f"Error creating reservation: {str(e)}")
+                raise serializers.ValidationError(str(e))
+        else:
+            # Regular room booking
+            try:
+                room = Rooms.objects.get(id=validated_data['roomId'])
+                print(f"Found room: {room.room_name} (ID: {room.id})")
+                
+                booking = Bookings.objects.create(
+                    user=user,
+                    room=room,
+                    check_in_date=validated_data['checkIn'],
+                    check_out_date=validated_data['checkOut'],
+                    status=validated_data.get('status', 'pending'),
+                    valid_id=valid_id_url,
+                    special_request=validated_data.get('specialRequests', '')
+                )
+                print(f"Booking created successfully: ID {booking.id}, Valid ID: {booking.valid_id}")
+                
+                # Verify the URL is accessible
+                if booking.valid_id:
+                    try:
+                        url = booking.valid_id.url
+                        print(f"Valid ID URL is accessible: {url}")
+                    except Exception as e:
+                        print(f"Error accessing valid_id URL: {str(e)}")
+                
+                return booking
+            except Rooms.DoesNotExist:
+                print(f"Room not found: {validated_data.get('roomId')}")
+                raise serializers.ValidationError("Room not found")
+            except Exception as e:
+                print(f"Error creating booking: {str(e)}")
+                raise serializers.ValidationError(str(e))
 
 class ReservationSerializer(serializers.ModelSerializer):
     guest_name = serializers.SerializerMethodField()
