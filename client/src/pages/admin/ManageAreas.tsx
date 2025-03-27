@@ -1,11 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { MapPinOff } from "lucide-react";
 import { FC, useState } from "react";
-import EditAreaModal, { IArea as IEditArea } from "../../components/admin/EditAreaModal";
+import EditAreaModal, {
+  IArea as IEditArea,
+} from "../../components/admin/EditAreaModal";
 import Modal from "../../components/Modal";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
-import { addNewArea, deleteArea, editArea, fetchAreas } from "../../services/Admin";
+import ManageRoomLoader from "../../motions/loaders/ManageRoomLoader";
+import {
+  addNewArea,
+  deleteArea,
+  editArea,
+  fetchAreas,
+} from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
 import { Edit, Eye, MapPin, Trash2 } from "lucide-react";
@@ -56,22 +65,32 @@ const ViewAreaModal: FC<{
           {/* Right Column: Information */}
           <div className="p-6 flex flex-col">
             <h1 className="text-3xl font-bold mb-4">{areaData.area_name}</h1>
-            <p className="text-gray-700 mb-6">{areaData.description || "No description available."}</p>
+            <p className="text-gray-700 mb-6">
+              {areaData.description || "No description available."}
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
-                <span className="block text-gray-600 font-medium">Capacity</span>
-                <span className="text-lg font-semibold">{areaData.capacity} people</span>
+                <span className="block text-gray-600 font-medium">
+                  Capacity
+                </span>
+                <span className="text-lg font-semibold">
+                  {areaData.capacity} people
+                </span>
               </div>
               <div>
                 <span className="block text-gray-600 font-medium">Status</span>
-                <span className="text-lg font-semibold">{areaData.status.toUpperCase()}</span>
+                <span className="text-lg font-semibold">
+                  {areaData.status.toUpperCase()}
+                </span>
               </div>
             </div>
 
             {/* Price + button */}
             <div className="mt-auto">
-              <p className="text-2xl font-bold mb-4">{areaData.price_per_hour.toLocaleString()} per hour</p>
+              <p className="text-2xl font-bold mb-4">
+                {areaData.price_per_hour.toLocaleString()} per hour
+              </p>
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
@@ -100,7 +119,11 @@ const ManageAreas = () => {
   const [loaderText, setLoaderText] = useState<string>("");
   const queryClient = useQueryClient();
 
-  const { data: areasData, isLoading, isError } = useQuery<{ data: Area[] }>({
+  const {
+    data: areasData,
+    isLoading,
+    isError,
+  } = useQuery<{ data: Area[] }>({
     queryKey: ["areas"],
     queryFn: fetchAreas,
   });
@@ -123,7 +146,11 @@ const ManageAreas = () => {
     },
   });
 
-  const editAreaMutation = useMutation<AddAreaResponse, unknown, { areaId: number; formData: FormData }>({
+  const editAreaMutation = useMutation<
+    AddAreaResponse,
+    unknown,
+    { areaId: number; formData: FormData }
+  >({
     mutationFn: ({ areaId, formData }) => editArea(areaId, formData),
     onMutate: () => {
       setLoading(true);
@@ -255,7 +282,9 @@ const ManageAreas = () => {
                 />
                 <div className="p-4 flex flex-col h-full">
                   <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-xl font-bold text-gray-900">{area.area_name}</h2>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {area.area_name}
+                    </h2>
                     <span className="text-sm font-semibold text-blue-600 uppercase">
                       {area.status}
                     </span>
@@ -301,7 +330,8 @@ const ManageAreas = () => {
             <MapPin className="w-16 h-16 text-gray-400 mb-4" />
             <p className="text-2xl font-semibold">No Areas Found</p>
             <p className="mt-2 text-gray-500 text-center max-w-md">
-              It looks like you haven't added any areas yet. Click the button below to create your first area.
+              It looks like you haven't added any areas yet. Click the button
+              below to create your first area.
             </p>
           </div>
         )}
