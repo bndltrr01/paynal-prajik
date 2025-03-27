@@ -56,8 +56,8 @@ const VenueDetails = () => {
     const formattedPrice = typeof venueDetail.price_per_hour === 'string'
         ? venueDetail.price_per_hour.startsWith('₱')
             ? venueDetail.price_per_hour
-            : `₱${venueDetail.price_per_hour}`
-        : `₱${venueDetail.price_per_hour}`;
+            : `${venueDetail.price_per_hour}`
+        : `${venueDetail.price_per_hour}`;
 
     return (
         <div className="container mx-auto py-10 px-4">

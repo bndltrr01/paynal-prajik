@@ -271,11 +271,9 @@ const GuestBookings: FC = () => {
                   {filteredBookings.map((booking: any) => {
                     const isVenueBooking = booking.is_venue_booking;
 
-                    // Get room or area details based on booking type
                     let itemName, itemType, itemImage, totalAmount;
 
                     if (isVenueBooking) {
-                      // Venue booking
                       itemName = booking.area_name || booking.area_details?.area_name || "Venue";
                       itemType = "Venue";
                       itemImage = booking.area_image || booking.area_details?.area_image;

@@ -139,11 +139,11 @@ const BookingCard = ({
             <p className="text-blue-600 font-semibold text-lg">
               {isVenueBooking ? (
                 <>
-                  TOTAL: ₱{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}
+                  TOTAL: {typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}
                   {areaDetails?.price_per_hour && <span className="text-sm text-gray-600 ml-2">({areaDetails.price_per_hour}/hour)</span>}
                 </>
               ) : (
-                <>PRICE: ₱{typeof price === 'number' ? price.toLocaleString() : price}</>
+                <>PRICE: {typeof price === 'number' ? price.toLocaleString() : price}</>
               )}
             </p>
 
@@ -242,7 +242,7 @@ const BookingCard = ({
                     </p>
                     <p className="flex justify-between">
                       <span className="font-medium">Total Price:</span>
-                      <span>₱{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice || price.toLocaleString()}</span>
+                      <span>{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice || price.toLocaleString()}</span>
                     </p>
                   </>
                 )}

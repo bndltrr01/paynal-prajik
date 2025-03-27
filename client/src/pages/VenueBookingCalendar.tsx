@@ -446,7 +446,7 @@ const VenueBookingCalendar = () => {
                                         </div>
                                         <div className="flex justify-between text-sm font-semibold text-blue-600 pt-2 border-t border-gray-200">
                                             <span>Total Price:</span>
-                                            <span>₱{price.toLocaleString()}</span>
+                                            <span>{price.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 </div>

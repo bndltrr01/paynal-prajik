@@ -121,12 +121,8 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
 
   useEffect(() => {
     if (effectiveBookingId && bookingData) {
-      console.log('Processing single booking data:', bookingData);
-
-      // Determine if this is a venue booking
       const isVenueBooking = bookingData.is_venue_booking || false;
       const formattedBooking: FormattedBooking = {
-        // Default data
         bookingId: bookingData.id,
         status: bookingData.status || "pending",
         dates: `${new Date(bookingData.check_in_date).toLocaleDateString()} - ${new Date(bookingData.check_out_date).toLocaleDateString()}`,
@@ -136,14 +132,12 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
         cancellationReason: bookingData.cancellation_reason,
         cancellationDate: bookingData.cancellation_date ? new Date(bookingData.cancellation_date).toLocaleDateString() : undefined,
         isVenueBooking: isVenueBooking,
-        // These will be filled based on booking type
         roomType: "",
         imageUrl: "",
         guests: 0,
         price: 0
       };
 
-      // Add user details if available
       if (bookingData.user) {
         formattedBooking.userDetails = {
           fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
@@ -153,7 +147,6 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
       }
 
       if (isVenueBooking) {
-        // Process area/venue booking
         const areaData = bookingData.area_details || bookingData.area;
         if (areaData) {
           formattedBooking.roomType = areaData.area_name || "Venue";
@@ -169,7 +162,6 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
           };
         }
       } else {
-        // Process room booking
         const roomData = bookingData.room_details || bookingData.room;
         if (roomData) {
           const roomType = roomData.room_name || "Unknown Room";
@@ -187,13 +179,9 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
 
   useEffect(() => {
     if (!effectiveBookingId && userBookings && userBookings.length > 0) {
-      console.log('Processing user bookings:', userBookings);
-
       const formattedBookings = userBookings.map((booking) => {
-        // Determine if this is a venue booking
         const isVenueBooking = booking.is_venue_booking || false;
         const formattedBooking: FormattedBooking = {
-          // Default data
           bookingId: booking.id,
           status: booking.status || "pending",
           dates: `${new Date(booking.check_in_date).toLocaleDateString()} - ${new Date(booking.check_out_date).toLocaleDateString()}`,
@@ -203,14 +191,12 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
           cancellationReason: booking.cancellation_reason,
           cancellationDate: booking.cancellation_date ? new Date(booking.cancellation_date).toLocaleDateString() : undefined,
           isVenueBooking: isVenueBooking,
-          // These will be filled based on booking type
           roomType: "",
           imageUrl: "",
           guests: 0,
           price: 0
         };
 
-        // Add user details if available
         if (booking.user) {
           formattedBooking.userDetails = {
             fullName: `${booking.user.first_name} ${booking.user.last_name}`,
@@ -220,7 +206,6 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
         }
 
         if (isVenueBooking) {
-          // Process area/venue booking
           const areaData = booking.area_details || booking.area;
           if (areaData) {
             formattedBooking.roomType = areaData.area_name || "Venue";
@@ -236,7 +221,6 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
             };
           }
         } else {
-          // Process room booking
           const roomData = booking.room_details || booking.room;
           if (roomData) {
             const roomType = roomData.room_name || "Unknown Room";

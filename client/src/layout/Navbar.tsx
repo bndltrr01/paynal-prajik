@@ -201,9 +201,7 @@ const Navbar: FC = () => {
                 options={[
                   {
                     label: "Account",
-                    onClick: () => {
-                      navigate(`/guest/bookings}`);
-                    },
+                    onClick: () => navigate("/guest/bookings"),
                     icon: <FontAwesomeIcon icon={faCircleUser} />,
                   },
                   {

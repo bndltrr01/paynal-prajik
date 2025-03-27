@@ -53,7 +53,7 @@ const VenueAvailable: FC<VenueAvailableProps> = ({
         {/* Price and Button */}
         <div className="flex justify-between items-center mt-2">
           <div className="text-lg font-bold text-gray-900 font-montserrat">
-            ₱{price.toLocaleString()}
+            {price.toLocaleString()}
           </div>
           <button
             onClick={onBookNow}

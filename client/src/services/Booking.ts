@@ -11,7 +11,7 @@ export interface BookingResponse {
         address?: string;
         phone_number?: string;
     };
-    room_details: {
+    room_details?: {
         id: number;
         room_name: string;
         room_type: string;
@@ -24,6 +24,17 @@ export interface BookingResponse {
             description: string;
         }>;
     };
+    area_details?: {
+        id: number;
+        area_name: string;
+        area_image?: string;
+        description?: string;
+        price_per_hour?: string;
+        capacity?: number;
+        status?: string;
+    };
+    is_venue_booking?: boolean;
+    total_price?: string | number;
     check_in_date: string;
     check_out_date: string;
     status: string;

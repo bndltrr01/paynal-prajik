@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/pages/AvailabilityResults.tsx
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
 import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
@@ -25,16 +23,13 @@ const AvailabilityResults = () => {
   const arrivalLabel = arrival;
   const departureLabel = departure;
 
-  // Handle navigation to venue details
   const handleViewVenueDetails = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
     navigate(`/venues/${id}`);
   };
 
-  // Handle navigation to venue booking
   const handleBookVenue = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
-    console.log(`Navigating to venue booking for area ID: ${id}`);
     navigate(`/venue-booking/${id}?arrival=${arrival}&departure=${departure}`);
   };
 
@@ -49,11 +44,6 @@ const AvailabilityResults = () => {
         </p>
       </div>
 
-      <div className="w-[80%] mx-auto">
-        <RoomAvailabilityCalendar />
-      </div>
-
-      {/* Loading and Error States */}
       {isLoading && (
         <div className="flex justify-center items-center h-40">
           <p className="text-lg text-gray-600">Loading availability...</p>
