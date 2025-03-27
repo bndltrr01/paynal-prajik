@@ -1,6 +1,7 @@
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { motion } from "framer-motion";
+import { Book, BookmarkPlus, Eye } from "lucide-react";
 import { FC } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -84,22 +85,22 @@ const VenueCard: FC<AreaCardProps> = ({
           </span>
           <div className="flex gap-2 flex-wrap justify-end font-montserrat">
             <button
-              className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer"
+              className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer flex items-center gap-1"
               onClick={handleViewDetails}
             >
-              View Details
+              <Eye size={16} /> <span>View</span>
             </button>
 
             <button
-              className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer"
+              className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer flex items-center gap-1"
               onClick={handleBookNow}
             >
-              Book Now
+              <Book size={16} /> <span>Book</span>
             </button>
 
             <Link to={`/venue-booking/${id}`} onClick={(e) => e.stopPropagation()}>
-              <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-purple-700 transition cursor-pointer">
-                Reserve Venue
+              <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-purple-700 transition cursor-pointer flex items-center gap-1">
+                <BookmarkPlus size={16} /> <span>Reserve</span>
               </button>
             </Link>
           </div>

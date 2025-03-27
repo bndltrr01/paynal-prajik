@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, Book, BookmarkPlus } from "lucide-react";
 import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
@@ -105,24 +106,24 @@ const AvailabilityResults = () => {
                     <p className="text-gray-800 font-semibold text-lg mb-3">
                       {room.room_price}
                     </p>
-                    <div className="mt-auto flex flex-wrap justify-end gap-2 font-montserrat">
+                    <div className="mt-auto flex flex-wrap justify-evenly gap-2 font-montserrat">
                       <Link
                         to={`/rooms/${room.id}`}
-                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition"
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
                       >
-                        View Room
+                        <Eye size={16} /> <span>View</span>
                       </Link>
                       <Link
                         to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
-                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition"
+                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
                       >
-                        Book Room
+                        <Book size={16} /> <span>Book</span>
                       </Link>
                       <Link
                         to={`/booking/${room.id}`}
-                        className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition"
+                        className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-1"
                       >
-                        Reserve Room
+                        <BookmarkPlus size={16} /> <span>Reserve</span>
                       </Link>
                     </div>
                   </div>
@@ -171,22 +172,22 @@ const AvailabilityResults = () => {
                     <p className="text-gray-800 font-semibold text-lg mb-3">
                       {area.price_per_hour} / hour
                     </p>
-                    <div className="mt-auto flex flex-wrap justify-end gap-2 font-montserrat">
+                    <div className="mt-auto flex flex-wrap justify-evenly gap-2 font-montserrat">
                       <button
-                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer"
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer flex items-center gap-1"
                         onClick={(e) => handleViewVenueDetails(e, area.id)}
                       >
-                        View Details
+                        <Eye size={16} /> <span>View</span>
                       </button>
                       <button
-                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer"
+                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition cursor-pointer flex items-center gap-1"
                         onClick={(e) => handleBookVenue(e, area.id)}
                       >
-                        Book Area
+                        <Book size={16} /> <span>Book</span>
                       </button>
                       <Link to={`/venue-booking/${area.id}?arrival=${arrival}&departure=${departure}`}>
-                        <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-purple-700 transition cursor-pointer">
-                          Reserve Venue
+                        <button className="bg-purple-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition cursor-pointer flex items-center gap-1">
+                          <BookmarkPlus size={16} /> <span>Reserve</span>
                         </button>
                       </Link>
                     </div>

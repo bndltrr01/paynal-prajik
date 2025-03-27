@@ -167,14 +167,12 @@ export const createReservation = async (reservationData: ReservationFormData) =>
             const startDate = new Date(reservationData.startTime);
             const formattedStartDate = startDate.toISOString().split('T')[0];
             formData.append('checkIn', formattedStartDate);
-            console.log('Formatted checkIn date:', formattedStartDate);
         }
         
         if (reservationData.endTime) {
             const endDate = new Date(reservationData.endTime);
             const formattedEndDate = endDate.toISOString().split('T')[0];
             formData.append('checkOut', formattedEndDate);
-            console.log('Formatted checkOut date:', formattedEndDate);
         }
         
         formData.append('status', reservationData.status || 'pending');
@@ -184,7 +182,6 @@ export const createReservation = async (reservationData: ReservationFormData) =>
             formData.append('totalPrice', reservationData.totalPrice.toString());
         }
         
-        console.log('Sending venue booking data to server:');
         for (const [key, value] of formData.entries()) {
             if (key === 'validId') {
                 console.log(`${key}: [File data]`);
@@ -200,15 +197,9 @@ export const createReservation = async (reservationData: ReservationFormData) =>
             withCredentials: true
         });
         
-        console.log('Successful venue booking response:', response.data);
         return response.data;
     } catch (error: any) {
         console.error(`Failed to create reservation: ${error}`);
-        if (error.response) {
-            console.error('Server response data:', error.response.data);
-            console.error('Server response status:', error.response.status);
-            console.error('Server response headers:', error.response.headers);
-        }
         throw error;
     }
 };
@@ -245,14 +236,6 @@ export const fetchBookingDetail = async (bookingId: string) => {
             headers: { 'Content-Type': 'application/json' },
             withCredentials: true
         });
-        
-        if (response.data.data) {
-            const bookingData = response.data.data;
-            if (!bookingData.valid_id) {
-                console.warn(`Missing valid_id for booking ${bookingId}`);
-            }
-        }
-        
         return response.data.data;
     } catch (error) {
         console.error(`Failed to fetch booking details:`, error);
