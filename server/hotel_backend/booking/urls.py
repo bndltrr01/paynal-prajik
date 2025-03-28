@@ -13,4 +13,6 @@ urlpatterns = [
     path('rooms/<int:room_id>', views.room_detail, name='room_detail'),
     path('areas/<int:area_id>', views.area_detail, name='area_detail'),
     path('user/bookings', views.user_bookings, name='user_bookings'),
+    path('rooms/<int:room_id>/bookings', views.fetch_room_bookings, name='room_bookings'),
+    path('areas/<int:area_id>/bookings', views.fetch_area_bookings, name='area_bookings'),
 ]

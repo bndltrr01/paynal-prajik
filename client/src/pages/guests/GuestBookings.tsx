@@ -3,10 +3,16 @@ import { Eye, Search, XCircle } from "lucide-react";
 import { FC, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import BookingData from "../../components/bookings/BookingData";
+import CancellationModal from "../../components/bookings/CancellationModal";
 import { useUserContext } from "../../contexts/AuthContext";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import { cancelBooking, fetchBookingDetail, fetchUserBookings } from "../../services/Booking";
 import { getGuestBookings } from "../../services/Guest";
+
+// Helper function to format status display
+const formatStatus = (status: string): string => {
+  return status.toUpperCase().replace(/_/g, ' ');
+};
 
 const GuestBookings: FC = () => {
   const { userDetails } = useUserContext();
@@ -14,17 +20,14 @@ const GuestBookings: FC = () => {
   const bookingId = searchParams.get('bookingId');
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("");
-  const [cancelReason, setCancelReason] = useState("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
 
-  // const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const isSuccess = searchParams.get('success') === 'true';
   const isCancelled = searchParams.get('cancelled') === 'true';
 
-  // Query to fetch user bookings
   const userBookingsQuery = useQuery({
     queryKey: ['userBookings'],
     queryFn: fetchUserBookings,
@@ -50,7 +53,6 @@ const GuestBookings: FC = () => {
 
       setShowCancelModal(false);
       setCancellationBookingId(null);
-      setCancelReason("");
 
       queryClient.invalidateQueries({ queryKey: ['userBookings'] });
       queryClient.invalidateQueries({ queryKey: ['guestBookings'] });
@@ -73,12 +75,12 @@ const GuestBookings: FC = () => {
         ? "Failed to cancel booking. Please try again later."
         : null;
 
-  const handleCancelBooking = async () => {
-    if (!cancellationBookingId || !cancelReason.trim()) return;
+  const handleCancelBooking = (reason: string) => {
+    if (!cancellationBookingId || !reason.trim()) return;
 
     cancelBookingMutation.mutate({
       bookingId: cancellationBookingId,
-      reason: cancelReason
+      reason: reason
     });
   };
 
@@ -90,7 +92,6 @@ const GuestBookings: FC = () => {
   const closeCancelModal = () => {
     setShowCancelModal(false);
     setCancellationBookingId(null);
-    setCancelReason("");
   };
 
   const viewBookingDetails = (id: string) => {
@@ -129,19 +130,23 @@ const GuestBookings: FC = () => {
   });
 
   const getStatusColor = (status: string): string => {
-    switch (status.toLowerCase()) {
+    const normalizedStatus = status.toLowerCase().replace(/_/g, ' ');
+
+    switch (normalizedStatus) {
       case 'confirmed':
         return 'bg-green-100 text-green-700';
       case 'pending':
         return 'bg-yellow-100 text-yellow-700';
       case 'cancelled':
         return 'bg-red-100 text-red-700';
-      case 'completed':
-        return 'bg-blue-100 text-blue-700';
-      case 'checked_in':
+      case 'reserved':
+        return 'bg-green-100 text-green-700';
+      case 'checked in':
         return 'bg-indigo-100 text-indigo-700';
-      case 'checked_out':
+      case 'checked out':
         return 'bg-purple-100 text-purple-700';
+      case 'missed reservation':
+        return 'bg-orange-100 text-orange-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -189,9 +194,7 @@ const GuestBookings: FC = () => {
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <BookingData bookingId={bookingId} />
-        </div>
+        <BookingData bookingId={bookingId} />
       </div>
     );
   }
@@ -226,7 +229,7 @@ const GuestBookings: FC = () => {
             placeholder="Search by room name or booking reference..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
@@ -238,15 +241,16 @@ const GuestBookings: FC = () => {
             id="statusFilter"
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="py-2 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="py-2 px-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Statuses</option>
             <option value="confirmed">Confirmed</option>
             <option value="pending">Pending</option>
+            <option value="reserved">Reserved</option>
             <option value="cancelled">Cancelled</option>
-            <option value="completed">Completed</option>
             <option value="checked_in">Checked In</option>
             <option value="checked_out">Checked Out</option>
+            <option value="missed_reservation">Missed Reservation</option>
           </select>
         </div>
       </div>
@@ -270,23 +274,21 @@ const GuestBookings: FC = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBookings.map((booking: any) => {
                     const isVenueBooking = booking.is_venue_booking;
-                    let itemName, itemType, itemImage, totalAmount;
+                    let itemName, itemImage, totalAmount;
 
                     if (isVenueBooking) {
                       itemName = booking.area_name || booking.area_details?.area_name || "Venue";
-                      itemType = "Venue";
                       itemImage = booking.area_image || booking.area_details?.area_image;
                       totalAmount = booking.total_price || 0;
                     } else {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
-                      itemType = booking.room_type || booking.room_details?.room_type || "Standard";
                       itemImage = booking.room_image || booking.room_details?.room_image;
                       totalAmount = booking.total_amount || booking.room_details?.room_price || 0;
                     }
 
                     const checkInDate = booking.check_in_date;
                     const checkOutDate = booking.check_out_date;
-                    const status = booking.status.toUpperCase();
+                    const status = formatStatus(booking.status);
                     const id = booking.id;
 
                     return (
@@ -302,43 +304,43 @@ const GuestBookings: FC = () => {
                               />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{itemName}</div>
-                              <div className="text-sm text-gray-500">{itemType}</div>
+                              <div className="text-md font-medium text-gray-900">{itemName}</div>
                               {isVenueBooking ? (
-                                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded inline-block mt-1">Venue</div>
+                                <div className="text-md bg-blue-100 text-blue-800 px-2 py-0.5 rounded inline-block mt-1">Venue</div>
                               ) : (
-                                <div className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded inline-block mt-1">Room</div>
+                                <div className="text-md bg-green-100 text-green-800 px-2 py-0.5 rounded inline-block mt-1">Room</div>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
                           {formatDate(checkInDate)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
                           {formatDate(checkOutDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
+                          <span className={`px-2 py-1 inline-flex text-lg leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
                             {status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-lg font-semibold text-gray-900">
                           {typeof totalAmount === 'number' ? totalAmount.toLocaleString() : totalAmount}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-lg font-medium">
+                          <div className="flex justify-center space-x-2">
                             <button
-                              className="text-blue-600 hover:text-blue-900 flex items-center"
+                              className="text-blue-600 hover:text-blue-900 bg-blue-100 px-4 py-2 rounded-full flex items-center cursor-pointer"
                               onClick={() => viewBookingDetails(id.toString())}
                             >
                               <Eye size={16} className="mr-1" /> View
                             </button>
-                            {status.toLowerCase() !== 'cancelled' &&
-                              status.toLowerCase() !== 'completed' &&
-                              status.toLowerCase() !== 'checked_out' && (
+                            {booking.status.toLowerCase() !== 'cancelled' &&
+                              booking.status.toLowerCase() !== 'completed' &&
+                              booking.status.toLowerCase() !== 'checked_out' &&
+                              booking.status.toLowerCase() !== 'checked_in' && (
                                 <button
-                                  className="text-red-600 hover:text-red-900 flex items-center"
+                                  className="text-red-600 hover:text-red-900 bg-red-100 px-4 py-2 rounded-full flex items-center cursor-pointer"
                                   onClick={() => openCancelModal(id.toString())}
                                 >
                                   <XCircle size={16} className="mr-1" /> Cancel
@@ -360,38 +362,12 @@ const GuestBookings: FC = () => {
         </div>
       </div>
 
-      {/* Cancellation Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Cancel Booking</h2>
-            <p className="mb-4">Please provide a reason for cancellation:</p>
-            <textarea
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md mb-4"
-              rows={3}
-              placeholder="Enter cancellation reason..."
-            ></textarea>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={closeCancelModal}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCancelBooking}
-                disabled={!cancelReason.trim() || cancelBookingMutation.isPending}
-                className={`px-4 py-2 bg-red-600 text-white rounded-md ${!cancelReason.trim() || cancelBookingMutation.isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
-                  }`}
-              >
-                {cancelBookingMutation.isPending ? 'Cancelling...' : 'Confirm Cancellation'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Use the CancellationModal component */}
+      <CancellationModal
+        isOpen={showCancelModal}
+        onClose={closeCancelModal}
+        onConfirm={handleCancelBooking}
+      />
     </div>
   );
 };

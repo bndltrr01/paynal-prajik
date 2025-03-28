@@ -21,6 +21,9 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
     case "pending":
       bgColor = "bg-yellow-100 text-yellow-800";
       break;
+    case "reserved":
+      bgColor = "bg-green-100 text-green-800";
+      break;
     case "confirmed":
       bgColor = "bg-green-100 text-green-800";
       break;
@@ -33,7 +36,10 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
     case "cancelled":
       bgColor = "bg-red-100 text-red-800";
       break;
-    case "no_show":
+    case "rejected":
+      bgColor = "bg-red-100 text-red-800";
+      break;
+    case "missed_reservation":
       bgColor = "bg-purple-100 text-purple-800";
       break;
     default:
@@ -47,13 +53,71 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
   );
 };
 
+// Rejection modal component
+const RejectionReasonModal: FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+}> = ({ isOpen, onClose, onConfirm }) => {
+  const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    if (!reason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+    setIsSubmitting(true);
+    onConfirm(reason);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+        <h2 className="text-xl font-bold mb-4">Reject Booking</h2>
+        <p className="mb-4 text-gray-600">Please provide a reason for rejecting this booking:</p>
+
+        <textarea
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+          rows={4}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Enter rejection reason..."
+        />
+
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Processing...' : 'Confirm Rejection'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const BookingDetailsModal: FC<{
   booking: BookingResponse | null;
   onClose: () => void;
   onConfirm: () => void;
   onReject: () => void;
+  onCheckIn?: () => void;
+  onCheckOut?: () => void;
+  onMissedReservation?: () => void;
   canManage: boolean;
-}> = ({ booking, onClose, onConfirm, onReject, canManage }) => {
+}> = ({ booking, onClose, onConfirm, onReject, onCheckIn, onCheckOut, onMissedReservation, canManage }) => {
   if (!booking) return null;
 
   const isVenueBooking = booking.is_venue_booking;
@@ -187,7 +251,38 @@ const BookingDetailsModal: FC<{
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
             >
               <Check size={18} />
-              Confirm Booking
+              Reserve Booking
+            </button>
+          </div>
+        )}
+
+        {canManage && booking.status === "reserved" && (
+          <div className="flex justify-between mt-6">
+            <button
+              onClick={onMissedReservation}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-2"
+            >
+              <X size={18} />
+              Mark as Missed
+            </button>
+            <button
+              onClick={onCheckIn}
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <Check size={18} />
+              Check In Guest
+            </button>
+          </div>
+        )}
+
+        {canManage && booking.status === "checked_in" && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={onCheckOut}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            >
+              <Check size={18} />
+              Check Out Guest
             </button>
           </div>
         )}
@@ -201,6 +296,7 @@ const ManageBookings: FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
 
   const { data: bookingsResponse, error, isLoading } = useQuery<{ data: BookingResponse[] }, Error>({
     queryKey: ["admin-bookings"],
@@ -231,16 +327,18 @@ const ManageBookings: FC = () => {
   });
 
   const updateBookingStatusMutation = useMutation({
-    mutationFn: async ({ bookingId, status }: { bookingId: number; status: string }) => {
-      return await updateBookingStatus(bookingId, status);
+    mutationFn: async ({ bookingId, status, reason }: { bookingId: number; status: string; reason?: string }) => {
+      return await updateBookingStatus(bookingId, status, reason);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       toast.success("Booking status updated successfully");
       setSelectedBooking(null);
+      setShowRejectionModal(false);
     },
     onError: (error) => {
       toast.error(`Failed to update booking: ${error}`);
+      setShowRejectionModal(false);
     },
   });
 
@@ -264,22 +362,58 @@ const ManageBookings: FC = () => {
     if (selectedBooking) {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
-        status: "confirmed",
+        status: "reserved",
       });
     }
   };
 
-  const handleRejectBooking = () => {
+  const handleCheckIn = () => {
     if (selectedBooking) {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
-        status: "cancelled",
+        status: "checked_in",
+      });
+    }
+  };
+
+  const handleCheckOut = () => {
+    if (selectedBooking) {
+      updateBookingStatusMutation.mutate({
+        bookingId: selectedBooking.id,
+        status: "checked_out",
+      });
+    }
+  };
+
+  const handleMissedReservation = () => {
+    if (selectedBooking) {
+      updateBookingStatusMutation.mutate({
+        bookingId: selectedBooking.id,
+        status: "missed_reservation",
+      });
+    }
+  };
+
+  const handleRejectInitiate = () => {
+    setShowRejectionModal(true);
+  };
+
+  const handleRejectConfirm = (reason: string) => {
+    if (selectedBooking) {
+      updateBookingStatusMutation.mutate({
+        bookingId: selectedBooking.id,
+        status: "rejected",
+        reason: reason
       });
     }
   };
 
   const closeModal = () => {
     setSelectedBooking(null);
+  };
+
+  const closeRejectionModal = () => {
+    setShowRejectionModal(false);
   };
 
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
@@ -334,11 +468,13 @@ const ManageBookings: FC = () => {
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
+            <option value="reserved">Reserved</option>
             <option value="confirmed">Confirmed</option>
             <option value="checked_in">Checked In</option>
             <option value="checked_out">Checked Out</option>
             <option value="cancelled">Cancelled</option>
-            <option value="no_show">No Show</option>
+            <option value="rejected">Rejected</option>
+            <option value="missed_reservation">Missed Reservation</option>
           </select>
         </div>
       </div>
@@ -434,12 +570,14 @@ const ManageBookings: FC = () => {
                           >
                             <Eye size={25} />
                           </button>
-                          <button
-                            className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                            title="Edit Booking"
-                          >
-                            <FileEdit size={25} />
-                          </button>
+                          {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
+                            <button
+                              className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
+                              title="Edit Booking"
+                            >
+                              <FileEdit size={25} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -463,8 +601,20 @@ const ManageBookings: FC = () => {
           booking={selectedBooking}
           onClose={closeModal}
           onConfirm={handleConfirmBooking}
-          onReject={handleRejectBooking}
+          onReject={handleRejectInitiate}
+          onCheckIn={handleCheckIn}
+          onCheckOut={handleCheckOut}
+          onMissedReservation={handleMissedReservation}
           canManage={true}
+        />
+      )}
+
+      {/* Rejection Reason Modal */}
+      {showRejectionModal && (
+        <RejectionReasonModal
+          isOpen={showRejectionModal}
+          onClose={closeRejectionModal}
+          onConfirm={handleRejectConfirm}
         />
       )}
     </div>

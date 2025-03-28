@@ -1,22 +1,20 @@
-import RoomHero from "../layout/RoomHero";
-import RoomList from "../components/rooms/RoomList";
+import RoomAbout from "../components/rooms/RoomAbout";
 import RoomFeatures from "../components/rooms/RoomFeatures";
 import RoomIncluded from "../components/rooms/RoomIncluded";
-import RoomAbout from "../components/rooms/RoomAbout";
-import { Suspense, lazy } from "react";
-
-const LoadingHydrate = lazy(() => import("../motions/loaders/LoadingHydrate"));
+import RoomList from "../components/rooms/RoomList";
+import withSuspense from "../hoc/withSuspense";
+import RoomHero from "../layout/RoomHero";
 
 const Rooms = () => {
   return (
-    <Suspense fallback={<LoadingHydrate />}>
+    <>
       <RoomHero />
       <RoomFeatures />
       <RoomAbout />
       <RoomIncluded />
       <RoomList />
-    </Suspense>
+    </>
   );
 };
 
-export default Rooms;
+export default withSuspense(Rooms, { loaderType: "card", count: 3 });

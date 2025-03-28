@@ -272,12 +272,14 @@ const ManageStaff: FC = () => {
         {showDeleteModal && (
           <Modal
             isOpen={showDeleteModal}
-            title="Delete Staff"
-            description="Are you sure you want to delete this staff account?"
+            icon="fa fa-trash"
+            title="Delete Guest"
+            description="Are you sure you want to delete this guest account?"
+            className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${deleteMutation.isPending ? "opacity-50 cursor-not-allowed" : ""}`}
             cancel={() => setShowDeleteModal(false)}
             onConfirm={confirmDeleteStaff}
             cancelText="Cancel"
-            confirmText="Delete Staff"
+            confirmText="Delete Guest"
           />
         )}
 

@@ -29,9 +29,16 @@ const VenueCard: FC<AreaCardProps> = ({
     navigate(`/venues/${id}`);
   };
 
+  const isBookingDisabled = (): boolean => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus === 'maintenance' || lowerStatus === 'occupied' || lowerStatus === 'reserved';
+  };
+
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/venue-booking/${id}`);
+    if (!isBookingDisabled()) {
+      navigate(`/venue-booking/${id}`);
+    }
   };
 
   const getStatusBadgeColor = (status: string): string => {
@@ -42,9 +49,19 @@ const VenueCard: FC<AreaCardProps> = ({
         return 'text-red-700 bg-red-100';
       case 'maintenance':
         return 'text-gray-700 bg-gray-100';
+      case 'reserved':
+        return 'text-amber-700 bg-amber-100';
+      case 'unavailable':
+        return 'text-red-700 bg-red-100';
       default:
         return 'text-blue-700 bg-blue-100';
     }
+  };
+
+  // Format status display name if needed
+  const getDisplayStatus = (status: string): string => {
+    // If status is in lowercase, capitalize first letter
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
   return (
@@ -65,7 +82,7 @@ const VenueCard: FC<AreaCardProps> = ({
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xl font-bold">{title}</h3>
             <span className={`text-sm font-bold uppercase px-2 py-1 rounded-full ${getStatusBadgeColor(status)}`}>
-              {status}
+              {getDisplayStatus(status)}
             </span>
           </div>
 
@@ -92,8 +109,13 @@ const VenueCard: FC<AreaCardProps> = ({
             </button>
 
             <button
-              className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-green-700 transition cursor-pointer flex items-center gap-1"
+              className={`text-sm text-white px-3 py-2 rounded-lg font-montserrat transition flex items-center gap-1 ${isBookingDisabled()
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                }`}
               onClick={handleBookNow}
+              disabled={isBookingDisabled()}
+              title={isBookingDisabled() ? `Cannot book a venue that is ${status}` : "Book this venue"}
             >
               <Book size={16} /> <span>Book</span>
             </button>

@@ -31,13 +31,22 @@ const RoomCard: FC<RoomCardProps> = ({
         return 'bg-red-100 text-red-700';
       case 'maintenance':
         return 'bg-gray-100 text-gray-700';
+      case 'reserved':
+        return 'bg-yellow-100 text-yellow-700';
       default:
         return 'bg-blue-100 text-blue-700';
     }
   };
 
+  const isBookingDisabled = (): boolean => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus === 'maintenance' || lowerStatus === 'occupied' || lowerStatus === 'reserved';
+  };
+
   const handleReserveClick = () => {
-    navigate(`/booking/${id}`);
+    if (!isBookingDisabled()) {
+      navigate(`/booking/${id}`);
+    }
   };
 
   return (
@@ -72,8 +81,13 @@ const RoomCard: FC<RoomCardProps> = ({
               <Eye size={16} /> <span>View</span>
             </button>
             <button
-              className="bg-green-600 text-white text-sm px-3 py-2 rounded-md hover:bg-green-700 transition-colors cursor-pointer flex items-center gap-1"
+              className={`text-white text-sm px-3 py-2 rounded-md transition-colors flex items-center gap-1 ${isBookingDisabled()
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                }`}
               onClick={handleReserveClick}
+              disabled={isBookingDisabled()}
+              title={isBookingDisabled() ? `Cannot book a room that is ${status}` : "Book this room"}
             >
               <Book size={16} /> <span>Book</span>
             </button>

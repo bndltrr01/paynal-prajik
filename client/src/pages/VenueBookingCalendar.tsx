@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { addMonths, eachDayOfInterval, endOfMonth, format, isBefore, isSameDay, parseISO, startOfDay, startOfMonth } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { fetchAreaById } from '../services/Booking';
+import { fetchAreaBookings, fetchAreaById } from '../services/Booking';
 
 interface AreaData {
     id: number;
@@ -14,9 +14,27 @@ interface AreaData {
     price_per_hour: string;
 }
 
+interface BookingData {
+    id: number;
+    check_in_date: string;
+    check_out_date: string;
+    status: string;
+    start_time: string | null;
+    end_time: string | null;
+}
+
 interface UnavailableTime {
     start_time: string;
     end_time: string;
+    status: string;
+}
+
+interface BookingsByDate {
+    [date: string]: {
+        status: string;
+        bookingId: number;
+        unavailableTimes: UnavailableTime[];
+    };
 }
 
 const VenueBookingCalendar = () => {
@@ -32,6 +50,7 @@ const VenueBookingCalendar = () => {
     const [selectedEndTime, setSelectedEndTime] = useState<string>('');
     const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
     const [unavailableTimes, setUnavailableTimes] = useState<UnavailableTime[]>([]);
+    const [bookingsByDate, setBookingsByDate] = useState<BookingsByDate>({});
     const [duration, setDuration] = useState<number>(1); // Duration in hours
     const [price, setPrice] = useState<number>(0);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -42,7 +61,7 @@ const VenueBookingCalendar = () => {
                 const parsedDate = parseISO(arrivalParam);
                 setSelectedDate(parsedDate);
                 setCurrentMonth(parsedDate);
-                fetchUnavailableTimes(parsedDate);
+                fetchUnavailableTimesForDate(parsedDate);
             } catch (error) {
                 console.error('Error parsing arrival date from URL:', error);
             }
@@ -66,37 +85,82 @@ const VenueBookingCalendar = () => {
         enabled: !!areaId
     });
 
-    // Mock function to fetch unavailable times - replace with actual API call
-    const fetchUnavailableTimes = async (date: Date) => {
-        try {
-            const formattedDate = format(date, 'yyyy-MM-dd');
+    // Fetch area bookings data
+    const { data: bookingsData, isLoading: isLoadingBookings } = useQuery<{ data: BookingData[] }>({
+        queryKey: ['areaBookings', areaId, currentMonth],
+        queryFn: async () => {
+            // Calculate a date range that covers two months
+            const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+            const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
+            return fetchAreaBookings(areaId || '', startDate, endDate);
+        },
+        enabled: !!areaId
+    });
 
-            // This is where you would make an API call to get booked time slots for this date and area
-            // For example:
-            // const response = await booking.get(`/area-bookings/${areaId}`, {
-            //   params: { date: formattedDate },
-            //   withCredentials: true
-            // });
-            // setUnavailableTimes(response.data.unavailableTimes);
+    // Process bookings data to map by date
+    useEffect(() => {
+        if (bookingsData?.data) {
+            const newBookingsByDate: BookingsByDate = {};
 
-            // For now, let's use mock data for demonstration
-            console.log(`Fetching unavailable times for ${formattedDate} and area ${areaId}`);
+            bookingsData.data.forEach(booking => {
+                const dateString = format(parseISO(booking.check_in_date), 'yyyy-MM-dd');
 
-            const mockUnavailableTimes: UnavailableTime[] = [
-                { start_time: '10:00', end_time: '12:00' },
-                { start_time: '15:30', end_time: '17:30' }
-            ];
-            setUnavailableTimes(mockUnavailableTimes);
-        } catch (error) {
-            console.error('Error fetching unavailable times:', error);
-            setErrorMessage('Failed to load booked time slots. Some times may not be available.');
+                // Initialize the date if it doesn't exist
+                if (!newBookingsByDate[dateString]) {
+                    newBookingsByDate[dateString] = {
+                        status: booking.status,
+                        bookingId: booking.id,
+                        unavailableTimes: []
+                    };
+                }
+
+                // Add time slot info if available
+                if (booking.start_time && booking.end_time) {
+                    newBookingsByDate[dateString].unavailableTimes.push({
+                        start_time: booking.start_time,
+                        end_time: booking.end_time,
+                        status: booking.status
+                    });
+                }
+            });
+
+            setBookingsByDate(newBookingsByDate);
+
+            // If a date is already selected, update its unavailable times
+            if (selectedDate) {
+                fetchUnavailableTimesForDate(selectedDate);
+            }
         }
+    }, [bookingsData, selectedDate]);
+
+    // Function to fetch unavailable times for a specific date
+    const fetchUnavailableTimesForDate = (date: Date) => {
+        const dateString = format(date, 'yyyy-MM-dd');
+        const bookingData = bookingsByDate[dateString];
+
+        if (bookingData && bookingData.unavailableTimes.length > 0) {
+            setUnavailableTimes(bookingData.unavailableTimes);
+        } else {
+            // Clear unavailable times if none found for this date
+            setUnavailableTimes([]);
+        }
+
+        // Clear any existing error
+        setErrorMessage(null);
     };
 
     useEffect(() => {
         if (areaData) {
-            const hourlyPrice = Number(areaData.price_per_hour.replace(/[^\d.]/g, ''));
-            setPrice(hourlyPrice * duration);
+            try {
+                // Handle possible undefined value and different price formats
+                const priceString = areaData.price_per_hour || '0';
+                const numericValue = priceString.toString().replace(/[^\d.]/g, '');
+                const hourlyPrice = parseFloat(numericValue) || 0;
+                setPrice(hourlyPrice * duration);
+            } catch (error) {
+                console.error('Error parsing area price:', error);
+                setPrice(0);
+            }
         }
     }, [areaData, duration]);
 
@@ -175,14 +239,31 @@ const VenueBookingCalendar = () => {
 
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
+    const isDateBooked = (date: Date): boolean => {
+        const dateString = format(date, 'yyyy-MM-dd');
+        const booking = bookingsByDate[dateString];
+
+        // The entire day may be fully booked (24 hours)
+        if (booking && booking.status && ['checked_in', 'reserved', 'occupied'].includes(booking.status.toLowerCase())) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const getDateStatus = (date: Date): string | null => {
+        const dateString = format(date, 'yyyy-MM-dd');
+        return bookingsByDate[dateString]?.status || null;
+    };
+
     const isDateUnavailable = (date: Date) => {
         // Only consider dates before today as unavailable
         if (isBefore(date, startOfDay(new Date()))) {
             return true;
         }
 
-        // Additional logic for unavailable dates can be added here
-        return false;
+        // Days with "fully booked" status are also unavailable
+        return isDateBooked(date);
     };
 
     const handleDateClick = (date: Date) => {
@@ -190,7 +271,7 @@ const VenueBookingCalendar = () => {
             return;
         }
         setSelectedDate(date);
-        fetchUnavailableTimes(date);
+        fetchUnavailableTimesForDate(date);
     };
 
     const handleDateHover = (date: Date) => {
@@ -204,24 +285,87 @@ const VenueBookingCalendar = () => {
         const isSelected = selectedDate && isSameDay(date, selectedDate);
         const isHovered = hoveredDate && isSameDay(date, hoveredDate);
         const isToday = isSameDay(date, new Date());
+        const dateStatus = getDateStatus(date);
+        const hasTimeSlots = bookingsByDate[format(date, 'yyyy-MM-dd')]?.unavailableTimes.length > 0;
 
-        let className = "h-10 w-10 flex items-center justify-center text-sm";
+        let className = "relative h-10 w-10 flex items-center justify-center text-sm rounded-full";
 
-        if (isUnavailable) {
-            className += " bg-gray-400 text-gray-100 cursor-not-allowed";
-        } else if (isSelected) {
-            className += " bg-blue-600 text-white cursor-pointer";
-        } else if (isHovered) {
-            className += " bg-blue-100 border border-blue-300 cursor-pointer";
+        // First check date status and apply appropriate styling
+        if (dateStatus) {
+            switch (dateStatus.toLowerCase()) {
+                case 'reserved':
+                    className += " bg-green-100 text-green-800 border border-green-500";
+                    break;
+                case 'checked_in':
+                    className += " bg-blue-100 text-blue-800 border border-blue-500";
+                    break;
+                case 'occupied':
+                    className += " bg-blue-100 text-blue-800 border border-blue-500";
+                    break;
+                case 'checked_out':
+                    className += " bg-gray-100 text-gray-800 border border-gray-500";
+                    break;
+                case 'rejected':
+                    className += " bg-red-100 text-red-800 border border-red-500";
+                    break;
+                case 'missed_reservation':
+                    className += " bg-orange-100 text-orange-800 border border-orange-500";
+                    break;
+                default:
+                    // Apply standard styles if status doesn't match any of the above
+                    if (isSelected) {
+                        className += " bg-blue-600 text-white";
+                    } else if (isHovered) {
+                        className += " bg-blue-100 border border-blue-300";
+                    } else if (hasTimeSlots) {
+                        // Date has some time slots booked but not fully booked
+                        className += " bg-purple-50 border border-purple-300";
+                    } else {
+                        className += " bg-white border border-gray-300 hover:bg-gray-100";
+                    }
+            }
         } else {
-            className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
+            // No booking status - apply standard styles
+            if (isUnavailable) {
+                className += " bg-gray-300 text-gray-500 cursor-not-allowed";
+            } else if (isSelected) {
+                className += " bg-blue-600 text-white";
+            } else if (isHovered) {
+                className += " bg-blue-100 border border-blue-300";
+            } else if (hasTimeSlots) {
+                // Date has some time slots booked but not fully booked
+                className += " bg-purple-50 border border-purple-300";
+            } else {
+                className += " bg-white border border-gray-300 hover:bg-gray-100";
+            }
         }
 
+        // Add today indicator
         if (isToday && !isSelected && !isUnavailable) {
             className += " border-blue-500 border-2";
         }
 
+        // Add cursor style
+        if (isUnavailable) {
+            className += " cursor-not-allowed";
+        } else {
+            className += " cursor-pointer";
+        }
+
         return className;
+    };
+
+    const getDateContent = (date: Date) => {
+        const hasTimeSlots = bookingsByDate[format(date, 'yyyy-MM-dd')]?.unavailableTimes.length > 0;
+
+        return (
+            <>
+                {format(date, 'd')}
+                {hasTimeSlots && (
+                    <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-blue-500"></span>
+                )}
+            </>
+        );
     };
 
     // Generate time slots from 7 AM to 10 PM
@@ -282,7 +426,7 @@ const VenueBookingCalendar = () => {
         }
     };
 
-    if (isLoadingArea) {
+    if (isLoadingArea || isLoadingBookings) {
         return (
             <div className="flex justify-center items-center h-[calc(100vh-80px)]">
                 <div className="animate-spin h-10 w-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
@@ -404,7 +548,7 @@ const VenueBookingCalendar = () => {
                                                                     onMouseEnter={() => handleDateHover(day)}
                                                                     onMouseLeave={() => setHoveredDate(null)}
                                                                 >
-                                                                    {format(day, 'd')}
+                                                                    {getDateContent(day)}
                                                                 </div>
                                                             ) : (
                                                                 <div></div>
@@ -473,10 +617,19 @@ const VenueBookingCalendar = () => {
                         {selectedDate && unavailableTimes.length > 0 && (
                             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                                 <h4 className="font-medium text-yellow-800 mb-2">Already Booked Time Slots</h4>
-                                <ul className="list-disc list-inside">
+                                <ul className="list-disc list-inside space-y-1">
                                     {unavailableTimes.map((slot, index) => (
-                                        <li key={index} className="text-yellow-700">
-                                            {slot.start_time} - {slot.end_time}
+                                        <li key={index} className="flex items-center">
+                                            <span className={`inline-block w-3 h-3 rounded-full mr-2 ${slot.status === 'reserved' ? 'bg-green-500' :
+                                                slot.status === 'checked_in' ? 'bg-blue-500' :
+                                                    'bg-gray-500'
+                                                }`}></span>
+                                            <span className="text-yellow-700">
+                                                {slot.start_time} - {slot.end_time}
+                                                <span className="ml-2 text-xs">
+                                                    ({slot.status})
+                                                </span>
+                                            </span>
                                         </li>
                                     ))}
                                 </ul>
@@ -487,26 +640,42 @@ const VenueBookingCalendar = () => {
                         {!arrivalParam && (
                             <div className="mt-6 border-t pt-4">
                                 <h4 className="text-sm font-medium mb-3">LEGEND</h4>
-                                <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 bg-white border border-gray-300 mr-2"></div>
+                                        <div className="h-6 w-6 bg-white border border-gray-300 mr-2 rounded-full"></div>
                                         <span className="text-sm">Available Date</span>
                                     </div>
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 bg-blue-600 mr-2"></div>
+                                        <div className="h-6 w-6 bg-blue-600 mr-2 rounded-full"></div>
                                         <span className="text-sm">Selected Date</span>
                                     </div>
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 bg-gray-400 mr-2"></div>
+                                        <div className="h-6 w-6 bg-gray-300 mr-2 rounded-full"></div>
                                         <span className="text-sm">Unavailable Date</span>
                                     </div>
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 border-2 border-blue-500 bg-white mr-2"></div>
+                                        <div className="h-6 w-6 border-2 border-blue-500 bg-white mr-2 rounded-full"></div>
                                         <span className="text-sm">Today</span>
                                     </div>
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 bg-blue-100 border border-blue-300 mr-2"></div>
-                                        <span className="text-sm">Hovered Date</span>
+                                        <div className="h-6 w-6 bg-purple-50 border border-purple-300 mr-2 rounded-full"></div>
+                                        <span className="text-sm">Partially Booked</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="h-6 w-6 bg-green-100 border border-green-500 mr-2 rounded-full"></div>
+                                        <span className="text-sm">Reserved</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="h-6 w-6 bg-blue-100 border border-blue-500 mr-2 rounded-full"></div>
+                                        <span className="text-sm">Checked In</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="h-6 w-6 bg-red-100 border border-red-500 mr-2 rounded-full"></div>
+                                        <span className="text-sm">Rejected</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <div className="h-6 w-6 bg-orange-100 border border-orange-500 mr-2 rounded-full"></div>
+                                        <span className="text-sm">Missed Reservation</span>
                                     </div>
                                 </div>
                             </div>
@@ -544,7 +713,9 @@ const VenueBookingCalendar = () => {
                                 <h3 className="text-xl font-bold mb-2">{areaData.area_name}</h3>
                                 <span className={`px-2 py-1 ${areaData.status === 'available'
                                     ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
+                                    : areaData.status === 'reserved'
+                                        ? 'bg-blue-100 text-blue-800'
+                                        : 'bg-red-100 text-red-800'
                                     } text-md font-medium rounded-full`}>
                                     {areaData.status.toUpperCase()}
                                 </span>

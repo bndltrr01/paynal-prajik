@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { cancelBooking } from "../../services/Booking";
+import BookingDetailsModal from "./BookingDetailsModal";
 import CancellationModal from "./CancellationModal";
 
 interface BookingCardProps {
@@ -54,7 +55,7 @@ const BookingCard = ({
   totalPrice,
 }: BookingCardProps) => {
   const [showCancellationModal, setShowCancellationModal] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const queryClient = useQueryClient();
 
   const normalizedStatus = status.toLowerCase();
@@ -100,16 +101,15 @@ const BookingCard = ({
   };
 
   const handleCancelClick = () => setShowCancellationModal(true);
-
   const handleConfirmCancel = (reason: string) => cancelMutation.mutate(reason);
-
-  const toggleDetails = () => setShowDetails(!showDetails);
+  const toggleDetailsModal = () => setShowDetailsModal(!showDetailsModal);
 
   return (
-    <div className="w-full max-w-7xl mx-auto bg-white shadow-md rounded-lg p-6 flex flex-col gap-6 mb-6">
+    <div className="w-full max-w-7xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl mb-6">
       {/* Main booking info */}
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-60 h-auto flex items-center justify-center overflow-hidden rounded-lg bg-gray-200">
+      <div className="flex flex-col md:flex-row">
+        {/* Image container */}
+        <div className="w-full md:w-64 h-48 md:h-auto">
           <img
             src={isVenueBooking ? (areaDetails?.area_image || imageUrl) : (roomDetails?.room_image || imageUrl)}
             alt={roomType}
@@ -118,38 +118,47 @@ const BookingCard = ({
           />
         </div>
 
-        <div className="flex-grow flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start">
+        {/* Booking info container */}
+        <div className="flex-grow p-4 md:p-6 flex flex-col justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
               <div>
-                <h2 className="text-2xl font-semibold">{roomType}</h2>
-                {isVenueBooking ? (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">Venue Booking</span>
-                ) : (
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Room Booking</span>
-                )}
+                <h2 className="text-xl md:text-2xl font-semibold">{roomType}</h2>
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                  {isVenueBooking ? (
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Area Booking</span>
+                  ) : (
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Room Booking</span>
+                  )}
+                  <span className={`px-2.5 py-0.5 text-xs font-medium rounded ${styleClass} uppercase`}>
+                    {getDisplayStatus()}
+                  </span>
+                </div>
               </div>
+
               {bookingDate && (
-                <p className="text-md text-gray-500">Booked on: {bookingDate}</p>
+                <p className="text-sm text-gray-500">Booked on: {bookingDate}</p>
               )}
             </div>
-            <p className="text-gray-600 flex items-center my-2">
+
+            <p className="text-gray-600 flex items-center text-sm">
               <span className="mr-2">👥</span>{guests} {isVenueBooking ? 'capacity' : 'guests'}
             </p>
-            <p className="text-blue-600 font-semibold text-lg">
+
+            <p className="text-blue-600 font-semibold">
               {isVenueBooking ? (
                 <>
-                  TOTAL: {typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}
-                  {areaDetails?.price_per_hour && <span className="text-sm text-gray-600 ml-2">({areaDetails.price_per_hour}/hour)</span>}
+                  <span className="text-lg">TOTAL: {typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}</span>
+                  {areaDetails?.price_per_hour && <span className="text-xs text-gray-600 ml-2">({areaDetails.price_per_hour}/hour)</span>}
                 </>
               ) : (
-                <>PRICE: {typeof price === 'number' ? price.toLocaleString() : price}</>
+                <span className="text-lg">PRICE: {typeof price === 'number' ? price.toLocaleString() : price}</span>
               )}
             </p>
 
             {isCancelled && (
-              <p className="text-red-600 mt-1 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <p className="text-red-600 flex items-center text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <span className="font-medium">Booking Cancelled</span>
@@ -158,24 +167,18 @@ const BookingCard = ({
             )}
           </div>
 
-          <div className="flex items-end justify-between mt-4">
-            <span
-              className={`px-4 py-2 text-sm font-bold rounded-lg ${styleClass} min-w-[100px] text-center uppercase`}
-            >
-              {getDisplayStatus()}
-            </span>
-
-            <div className="flex gap-3 ml-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-4">
+            <div className="flex flex-wrap gap-2">
               <button
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                onClick={toggleDetails}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex-grow sm:flex-grow-0 cursor-pointer"
+                onClick={toggleDetailsModal}
               >
-                {showDetails ? 'Hide Details' : 'View Details'}
+                View Details
               </button>
 
               {canCancel && (
                 <button
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex-grow sm:flex-grow-0 cursor-pointer"
                   onClick={handleCancelClick}
                   disabled={cancelMutation.isPending}
                 >
@@ -187,123 +190,32 @@ const BookingCard = ({
         </div>
       </div>
 
-      {/* Expanded details section */}
-      {showDetails && (
-        <div className="border-t pt-4 mt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Guest Information */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-2xl border-b pb-2">Guest Information</h3>
-
-              {userDetails ? (
-                <div className="space-y-2">
-                  <p className="flex justify-between">
-                    <span className="font-medium">Name:</span>
-                    <span>{userDetails.fullName}</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-medium">Email:</span>
-                    <span>{userDetails.email}</span>
-                  </p>
-                  {userDetails.phoneNumber && (
-                    <p className="flex justify-between">
-                      <span className="font-medium">Phone:</span>
-                      <span>{userDetails.phoneNumber}</span>
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-500">Guest information not available</p>
-              )}
-            </div>
-
-            {/* Additional Booking Details */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-2xl border-b pb-2">Booking Details</h3>
-
-              <div className="space-y-2">
-                <p className="flex justify-between">
-                  <span className="font-medium">Status:</span>
-                  <span className={`px-2 py-0.5 rounded text-sm ${styleClass}`}>{getDisplayStatus()}</span>
-                </p>
-                <p className="flex justify-between">
-                  <span className="font-medium">{isVenueBooking ? 'Start/End Time:' : 'Check-in/out:'}</span>
-                  <span>{dates}</span>
-                </p>
-                {isVenueBooking && areaDetails && (
-                  <>
-                    <p className="flex justify-between">
-                      <span className="font-medium">Capacity:</span>
-                      <span>{areaDetails.capacity} people</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-medium">Price per hour:</span>
-                      <span>{areaDetails.price_per_hour}</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-medium">Total Price:</span>
-                      <span>{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice || price.toLocaleString()}</span>
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Cancellation Information (if cancelled) */}
-            {isCancelled && (
-              <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-lg border-b pb-2 text-red-600">Cancellation Information</h3>
-                <div className="bg-red-50 p-4 rounded-md">
-                  {cancellationDate && (
-                    <p className="flex justify-between mb-2">
-                      <span className="font-medium">Cancelled on:</span>
-                      <span>{cancellationDate}</span>
-                    </p>
-                  )}
-                  {cancellationReason ? (
-                    <div>
-                      <p className="font-medium mb-1">Cancellation Reason:</p>
-                      <p className="text-gray-700 bg-white p-3 rounded-md border border-red-100">{cancellationReason}</p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-700">No cancellation reason provided.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Special Requests (if any) */}
-            {specialRequest && specialRequest.trim() !== '' && (
-              <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-2xl border-b pb-2">Special Requests</h3>
-                <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{specialRequest}</p>
-              </div>
-            )}
-
-            {/* Valid ID (if available) */}
-            {validId && (
-              <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-2xl border-b pb-2">Valid ID</h3>
-                <div className="rounded-md overflow-hidden">
-                  <img
-                    src={validId}
-                    alt="Valid ID"
-                    className="w-full h-auto max-h-64 object-contain"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        isOpen={showDetailsModal}
+        onClose={toggleDetailsModal}
+        roomType={roomType}
+        status={status}
+        styleClass={styleClass}
+        getDisplayStatus={getDisplayStatus}
+        dates={dates}
+        userDetails={userDetails}
+        isVenueBooking={isVenueBooking}
+        areaDetails={areaDetails}
+        totalPrice={totalPrice}
+        price={price}
+        isCancelled={isCancelled}
+        cancellationDate={cancellationDate}
+        cancellationReason={cancellationReason}
+        specialRequest={specialRequest}
+        validId={validId}
+      />
 
       {/* Cancellation Modal */}
       <CancellationModal
         isOpen={showCancellationModal}
         onClose={() => setShowCancellationModal(false)}
         onConfirm={handleConfirmCancel}
-        bookingId={bookingId}
       />
     </div>
   );

@@ -59,6 +59,28 @@ const VenueDetails = () => {
             : `${venueDetail.price_per_hour}`
         : `${venueDetail.price_per_hour}`;
 
+    // Check if booking is disabled based on status
+    const isBookingDisabled = (): boolean => {
+        const status = venueDetail.status?.toLowerCase();
+        return status === 'maintenance' || status === 'occupied' || status === 'reserved';
+    };
+
+    // Get status badge color
+    const getStatusBadgeColor = (status: string): string => {
+        switch (status?.toLowerCase()) {
+            case 'available':
+                return 'bg-green-100 text-green-700';
+            case 'occupied':
+                return 'bg-red-100 text-red-700';
+            case 'maintenance':
+                return 'bg-gray-100 text-gray-700';
+            case 'reserved':
+                return 'bg-yellow-100 text-yellow-700';
+            default:
+                return 'bg-blue-100 text-blue-700';
+        }
+    };
+
     return (
         <div className="container mx-auto py-10 px-4">
             <section className="container mx-auto min-h-screen mt-[100px] overflow-x-hidden">
@@ -73,7 +95,7 @@ const VenueDetails = () => {
                             className="flex items-center gap-x-3 text-white hover:text-white/80"
                         >
                             <i className="fa fa-arrow-left text-xl"></i>
-                            <span className="text-xl">Back to Venues</span>
+                            <span className="text-xl">Back to Areas</span>
                         </Link>
                     </div>
                     <div className="relative z-10 flex h-full items-center justify-center">
@@ -81,6 +103,9 @@ const VenueDetails = () => {
                             <h1 className="text-4xl md:text-5xl lg:text-7xl font-montserrat font-bold tracking-wider uppercase">
                                 {venueDetail.area_name}
                             </h1>
+                            <span className={`inline-block mt-4 px-4 py-2 rounded-full text-lg font-bold ${getStatusBadgeColor(venueDetail.status)}`}>
+                                {venueDetail.status?.toUpperCase()}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -107,7 +132,7 @@ const VenueDetails = () => {
                                         className="flex items-center gap-2 text-blue-600 hover:underline"
                                     >
                                         <i className="fa fa-chevron-left"></i>
-                                        <span>Previous Venue</span>
+                                        <span>Previous Area</span>
                                     </Link>
                                 ) : (
                                     <div></div>
@@ -118,7 +143,7 @@ const VenueDetails = () => {
                                         to={`/venues/${nextVenue.id}`}
                                         className="flex items-center gap-2 text-blue-600 hover:underline"
                                     >
-                                        <span>Next Venue</span>
+                                        <span>Next Area</span>
                                         <i className="fa fa-chevron-right"></i>
                                     </Link>
                                 ) : (
@@ -132,7 +157,7 @@ const VenueDetails = () => {
                             {/* Venue Description */}
                             <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
                                 <h2 className="font-playfair text-3xl font-semibold mb-4">
-                                    Venue Description
+                                    Area Description
                                 </h2>
                                 <hr className="border-gray-300 mb-4" />
                                 <p className="text-lg font-playfair">
@@ -143,17 +168,13 @@ const VenueDetails = () => {
                             {/* Venue Details */}
                             <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
                                 <h2 className="text-3xl font-playfair font-semibold mb-4">
-                                    Venue Information
+                                    Area Information
                                 </h2>
                                 <hr className="border-gray-300 mb-4" />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <h3 className="font-semibold text-gray-700">Capacity</h3>
                                         <p className="text-lg">{venueDetail.capacity} people</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-700">Status</h3>
-                                        <p className="text-lg capitalize">{venueDetail.status}</p>
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-gray-700">Price</h3>
@@ -164,11 +185,25 @@ const VenueDetails = () => {
 
                             {/* Reserve Now Button */}
                             <div className="mt-4">
-                                <Link to={`/availability?venueId=${venueDetail.id}`}>
-                                    <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
-                                        Reserve Now
-                                    </button>
-                                </Link>
+                                {isBookingDisabled() ? (
+                                    <div className="relative group">
+                                        <button
+                                            disabled
+                                            className="w-full py-4 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed"
+                                        >
+                                            Not Available
+                                        </button>
+                                        <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                            This venue is currently {venueDetail.status}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <Link to={`/venue-booking/${venueDetail.id}`}>
+                                        <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                                            Reserve Now
+                                        </button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

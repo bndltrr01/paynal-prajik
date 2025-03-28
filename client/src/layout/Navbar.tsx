@@ -139,8 +139,8 @@ const Navbar: FC = () => {
           </div>
 
           {/* Center Section */}
-          <div className="hidden lg:flex justify-center">
-            <ul className="flex items-center space-x-6 xl:space-x-8">
+          <div className="hidden lg:flex ">
+            <ul className="flex space-x-6 xl:space-x-8">
               {navLinks.map((link, index) => (
                 <SlotNavButton
                   key={index}
@@ -302,8 +302,7 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
         loading={loading}
         confirmText={
           loading ? (

@@ -14,12 +14,10 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: Cancellati
     const [error, setError] = useState('');
 
     const handleConfirm = () => {
-        // Validate reason
         if (!reason.trim()) {
             setError('Please provide a reason for cancellation');
             return;
         }
-
         setError('');
         setIsSubmitting(true);
         onConfirm(reason);
@@ -63,7 +61,7 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: Cancellati
                             <textarea
                                 id="reason"
                                 rows={4}
-                                className={`w-full px-3 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                className={`w-full px-3 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 resize-none focus:ring-blue-500`}
                                 value={reason}
                                 onChange={(e) => {
                                     setReason(e.target.value);

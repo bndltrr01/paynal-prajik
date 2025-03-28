@@ -316,17 +316,21 @@ export const deleteAmenity = async (amenityId: number) => {
 };
 
 // Booking Management
-export const updateBookingStatus = async (bookingId: number, status: string) => {
+export const updateBookingStatus = async (bookingId: number, status: string, reason?: string) => {
   try {
-    const response = await ADMIN.put(`/booking/${bookingId}/status`, 
-      { status },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      }
-    );
+    const data: Record<string, any> = { status };
+    
+    // Add reason for cancellation or rejection
+    if ((status === 'cancelled' || status === 'rejected') && reason) {
+      data.reason = reason;
+    }
+    
+    const response = await ADMIN.put(`/booking/${bookingId}/status`, data, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
     return response.data;
   } catch (error) {
     console.error(`Failed to update booking status: ${error}`);

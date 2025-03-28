@@ -6,6 +6,7 @@ import ProtectedRoute from "./contexts/ProtectedRoutes";
 import AdminLayout from "./layout/admin/AdminLayout";
 import Footer from "./layout/Footer";
 import Navbar from "./layout/Navbar";
+import ScrollToTop from "./components/ScrollToTop";
 
 // Import the new PageTransitionLoader
 const PageTransitionLoader = lazy(() => import("./motions/loaders/PageTransitionLoader"));
@@ -59,6 +60,7 @@ const App = () => {
     <>
       <Suspense fallback={<LoadingHydrate />}>
         {!isAdminRoute && <Navbar />}
+        <ScrollToTop />
 
         <Suspense fallback={<PageTransitionLoader />}>
           <Routes>
@@ -66,7 +68,7 @@ const App = () => {
               path="/"
               element={
                 isAuthenticated ? (
-                  role === "admin" || role === "staff" ? (
+                  role === "admin" ? (
                     <Navigate to="/admin" replace />
                   ) : (
                     <Homepage />

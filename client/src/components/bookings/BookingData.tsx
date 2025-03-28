@@ -279,7 +279,7 @@ const BookingData = ({ bookingId }: BookingDataProps) => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-2 space-y-6">
       {bookingsToShow.map((booking, index) => (
         <BookingCard key={index} {...booking} />
       ))}

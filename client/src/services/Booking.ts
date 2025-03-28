@@ -276,3 +276,45 @@ export const cancelBooking = async (bookingId: string, reason: string) => {
         throw error;
     }
 };
+
+export const fetchRoomBookings = async (roomId: string, startDate?: string, endDate?: string) => {
+    try {
+        let url = `/rooms/${roomId}/bookings`;
+        const params: Record<string, string> = {};
+        
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+        
+        const response = await booking.get(url, {
+            params,
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+        });
+        
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch room bookings: ${error}`);
+        throw error;
+    }
+};
+
+export const fetchAreaBookings = async (areaId: string, startDate?: string, endDate?: string) => {
+    try {
+        let url = `/areas/${areaId}/bookings`;
+        const params: Record<string, string> = {};
+        
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+        
+        const response = await booking.get(url, {
+            params,
+            headers: { 'Content-Type': 'application/json' },
+            withCredentials: true
+        });
+        
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch area bookings: ${error}`);
+        throw error;
+    }
+};

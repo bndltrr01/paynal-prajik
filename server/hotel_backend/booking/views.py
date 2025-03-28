@@ -11,7 +11,8 @@ from .serializers import (
     RoomSerializer
 )
 from rest_framework.permissions import IsAuthenticated
-from datetime import datetime
+from datetime import datetime, timezone
+from django.db.models import Q
 
 # Create your views here.
 @api_view(['GET'])
@@ -290,27 +291,148 @@ def cancel_booking(request, booking_id):
     try:
         booking = Bookings.objects.get(id=booking_id)
         
-        if booking.user != request.user:
-            return Response({"error": "You can only cancel your own bookings"}, status=status.HTTP_403_FORBIDDEN)
-        
-        if booking.status not in ['pending', 'confirmed']:
+        # Check if the booking belongs to the user or if admin/staff
+        if booking.user.id != request.user.id and request.user.role not in ['admin', 'staff']:
             return Response({
-                "error": f"Cannot cancel booking with status: {booking.status}"
+                "error": "You do not have permission to cancel this booking"
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if the booking can be cancelled
+        if booking.status in ['cancelled', 'checked_out', 'no_show', 'rejected']:
+            return Response({
+                "error": f"Cannot cancel a booking with status '{booking.status}'"
             }, status=status.HTTP_400_BAD_REQUEST)
         
         reason = request.data.get('reason', '')
+        if not reason:
+            return Response({
+                "error": "A reason for cancellation is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
         
+        # Update booking status and add cancellation info
+        previous_status = booking.status
         booking.status = 'cancelled'
         booking.cancellation_reason = reason
-        booking.cancellation_date = datetime.now().date()
+        booking.cancellation_date = timezone.now()
         booking.save()
+        
+        # Free up the room or area if it was reserved
+        if previous_status == 'reserved':
+            if booking.is_venue_booking and booking.area:
+                area = booking.area
+                area.status = 'available'
+                area.save()
+            elif booking.room:
+                room = booking.room
+                room.status = 'available'
+                room.save()
+        
+        # Serialize and return the updated booking
+        serializer = BookingSerializer(booking)
         
         return Response({
             "message": "Booking cancelled successfully",
-            "booking_id": booking_id
+            "data": serializer.data
         }, status=status.HTTP_200_OK)
-        
     except Bookings.DoesNotExist:
-        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({
+            "error": "Booking not found"
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            "error": str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def fetch_room_bookings(request, room_id):
+    """
+    Get all bookings for a specific room to check availability
+    """
+    try:
+        # Get date range from request if provided (optional)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        # Basic query to get bookings for this room
+        query = Q(room_id=room_id) & ~Q(status__in=['cancelled', 'rejected'])
+        
+        # Add date filtering if provided
+        if start_date and end_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                end = datetime.strptime(end_date, "%Y-%m-%d")
+                
+                # Find all bookings that overlap with the requested date range
+                # A booking overlaps if:
+                # - check_in_date <= end_date AND check_out_date >= start_date
+                query = query & Q(check_in_date__lte=end) & Q(check_out_date__gte=start)
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, 
+                               status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get the bookings
+        bookings = Bookings.objects.filter(query)
+        
+        # Format the response with the dates and status
+        booking_data = []
+        for booking in bookings:
+            booking_data.append({
+                'id': booking.id,
+                'check_in_date': booking.check_in_date,
+                'check_out_date': booking.check_out_date,
+                'status': booking.status
+            })
+        
+        return Response({
+            "data": booking_data
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def fetch_area_bookings(request, area_id):
+    """
+    Get all bookings for a specific area to check availability
+    """
+    try:
+        # Get date range from request if provided (optional)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        # Basic query to get bookings for this area
+        query = Q(area_id=area_id) & ~Q(status__in=['cancelled', 'rejected'])
+        
+        # Add date filtering if provided
+        if start_date and end_date:
+            try:
+                start = datetime.strptime(start_date, "%Y-%m-%d")
+                end = datetime.strptime(end_date, "%Y-%m-%d")
+                
+                # Find all bookings that overlap with the requested date range
+                query = query & Q(check_in_date__lte=end) & Q(check_out_date__gte=start)
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, 
+                               status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get the bookings
+        bookings = Bookings.objects.filter(query)
+        
+        # Format the response with the dates and status
+        booking_data = []
+        for booking in bookings:
+            booking_data.append({
+                'id': booking.id,
+                'check_in_date': booking.check_in_date,
+                'check_out_date': booking.check_out_date,
+                'status': booking.status,
+                'start_time': booking.start_time,
+                'end_time': booking.end_time
+            })
+        
+        return Response({
+            "data": booking_data
+        }, status=status.HTTP_200_OK)
+    
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
