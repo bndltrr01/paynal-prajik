@@ -566,15 +566,36 @@ def archive_staff(request, staff_id):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-# Bookings Management
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_bookings(request):
     try:
         bookings = Bookings.objects.all().order_by('-created_at')
-        serializer = BookingSerializer(bookings, many=True)
+        
+        # Get pagination parameters
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 9)
+        
+        # Create paginator
+        paginator = Paginator(bookings, page_size)
+        
+        try:
+            paginated_bookings = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_bookings = paginator.page(1)
+        except EmptyPage:
+            paginated_bookings = paginator.page(paginator.num_pages)
+        
+        serializer = BookingSerializer(paginated_bookings, many=True)
+        
         return Response({
-            "data": serializer.data
+            "data": serializer.data,
+            "pagination": {
+                "total_pages": paginator.num_pages,
+                "current_page": int(page),
+                "total_items": paginator.count,
+                "page_size": int(page_size)
+            }
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -677,8 +698,32 @@ def update_booking_status(request, booking_id):
         booking.cancellation_reason = request.data.get('reason', 'Rejected by admin/staff')
     
     # Update booking status
+    previous_status = booking.status
     booking.status = status_value
     booking.save()
+    
+    # Serialize the booking for the response and potential email
+    serializer = BookingSerializer(booking)
+    
+    # If status changes to reserved, send email notification
+    if status_value == 'reserved' and previous_status != 'reserved':
+        try:
+            from .email.booking import send_booking_confirmation_email
+            
+            # Get the user's email
+            user_email = booking.user.email
+            
+            # Send confirmation email
+            email_sent = send_booking_confirmation_email(user_email, serializer.data)
+            
+            if email_sent:
+                print(f"Confirmation email sent to {user_email} for booking {booking_id}")
+            else:
+                print(f"Failed to send confirmation email to {user_email} for booking {booking_id}")
+                
+        except Exception as e:
+            print(f"Error while sending booking confirmation email: {str(e)}")
+            # Continue with the response even if email fails
         
     # If status changes from reserved to something else, and not checked_in,
     # we might need to make the room/area available again
@@ -692,25 +737,19 @@ def update_booking_status(request, booking_id):
             room.status = 'available'
             room.save()
     
-    serializer = BookingSerializer(booking)
     return Response({
         "message": f"Booking status updated to {status_value}",
         "data": serializer.data
     }, status=status.HTTP_200_OK)
 
-# Add the new record_payment view
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def record_payment(request, booking_id):
-    """
-    Record a payment for a booking and create a transaction record
-    """
     try:
         booking = Bookings.objects.get(id=booking_id)
     except Bookings.DoesNotExist:
         return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    # Get payment details from request data
     amount = request.data.get('amount')
     transaction_type = request.data.get('transaction_type', 'booking')
     
@@ -718,15 +757,12 @@ def record_payment(request, booking_id):
         return Response({"error": "Payment amount is required"}, status=status.HTTP_400_BAD_REQUEST)
     
     try:
-        # Convert amount to decimal if it's a string
         if isinstance(amount, str):
             amount = float(amount)
             
-        # Mark the booking as paid
         booking.payment_status = 'paid'
         booking.save()
         
-        # Create transaction record
         transaction = Transactions.objects.create(
             booking=booking,
             user=booking.user,
@@ -747,15 +783,10 @@ def record_payment(request, booking_id):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Add a new view to get booking status counts
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def booking_status_counts(request):
-    """
-    Get counts of bookings by their status
-    """
     try:
-        # Count bookings by status
         pending_count = Bookings.objects.filter(status='pending').count()
         reserved_count = Bookings.objects.filter(status='reserved').count()
         checked_in_count = Bookings.objects.filter(status='checked_in').count()

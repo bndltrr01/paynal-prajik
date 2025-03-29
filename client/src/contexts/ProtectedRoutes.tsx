@@ -15,7 +15,7 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({ requiredRole, children }) => 
   }
 
   if (requiredRole.toLowerCase() === "admin") {
-    if (!(role.toLowerCase() === "admin" || role.toLowerCase() === "staff")) {
+    if (!(role.toLowerCase() === "admin")) {
       return <Navigate to="/" replace />;
     }
   } else {

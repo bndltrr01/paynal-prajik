@@ -27,7 +27,7 @@ interface RoomData {
 const ConfirmBooking = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated, setIsAuthenticated } = useUserContext();
+  const { isAuthenticated } = useUserContext();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [savedFormData, setSavedFormData] = useState<any>(null);
@@ -60,7 +60,6 @@ const ConfirmBooking = () => {
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Fetch room data
   const { data: roomData, isLoading } = useQuery<RoomData>({
     queryKey: ['room', roomId],
     queryFn: () => fetchRoomById(roomId),

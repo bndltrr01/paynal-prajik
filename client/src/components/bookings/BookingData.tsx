@@ -1,24 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { memo, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import deluxe_double from "../../assets/deluxe_double.jpg";
-import deluxe_single from "../../assets/deluxe_single.webp";
 import deluxe_twin from "../../assets/deluxe_twin.jpg";
-import executive_double from "../../assets/executive_double.avif";
-import executive_king from "../../assets/executive_king.webp";
-import president_king from "../../assets/president_king.jpg";
-import { fetchBookingDetail, fetchUserBookings } from "../../services/Booking";
+import withSuspense from "../../hoc/withSuspense";
+import { fetchBookingDetail } from "../../services/Booking";
 import BookingCard from "./BookingCard";
-
-// Map room types to images
-const roomImages: Record<string, string> = {
-  "Deluxe Twin Room": deluxe_twin,
-  "Deluxe Single Room": deluxe_single,
-  "Deluxe Double Room": deluxe_double,
-  "Executive King Room": executive_king,
-  "Executive Double Room": executive_double,
-  "Presidential King Suite": president_king,
-};
 
 interface BookingDataProps {
   bookingId?: string | null;
@@ -95,196 +82,169 @@ interface BookingData {
   cancellation_date?: string;
 }
 
-const BookingData = ({ bookingId }: BookingDataProps) => {
+// Memoize utility functions
+const formatDate = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+
+  try {
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  } catch (e) {
+    return dateString;
+  }
+};
+
+const BookingData = memo(({ bookingId }: BookingDataProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [bookingsToShow, setBookingsToShow] = useState<FormattedBooking[]>([]);
   const effectiveBookingId = bookingId || searchParams.get('bookingId');
 
-  const { data: bookingData, isLoading: isLoadingBooking, error: bookingError } = useQuery<BookingData>({
+  // Setup query with proper caching
+  const { data: bookingData, isLoading, error } = useQuery<BookingData>({
     queryKey: ['booking', effectiveBookingId],
     queryFn: () => fetchBookingDetail(effectiveBookingId || ''),
     enabled: !!effectiveBookingId,
+    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes after becoming unused
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
-  const { data: userBookings, isLoading: isLoadingUserBookings, error: userBookingsError } = useQuery<BookingData[]>({
-    queryKey: ['user-bookings'],
-    queryFn: fetchUserBookings,
-    enabled: !effectiveBookingId,
-  });
+  // Memoize the formatted booking data
+  const formattedBooking = useMemo(() => {
+    if (!effectiveBookingId || !bookingData) return null;
 
-  useEffect(() => {
-    if (effectiveBookingId && bookingData && bookingData.status === 'cancelled') {
+    // Handle cancelled status navigation
+    if (bookingData?.status === 'cancelled') {
       navigate('/my-booking?cancelled=true', { replace: true });
     }
-  }, [bookingData, effectiveBookingId, navigate]);
 
-  useEffect(() => {
-    if (effectiveBookingId && bookingData) {
-      const isVenueBooking = bookingData.is_venue_booking || false;
-      const formattedBooking: FormattedBooking = {
-        bookingId: bookingData.id,
-        status: bookingData.status || "pending",
-        dates: `${new Date(bookingData.check_in_date).toLocaleDateString()} - ${new Date(bookingData.check_out_date).toLocaleDateString()}`,
-        specialRequest: bookingData.special_request,
-        validId: bookingData.valid_id,
-        bookingDate: bookingData.created_at ? new Date(bookingData.created_at).toLocaleDateString() : undefined,
-        cancellationReason: bookingData.cancellation_reason,
-        cancellationDate: bookingData.cancellation_date ? new Date(bookingData.cancellation_date).toLocaleDateString() : undefined,
-        isVenueBooking: isVenueBooking,
-        roomType: "",
-        imageUrl: "",
-        guests: 0,
-        price: 0
+    const isVenueBooking = bookingData?.is_venue_booking || false;
+    const result: FormattedBooking = {
+      bookingId: bookingData?.id || '',
+      status: bookingData?.status || "pending",
+      dates: `${formatDate(bookingData?.check_in_date || '').split(',')[0]} - ${formatDate(bookingData?.check_out_date || '').split(',')[0]}`,
+      specialRequest: bookingData?.special_request,
+      validId: bookingData?.valid_id,
+      bookingDate: bookingData?.created_at ? formatDate(bookingData.created_at) : undefined,
+      cancellationReason: bookingData?.cancellation_reason,
+      cancellationDate: bookingData?.cancellation_date ? formatDate(bookingData.cancellation_date) : undefined,
+      isVenueBooking: isVenueBooking,
+      roomType: "",
+      imageUrl: "",
+      guests: 0,
+      price: 0
+    };
+
+    if (bookingData?.user) {
+      result.userDetails = {
+        fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
+        email: bookingData.user.email,
+        phoneNumber: bookingData.user.phone_number
       };
+    }
 
-      if (bookingData.user) {
-        formattedBooking.userDetails = {
-          fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
-          email: bookingData.user.email,
-          phoneNumber: bookingData.user.phone_number
+    if (isVenueBooking) {
+      const areaData = bookingData?.area_details || bookingData?.area;
+      if (areaData) {
+        result.roomType = areaData.area_name || "Venue";
+        result.imageUrl = areaData.area_image || "";
+        result.guests = areaData.capacity || 0;
+        result.price = bookingData?.total_price || 0;
+        result.totalPrice = bookingData?.total_price;
+        result.areaDetails = {
+          area_image: areaData.area_image,
+          area_name: areaData.area_name,
+          price_per_hour: areaData.price_per_hour,
+          capacity: areaData.capacity
         };
       }
-
-      if (isVenueBooking) {
-        const areaData = bookingData.area_details || bookingData.area;
-        if (areaData) {
-          formattedBooking.roomType = areaData.area_name || "Venue";
-          formattedBooking.imageUrl = areaData.area_image || "";
-          formattedBooking.guests = areaData.capacity || 0;
-          formattedBooking.price = bookingData.total_price || 0;
-          formattedBooking.totalPrice = bookingData.total_price;
-          formattedBooking.areaDetails = {
-            area_image: areaData.area_image,
-            area_name: areaData.area_name,
-            price_per_hour: areaData.price_per_hour,
-            capacity: areaData.capacity
-          };
-        }
-      } else {
-        const roomData = bookingData.room_details || bookingData.room;
-        if (roomData) {
-          const roomType = roomData.room_name || "Unknown Room";
-          formattedBooking.roomType = roomType;
-          formattedBooking.imageUrl = roomData.room_image || roomImages[roomType] || deluxe_twin;
-          formattedBooking.guests = roomData.pax || 2;
-          formattedBooking.price = roomData.room_price || 0;
-          formattedBooking.roomDetails = roomData;
-        }
+    } else {
+      const roomData = bookingData?.room_details || bookingData?.room;
+      if (roomData) {
+        const roomType = roomData.room_name || "Unknown Room";
+        result.roomType = roomType;
+        // Use image from database first, only fall back to static images if necessary
+        result.imageUrl = roomData.room_image || deluxe_twin;
+        result.guests = roomData.pax || 2;
+        result.price = roomData.room_price || 0;
+        result.roomDetails = roomData;
       }
-
-      setBookingsToShow([formattedBooking]);
     }
-  }, [effectiveBookingId, bookingData]);
 
-  useEffect(() => {
-    if (!effectiveBookingId && userBookings && userBookings.length > 0) {
-      const formattedBookings = userBookings.map((booking) => {
-        const isVenueBooking = booking.is_venue_booking || false;
-        const formattedBooking: FormattedBooking = {
-          bookingId: booking.id,
-          status: booking.status || "pending",
-          dates: `${new Date(booking.check_in_date).toLocaleDateString()} - ${new Date(booking.check_out_date).toLocaleDateString()}`,
-          specialRequest: booking.special_request,
-          validId: booking.valid_id,
-          bookingDate: booking.created_at ? new Date(booking.created_at).toLocaleDateString() : undefined,
-          cancellationReason: booking.cancellation_reason,
-          cancellationDate: booking.cancellation_date ? new Date(booking.cancellation_date).toLocaleDateString() : undefined,
-          isVenueBooking: isVenueBooking,
-          roomType: "",
-          imageUrl: "",
-          guests: 0,
-          price: 0
-        };
+    return result;
+  }, [effectiveBookingId, bookingData, navigate]);
 
-        if (booking.user) {
-          formattedBooking.userDetails = {
-            fullName: `${booking.user.first_name} ${booking.user.last_name}`,
-            email: booking.user.email,
-            phoneNumber: booking.user.phone_number
-          };
-        }
-
-        if (isVenueBooking) {
-          const areaData = booking.area_details || booking.area;
-          if (areaData) {
-            formattedBooking.roomType = areaData.area_name || "Venue";
-            formattedBooking.imageUrl = areaData.area_image || "";
-            formattedBooking.guests = areaData.capacity || 0;
-            formattedBooking.price = booking.total_price || 0;
-            formattedBooking.totalPrice = booking.total_price;
-            formattedBooking.areaDetails = {
-              area_image: areaData.area_image,
-              area_name: areaData.area_name,
-              price_per_hour: areaData.price_per_hour,
-              capacity: areaData.capacity
-            };
-          }
-        } else {
-          const roomData = booking.room_details || booking.room;
-          if (roomData) {
-            const roomType = roomData.room_name || "Unknown Room";
-            formattedBooking.roomType = roomType;
-            formattedBooking.imageUrl = roomData.room_image || roomImages[roomType] || deluxe_twin;
-            formattedBooking.guests = roomData.pax || 2;
-            formattedBooking.price = roomData.room_price || 0;
-            formattedBooking.roomDetails = roomData;
-          }
-        }
-
-        return formattedBooking;
-      });
-
-      setBookingsToShow(formattedBookings);
-    }
-  }, [effectiveBookingId, userBookings]);
-
-  const isLoading = isLoadingBooking || isLoadingUserBookings;
-  const error = bookingError || userBookingsError;
-
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6 flex justify-center items-center min-h-[300px]">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-          <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-        </div>
+  // Memoize loading component
+  const renderLoading = useCallback(() => (
+    <motion.div
+      className="p-6 space-y-6 flex justify-center items-center min-h-[300px]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+        <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
       </div>
-    );
-  }
+    </motion.div>
+  ), []);
 
-  if (error) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        <p>Error loading booking: {error instanceof Error ? error.message : 'An error occurred'}</p>
-      </div>
-    );
-  }
+  // Memoize error component
+  const renderError = useCallback(() => (
+    <motion.div
+      className="p-6 text-center text-red-500"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <p>Error loading booking: {error instanceof Error ? error.message : 'An error occurred'}</p>
+    </motion.div>
+  ), [error]);
 
-  if (bookingsToShow.length === 0) {
-    return (
-      <div className="text-center p-10 bg-white rounded-lg shadow-md">
-        {effectiveBookingId ? (
-          <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Booking Not Found</h2>
-            <p className="text-gray-600">The booking you're looking for could not be found. Please check the booking ID.</p>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Bookings Found</h2>
-            <p className="text-gray-600">You don't have any bookings yet. Start exploring our rooms and book your stay!</p>
-          </>
-        )}
-      </div>
-    );
-  }
+  // Memoize empty results component
+  const renderEmpty = useCallback(() => (
+    <motion.div
+      className="text-center p-10 bg-white rounded-lg shadow-md"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      {effectiveBookingId ? (
+        <>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Booking Not Found</h2>
+          <p className="text-gray-600">The booking you're looking for could not be found. Please check the booking ID.</p>
+        </>
+      ) : (
+        <>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Bookings Found</h2>
+          <p className="text-gray-600">You don't have any bookings yet. Start exploring our rooms and book your stay!</p>
+        </>
+      )}
+    </motion.div>
+  ), [effectiveBookingId]);
+
+  if (isLoading) return renderLoading();
+  if (error) return renderError();
+  if (!formattedBooking) return renderEmpty();
 
   return (
-    <div className="p-2 space-y-6">
-      {bookingsToShow.map((booking, index) => (
-        <BookingCard key={index} {...booking} />
-      ))}
-    </div>
+    <AnimatePresence>
+      <motion.div
+        className="max-w-4xl mx-auto"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        <div className="w-full">
+          <BookingCard {...formattedBooking} />
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
-};
+});
 
-export default BookingData;
+BookingData.displayName = "BookingData";
+
+export default withSuspense(BookingData);

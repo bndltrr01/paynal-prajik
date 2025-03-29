@@ -24,7 +24,6 @@ const withSuspense = <P extends object>(
         );
     };
 
-    // Set display name for debugging
     const displayName = Component.displayName || Component.name || 'Component';
     WithSuspenseComponent.displayName = `withSuspense(${displayName})`;
 

@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   FileEdit,
   Filter,
@@ -9,8 +11,8 @@ import {
 } from "lucide-react";
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
-import { recordPayment, updateBookingStatus } from "../../services/Admin";
-import { BookingResponse, fetchBookings } from "../../services/Booking";
+import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
+import { BookingResponse } from "../../services/Booking";
 import { formatDate } from "../../utils/formatters";
 
 const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
@@ -439,27 +441,23 @@ const ManageBookings: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 9; // Show 9 bookings per page
 
-  const { data: bookingsResponse, error, isLoading } = useQuery<{ data: BookingResponse[] }, Error>({
-    queryKey: ["admin-bookings"],
+  const { data: bookingsResponse, error, isLoading } = useQuery<{
+    data: BookingResponse[],
+    pagination?: {
+      total_pages: number;
+      current_page: number;
+      total_items: number;
+      page_size: number;
+    }
+  }, Error>({
+    queryKey: ["admin-bookings", currentPage, pageSize],
     queryFn: async () => {
       try {
-        const response = await fetchBookings();
+        const response = await getAllBookings({ page: currentPage, pageSize });
         console.log('Admin bookings response:', response);
-
-        // Check if any bookings have valid_id field
-        if (response.data && response.data.length > 0) {
-          response.data.forEach((booking, index) => {
-            console.log(`Booking ${index} valid_id:`, booking.valid_id);
-            console.log(`Booking ${index} user details:`, booking.user);
-            console.log(`Booking ${index} is venue booking:`, booking.is_venue_booking);
-            if (booking.is_venue_booking) {
-              console.log(`Booking ${index} area details:`, booking.area_details);
-              console.log(`Booking ${index} total price:`, booking.total_price);
-            }
-          });
-        }
-
         return response;
       } catch (err) {
         console.error('Error fetching admin bookings:', err);
@@ -584,6 +582,11 @@ const ManageBookings: FC = () => {
     setShowRejectionModal(false);
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const totalPages = bookingsResponse?.pagination?.total_pages || 1;
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
     const guestName = `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.toLowerCase();
     const email = booking.user?.email?.toLowerCase() || '';
@@ -652,112 +655,157 @@ const ManageBookings: FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       ) : (
-        <div className="overflow-x-auto shadow-md rounded-lg">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date of Reservation
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guest Name
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Property
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-in
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-out
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Amount
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => {
-                  const isVenueBooking = booking.is_venue_booking;
-                  const propertyName = isVenueBooking
-                    ? booking.area_details?.area_name || "Unknown Venue"
-                    : booking.room_details?.room_name || "Unknown Room";
-
-                  return (
-                    <tr key={booking.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                        {formatDate(booking.created_at)}
-                      </td>
-                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                        {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
-                      </td>
-                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                        {booking.user?.email || ''}
-                      </td>
-                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span>{propertyName}</span>
-                          {isVenueBooking ? (
-                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
-                          ) : (
-                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                        {formatDate(booking.check_in_date)}
-                      </td>
-                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                        {formatDate(booking.check_out_date)}
-                      </td>
-                      <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                        <BookingStatusBadge status={booking.status} />
-                      </td>
-                      <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                        ₱{getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => handleViewBooking(booking)}
-                            className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                            title="View Details"
-                          >
-                            <Eye size={25} />
-                          </button>
-                          {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
-                            <button
-                              className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                              title="Edit Booking"
-                            >
-                              <FileEdit size={25} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="py-6 text-center text-gray-500">
-                    No bookings found.
-                  </td>
+        <>
+          <div className="overflow-x-auto shadow-md rounded-lg">
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date of Reservation
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Guest Name
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check-in
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check-out
+                  </th>
+                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Amount
+                  </th>
+                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredBookings.length > 0 ? (
+                  filteredBookings.map((booking) => {
+                    const isVenueBooking = booking.is_venue_booking;
+                    const propertyName = isVenueBooking
+                      ? booking.area_details?.area_name || "Unknown Venue"
+                      : booking.room_details?.room_name || "Unknown Room";
+
+                    return (
+                      <tr key={booking.id} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {formatDate(booking.created_at)}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {booking.user?.email || ''}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span>{propertyName}</span>
+                            {isVenueBooking ? (
+                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
+                            ) : (
+                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {formatDate(booking.check_in_date)}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {formatDate(booking.check_out_date)}
+                        </td>
+                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
+                          <BookingStatusBadge status={booking.status} />
+                        </td>
+                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
+                          ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleViewBooking(booking)}
+                              className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
+                              title="View Details"
+                            >
+                              <Eye size={25} />
+                            </button>
+                            {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
+                              <button
+                                className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
+                                title="Edit Booking"
+                              >
+                                <FileEdit size={25} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="py-6 text-center text-gray-500">
+                      No bookings found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <nav className="flex items-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-l-md border ${currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                {/* Page number buttons */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 border-t border-b ${currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-50'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </nav>
+            </div>
+          )}
+        </>
       )}
 
       {/* Booking Details Modal */}

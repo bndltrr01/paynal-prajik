@@ -384,9 +384,19 @@ export const getBookingDetails = async (bookingId: number) => {
   }
 };
 
-export const getAllBookings = async () => {
+export const getAllBookings = async ({
+  page = 1,
+  pageSize = 9
+}: {
+  page?: number;
+  pageSize?: number;
+} = {}) => {
   try {
     const response = await ADMIN.get('/bookings', {
+      params: {
+        page,
+        page_size: pageSize
+      },
       withCredentials: true,
     });
     return response.data;

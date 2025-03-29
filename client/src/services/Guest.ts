@@ -12,9 +12,22 @@ export const getGuestDetails = async (id: string) => {
     }
 };
 
-export const getGuestBookings = async (id: string) => {
+export const getGuestBookings = async (
+  id: string,
+  {
+    page = 1,
+    pageSize = 9
+  }: {
+    page?: number;
+    pageSize?: number;
+  } = {}
+) => {
     try {
         const response = await guest.get(`/bookings`, {
+            params: {
+                page,
+                page_size: pageSize
+            },
             withCredentials: true
         });
         return response.data;
