@@ -14,3 +14,18 @@ export const fetchAllRooms = async () => {
         throw error;
     }
 };
+
+export const fetchRoomDetail = async (id: string | number) => {
+    try {
+        const response = await room.get(`/rooms/${id}`, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            withCredentials: true
+        });
+        return response.data;
+    } catch (error) {
+        console.error(`Failed to fetch room detail: ${error}`);
+        throw error;
+    }
+};

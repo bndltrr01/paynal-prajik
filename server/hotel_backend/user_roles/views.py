@@ -16,15 +16,21 @@ from datetime import timedelta
 @permission_classes([IsAuthenticated])
 def auth_logout(request):
     try:
+        # Log user activity before logout
+        print(f"Logging out user: {request.user.username} (ID: {request.user.id})")
+        
+        # Logout the user
         logout(request)
         
         response = Response({'message': 'User logged out successfully'}, status=status.HTTP_200_OK)
         
+        # Clear all authentication cookies with proper parameters
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         
         return response
     except Exception as e:
+        print(f"Logout error: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -56,8 +62,6 @@ def change_password(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def send_register_otp(request):
     try:     
         email = request.data.get("email")
@@ -112,8 +116,6 @@ def send_register_otp(request):
         OTP_EXPIRATION_TIME = 120
         cache.set(cache_key, otp_generated, OTP_EXPIRATION_TIME)
         
-        print(form.errors)
-        
         return Response({
             "success": "OTP sent for account verification",
             'otp': otp_generated
@@ -127,8 +129,6 @@ def send_register_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def verify_otp(request):
     try:
         email = request.data.get("email")
@@ -148,46 +148,17 @@ def verify_otp(request):
         if str(cached_otp) != str(received_otp):
             return Response({"error": "Incorrect OTP code. Please try again"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # OTP is valid: remove from cache.
         cache.delete(cache_key)
-        verified_key = f"{email}_verified"
-        cache.set(verified_key, True, timeout=600)
-        
-        return Response({
-            "message": "OTP verified successfully"
-        }, status=status.HTTP_200_OK)
-    except Exception as e:
-        print(f"OTP Error: {e}")
-        return Response({"error": "An error occurred during registration. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def complete_registration(request):
-    try:
-        email = request.data.get("email")
-        password = request.data.get("password")
-        first_name = request.data.get("first_name")
-        last_name = request.data.get("last_name")
-        age = request.data.get("age")
-        gender = request.data.get("gender")
+        # Create guest user with default values.
+        DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
         
-        if not email or not password or not first_name or not last_name or not age or not gender:
-            return Response({
-                "error": "Please fill out the fields"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        verified_key = f"{email}_verified"
-        if not cache.get(verified_key):
-            return Response({
-                "error": "OTP not verified. Please complete OTP verification"
-            }, status=status.HTTP_400_BAD_REQUEST)
+        first_name = "Guest"
+        last_name = ""
         
         if CustomUsers.objects.filter(email=email).exists():
-            return Response({
-                'error': 'Email already exists'
-            }, status=status.HTTP_400_BAD_REQUEST)
-            
-        
-        DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
+            return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
         
         user = CustomUsers.objects.create_user(
             username=email,
@@ -195,26 +166,23 @@ def complete_registration(request):
             password=password,
             first_name=first_name,
             last_name=last_name,
-            age=age,
-            gender=gender,
-            is_admin=False,
+            role="guest",
             profile_image=DEFAULT_PROFILE_IMAGE
         )
         user.save()
-        cache.delete(verified_key)
-        
+
+        # Authenticate and log in the new user.
         user_auth = authenticate(request, username=email, password=password)
         if user_auth is not None:
             login(request, user_auth)
             refresh = RefreshToken.for_user(user_auth)
-            response = {
-                "message": "User registered successfully",
+            response = Response({
+                "message": "OTP verified and user registered successfully",
                 "access_token": str(refresh.access_token),
                 "refresh_token": str(refresh),
                 "user": CustomUserSerializer(user_auth).data
-            }
-            response = Response(response, status=status.HTTP_200_OK)
-            
+            }, status=status.HTTP_200_OK)
+            # Set access and refresh token cookies.
             response.set_cookie(
                 key="access_token",
                 value=str(refresh.access_token),
@@ -223,29 +191,26 @@ def complete_registration(request):
                 samesite='Lax',
                 max_age=timedelta(days=1)
             )
-            
             response.set_cookie(
                 key="refresh_token",
                 value=str(refresh),
                 httponly=True,
                 secure=False,
-                samesite="Lax",
+                samesite='Lax',
                 max_age=timedelta(days=7)
             )
-            
             return response
         else:
             return Response({
-                "error": "An error occurred while completing the registration. Please try again later."
+                "error": "An error occurred during authentication. Please try again later."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
+        print(f"OTP Error: {e}")
         return Response({
-            "error": "An error occurred while completing the registration. Please try again later."
+            "error": "An error occurred during registration. Please try again later."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def resend_otp(request):
     try:
         email = request.data.get("email")
@@ -273,12 +238,10 @@ def resend_otp(request):
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({
-            'error': 'An error occurred while resending the OTP. Please try again later.'
+            'error': f'An error occurred while resending the OTP. Please try again later. {e}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def forgot_password(request):
     try:
         email = request.data.get('email')
@@ -311,8 +274,6 @@ def forgot_password(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def verify_reset_otp(request):
     try:
         email = request.data.get('email')
@@ -348,8 +309,6 @@ def verify_reset_otp(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def reset_password(request):
     try:
         email = request.data.get('email')
@@ -417,8 +376,6 @@ def reset_password(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-@authentication_classes([])
-@permission_classes([AllowAny])
 def user_login(request):
     try:
         email = request.data.get('email')
@@ -427,7 +384,7 @@ def user_login(request):
         if not email or not password:
             return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        user = CustomUsers.objects.filter(email=email).first()
+        user = CustomUsers.objects.filter(email=email)
         if not user:
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -435,8 +392,6 @@ def user_login(request):
         
         if auth_user is None:
             return Response({'error': 'Your password is incorrect'}, status=status.HTTP_401_UNAUTHORIZED)
-        
-        role = 'admin' if user.is_admin else 'guest'
         
         token = RefreshToken.for_user(auth_user)
         
@@ -446,14 +401,12 @@ def user_login(request):
             'username': auth_user.username,
             'first_name': auth_user.first_name,
             'last_name': auth_user.last_name,
-            'age': auth_user.age,
-            'guest_type': auth_user.guest_type,
-            'role': role,
+            'role': auth_user.role,
             'profile_image': auth_user.profile_image.url if auth_user.profile_image else "",
         }
         
         response = Response({
-            'message': f'{role.capitalize()} logged in successfully!',
+            'message': f'{auth_user.first_name} logged in successfully!',
             'user': user_data,
             'access_token': str(token.access_token),
             'refresh_token': str(token)
@@ -484,30 +437,46 @@ def user_login(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_auth(request):
-    user = request.user
-    role = 'admin' if user.is_admin else 'guest'
-    return Response({
-        'isAuthenticated': True,
-        'role': role,
-        'user': {
-            'id': user.id,
-            'email': user.email,
-            'role': role,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'profile_image': user.profile_image.url if user.profile_image else "",
-            'age': user.age
-        }
-    }, status=status.HTTP_200_OK)
+    try:
+        user = request.user
+        print(f"User authentication check: {user.username} (ID: {user.id})")
+        
+        # Check if user is properly authenticated
+        if not user.is_authenticated:
+            print(f"User {user.username} is not authenticated")
+            return Response({
+                'isAuthenticated': False,
+                'error': 'User is not authenticated'
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        return Response({
+            'isAuthenticated': True,
+            'role': user.role,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'profile_image': user.profile_image.url if user.profile_image else "",
+            }
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        print(f"Auth check error: {str(e)}")
+        return Response({
+            'isAuthenticated': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def user_details(request, user_id):
+def user_details(request, id):
     try:
-        user = CustomUsers.objects.get(id=user_id)
-        
+        user = CustomUsers.objects.get(id=id)
         serializer = CustomUserSerializer(user)
-        return Response({'user': serializer.data}, status=status.HTTP_200_OK)
+        return Response({
+            'data': serializer.data
+        }, status=status.HTTP_200_OK)
     except CustomUsers.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

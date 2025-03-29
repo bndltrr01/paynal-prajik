@@ -1,12 +1,15 @@
 import { FC } from "react";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "../../layout/admin/AdminSidebar";
+import { useUserContext } from "../../contexts/AuthContext";
 
 const AdminLayout: FC = () => {
+    const { role } = useUserContext();
+
     return (
         <div className="flex flex-col min-h-screen">
             <div className="flex flex-1">
-                <AdminSidebar />
+                <AdminSidebar role={role} />
                 <main className="flex-grow p-2 bg-gray-50">
                     <Outlet />
                 </main>

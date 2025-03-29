@@ -4,7 +4,7 @@ export const authenticateUser = async () => {
     try {
         const response = await API.get('/auth/user', {
             withCredentials: true
-        });
+        });        
         return response;
     } catch (error) {
         console.error(`Failed to authenticate user: ${error}`);

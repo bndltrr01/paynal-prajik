@@ -1,18 +1,30 @@
-const RoomAvailable = ({
+import { FC } from "react";
+
+interface RoomAvailableProps {
+  image: string;
+  title: string;
+  bedType: string;
+  capacity: number;
+  price: number;
+  availableRooms: number;
+  onBookNow: () => void;
+}
+
+const RoomAvailable: FC<RoomAvailableProps> = ({
   image,
   title,
   bedType,
   capacity,
   price,
   availableRooms,
-  onBookNow, // Function passed from parent
+  onBookNow,
 }) => {
   const soldOut = availableRooms <= 0;
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 flex flex-col">
       {/* Room Image */}
-      <img src={image} alt={title} className="h-44 w-full object-cover" />
+      <img loading="lazy" src={image} alt={title} className="h-44 w-full object-cover" />
 
       {/* Room Details */}
       <div className="p-4 space-y-3">
@@ -50,7 +62,7 @@ const RoomAvailable = ({
         {/* Price and Button */}
         <div className="flex justify-between items-center mt-2">
           <div className="text-lg font-bold text-gray-900 font-montserrat">
-            ₱{price.toLocaleString()}
+            {price.toLocaleString()}
           </div>
           <button
             onClick={onBookNow}

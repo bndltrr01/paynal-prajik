@@ -1,106 +1,37 @@
 import resort from "../assets/resort.jpg";
-import { motion } from "framer-motion";
 
 const Promotion = () => {
-  const headingText = "Unparalleled luxury, timeless comfort";
-  const headingWords = headingText.split(" ");
-
-  const paragraphText = "Elevate the guest experience with a seamless and sophisticated hotel management solution. Designed for premium resorts and luxury accommodations, it streamlines operations while delivering unparalleled comfort, efficiency, and elegance.";
-  const pWords = paragraphText.split(" ");
-
-  const containerVariants = {
-    hidden: {},
-    visible: {
-      transition: {
-        delayChildren: 0.5,
-        staggerChildren: 0.1,
-      },
-    }
-  };
-
-  const wordVariants = {
-    hidden: (custom: number) => ({
-      opacity: 0,
-      x: custom % 2 === 0 ? -50 : 50,
-    }),
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: { duration: 0.5 },
-    }
-  };
-
-  const paragraphVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (custom: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: { delay: custom * 0.1, duration: 0.5 },
-    }),
-  };
-
-  const imageVariants = {
-    hidden: { opacity: 0, x: 50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.5 } },
-  }
-
   return (
-    <>
-      <div className="flex flex-col md:flex-row items-center p-8">
-        <div className="md:w-1/2 w-full flex justify-center">
-          <motion.img
+    <div className=" bg-gray-50 p-5 py-10">
+      <div className="flex flex-col md:flex-row items-center p-8 mx-4 sm:mx-6 md:mx-8 lg:mx-12 xl:mx-16 2xl:mx-20">
+        {/* Image - Fluid Scaling */}
+        <div className="w-full md:w-[750px] md:h-[620px] flex justify-center mb-8 md:mb-0 md:mr-8">
+          <img
             src={resort}
             alt="Luxury Hotel Experience"
-            variants={imageVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ amount: 0.2 }}
-            className="rounded-lg shadow-md w-full md:w-[90%]"
+            className="rounded-lg shadow-md w-full md:w-auto h-auto object-cover"
+            loading="lazy"
+            width="750"
+            height="620"
           />
         </div>
 
-        <div className="md:w-1/2 w-full text-center md:text-left">
-          <div className="py-10">
-            <motion.h2 
-              className="text-9xl text-gray-900 mb-10 font-playfair font-medium"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ amount: 0.2 }}
-            >
-              {headingWords.map((word, index) => (
-                <motion.span
-                  key={index}
-                  custom={index}
-                  variants={wordVariants}
-                  className="inline-block mr-2"
-                >
-                  {word}
-                </motion.span>
-              ))}
-            </motion.h2>
-            <motion.p 
-              className="text-gray-500 text-lg font-montserrat font-medium"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ amount: 0.2 }}
-            >
-              {pWords.map((word, index) => (
-                <motion.span
-                  key={index}
-                  custom={index}
-                  variants={paragraphVariants}
-                  className="inline-block mr-2"
-                >
-                  {word}
-                </motion.span>
-              ))}
-            </motion.p>
+        {/* Text Content */}
+        <div className="w-full md:w-1/2 text-center md:text-left">
+          <div className="py-8">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl text-gray-900 mb-6 font-playfair font-medium">
+              Unparalleled luxury, timeless comfort
+            </h2>
+            <p className="text-gray-600 font-montserrat text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed">
+              Elevate the guest experience with a seamless and sophisticated
+              hotel management solution. Designed for premium resorts and luxury
+              accommodations, it streamlines operations while delivering
+              unparalleled comfort, efficiency, and elegance.
+            </p>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

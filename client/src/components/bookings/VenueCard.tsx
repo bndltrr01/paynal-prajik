@@ -1,40 +1,73 @@
-import { FC, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { motion } from "framer-motion";
+import { Book, Eye } from "lucide-react";
+import { FC } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface AreaCardProps {
+  id: number;
   title: string;
-  location: string;
   priceRange: string;
   capacity: number;
-  description: string;
   image: string;
-  isFeatured: boolean;
+  status: string;
 }
 
-const MAX_DESCRIPTION_LENGTH = 120;
-
 const VenueCard: FC<AreaCardProps> = ({
+  id,
   title,
-  location,
   priceRange,
   capacity,
-  description,
   image,
-  isFeatured,
+  status,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const navigate = useNavigate();
 
-  const trimmedDescription =
-    description.length > MAX_DESCRIPTION_LENGTH && !isExpanded
-      ? `${description.slice(0, MAX_DESCRIPTION_LENGTH)}...`
-      : description;
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/venues/${id}`);
+  };
+
+  const isBookingDisabled = (): boolean => {
+    const lowerStatus = status.toLowerCase();
+    return lowerStatus === 'maintenance' || lowerStatus === 'occupied' || lowerStatus === 'reserved';
+  };
+
+  const handleBookNow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isBookingDisabled()) {
+      navigate(`/venue-booking/${id}`);
+    }
+  };
+
+  const getStatusBadgeColor = (status: string): string => {
+    switch (status.toLowerCase()) {
+      case 'available':
+        return 'text-green-700 bg-green-100';
+      case 'occupied':
+        return 'text-red-700 bg-red-100';
+      case 'maintenance':
+        return 'text-gray-700 bg-gray-100';
+      case 'reserved':
+        return 'text-amber-700 bg-amber-100';
+      case 'unavailable':
+        return 'text-red-700 bg-red-100';
+      default:
+        return 'text-blue-700 bg-blue-100';
+    }
+  };
+
+  // Format status display name if needed
+  const getDisplayStatus = (status: string): string => {
+    // If status is in lowercase, capitalize first letter
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
   return (
-    <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-all duration-300 ease-in-out">
+    <div className="rounded-lg overflow-hidden shadow-md bg-white flex flex-col transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg">
       <motion.img
+        loading="lazy"
         src={image}
         alt={title}
         className="w-full h-64 object-cover"
@@ -48,26 +81,10 @@ const VenueCard: FC<AreaCardProps> = ({
           {/* Title + Featured Tag */}
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xl font-bold">{title}</h3>
-            {isFeatured && (
-              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                FEATURED
-              </span>
-            )}
+            <span className={`text-sm font-bold uppercase px-2 py-1 rounded-full ${getStatusBadgeColor(status)}`}>
+              {getDisplayStatus(status)}
+            </span>
           </div>
-
-          <p className="text-gray-500 text-sm mb-2">{location}</p>
-
-          <p className="text-gray-600 text-sm">
-            {trimmedDescription}
-            {description.length > MAX_DESCRIPTION_LENGTH && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-blue-500 ml-1 hover:underline"
-              >
-                {isExpanded ? "Show Less" : "Read More"}
-              </button>
-            )}
-          </p>
 
           {/* Capacity Section */}
           <div className="flex justify-between items-center text-sm mt-4 text-gray-700">
@@ -79,20 +96,29 @@ const VenueCard: FC<AreaCardProps> = ({
         </div>
 
         {/* Price and Button */}
-        <div className="flex justify-between items-center mt-4">
-          <span className="font-bold text-lg font-montserrat">
+        <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
+          <span className="font-semibold text-lg font-montserrat">
             {priceRange}
           </span>
-          <div className="flex gap-3">
-            <button className="bg-blue-600 text-sm text-white px-4 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition">
-              View Details
+          <div className="flex gap-2 flex-wrap justify-end font-montserrat">
+            <button
+              className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition cursor-pointer flex items-center gap-1"
+              onClick={handleViewDetails}
+            >
+              <Eye size={16} /> <span>View</span>
             </button>
 
-            <Link to="/availability">
-              <button className="bg-blue-600 text-sm text-white px-4 py-2 rounded-lg font-montserrat hover:bg-blue-700 transition">
-                Reserve Now
-              </button>
-            </Link>
+            <button
+              className={`text-sm text-white px-3 py-2 rounded-lg font-montserrat transition flex items-center gap-1 ${isBookingDisabled()
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                }`}
+              onClick={handleBookNow}
+              disabled={isBookingDisabled()}
+              title={isBookingDisabled() ? `Cannot book a venue that is ${status}` : "Book this venue"}
+            >
+              <Book size={16} /> <span>Book</span>
+            </button>
           </div>
         </div>
       </div>

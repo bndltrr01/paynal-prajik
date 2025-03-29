@@ -2,31 +2,76 @@ from django.db import models
 from property.models import Rooms, Areas
 from user_roles.models import CustomUsers
 from django.utils.timezone import now
+from cloudinary.models import CloudinaryField # type: ignore
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from property.models import Rooms, Areas
+
+User = get_user_model()
 
 # Create your models here.
 class Bookings(models.Model):
     BOOKING_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reserved', 'Reserved'),
         ('confirmed', 'Confirmed'),
         ('checked_in', 'Checked In'),
         ('checked_out', 'Checked Out'),
         ('cancelled', 'Cancelled'),
+        ('rejected', 'Rejected'),
+        ('missed_reservation', 'Missed Reservation'),
     ]
     user = models.ForeignKey(CustomUsers, on_delete=models.CASCADE, related_name='bookings')
-    room = models.ForeignKey(Rooms, on_delete=models.CASCADE, related_name='bookings')
+    room = models.ForeignKey(Rooms, on_delete=models.CASCADE, related_name='bookings', null=True, blank=True)
+    area = models.ForeignKey(Areas, on_delete=models.CASCADE, related_name='area_bookings', null=True, blank=True)
     check_in_date = models.DateField(null=False, blank=False)
     check_out_date = models.DateField(null=False, blank=False)
     status = models.CharField(
         max_length=20,
         choices=BOOKING_STATUS_CHOICES,
-        default='confirmed',
+        default='pending',
     )
-    cancellation_date = models.DateField(null=True, blank=True)
+    valid_id = CloudinaryField('valid_id', null=False, blank=False)
+    special_request = models.TextField(null=True, blank=True)
+    cancellation_date = models.DateTimeField(null=True, blank=True)
     cancellation_reason = models.TextField(null=True, blank=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    is_venue_booking = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    payment_status = models.CharField(max_length=20, default='unpaid')
     
     class Meta:
         db_table = 'bookings'
+    
+    def __str__(self):
+        if self.is_venue_booking and self.area:
+            return f"{self.user.email} - {self.area.area_name} - {self.status}"
+        elif self.room:
+            return f"{self.user.email} - {self.room.room_number} - {self.status}"
+        else:
+            return f"{self.user.email} - Unknown Property - {self.status}"
+    
+    def is_editable(self):
+        """Check if the booking can be edited"""
+        return self.status not in ['reserved', 'checked_in', 'checked_out', 'cancelled', 'rejected']
+    
+    def is_cancellable(self):
+        """Check if the booking can be cancelled by the user"""
+        return self.status in ['pending', 'confirmed', 'reserved']
+    
+    def is_active(self):
+        """Check if booking is currently active"""
+        return self.status in ['confirmed', 'reserved', 'checked_in']
+    
+    def get_duration_days(self):
+        """Calculate the duration of stay in days"""
+        if self.check_in_date and self.check_out_date:
+            delta = self.check_out_date - self.check_in_date
+            return delta.days
+        return 0
 
 class Reservations(models.Model):
     RESERVATION_STATUS_CHOICES = [
@@ -38,6 +83,8 @@ class Reservations(models.Model):
     start_time = models.DateTimeField(default=now)
     end_time = models.DateTimeField(default=now)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    valid_id = CloudinaryField('valid_id', null=True, blank=True)
+    special_request = models.TextField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=RESERVATION_STATUS_CHOICES,

@@ -6,7 +6,7 @@ const RoomFeatures = () => {
         {/* Free Wifi */}
         <div className="flex items-center gap-3 text-white">
           <i className="fa-solid fa-wifi text-xl"></i> {/* Font Awesome Icon */}
-          <span className="uppercase tracking-wide font-montserrat text-sm">
+          <span className="uppercase tracking-wide font-montserrat text-lg">
             Free Wifi
           </span>
         </div>
@@ -14,7 +14,7 @@ const RoomFeatures = () => {
         {/* Room Service */}
         <div className="flex items-center gap-3 text-white">
           <i className="fa-solid fa-bell-concierge text-xl"></i>
-          <span className="uppercase tracking-wide font-montserrat text-sm">
+          <span className="uppercase tracking-wide font-montserrat text-lg">
             Room Service
           </span>
         </div>
@@ -22,7 +22,7 @@ const RoomFeatures = () => {
         {/* Housekeeping */}
         <div className="flex items-center gap-3 text-white">
           <i className="fa-solid fa-broom text-xl"></i>
-          <span className="uppercase tracking-wide font-montserrat text-sm">
+          <span className="uppercase tracking-wide font-montserrat text-lg">
             Housekeeping
           </span>
         </div>
@@ -30,7 +30,7 @@ const RoomFeatures = () => {
         {/* 24/7 Support */}
         <div className="flex items-center gap-3 text-white">
           <i className="fa-solid fa-phone-volume text-xl"></i>
-          <span className="uppercase tracking-wide font-montserrat text-sm">
+          <span className="uppercase tracking-wide font-montserrat text-lg">
             24/7 Support
           </span>
         </div>

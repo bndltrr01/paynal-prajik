@@ -18,6 +18,17 @@ def fetch_rooms(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+def fetch_room_detail(request, id):
+    try:
+        room = Rooms.objects.get(id=id)
+        serializer = RoomSerializer(room)
+        return Response({
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
 def fetch_amenities(request):
     try:
         amenities = Amenities.objects.all()
@@ -36,5 +47,14 @@ def fetch_areas(request):
         return Response({
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def fetch_area_detail(request, id):
+    try:
+        area = Areas.objects.get(id=id)
+        serializer = AreaSerializer(area)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

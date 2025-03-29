@@ -1,9 +1,9 @@
-import Footer from "../layout/Footer";
-import RoomHero from "../layout/RoomHero";
-import RoomList from "../components/rooms/RoomList";
+import RoomAbout from "../components/rooms/RoomAbout";
 import RoomFeatures from "../components/rooms/RoomFeatures";
 import RoomIncluded from "../components/rooms/RoomIncluded";
-import RoomAbout from "../components/rooms/RoomAbout";
+import RoomList from "../components/rooms/RoomList";
+import withSuspense from "../hoc/withSuspense";
+import RoomHero from "../layout/RoomHero";
 
 const Rooms = () => {
   return (
@@ -13,9 +13,8 @@ const Rooms = () => {
       <RoomAbout />
       <RoomIncluded />
       <RoomList />
-      <Footer />
     </>
   );
 };
 
-export default Rooms;
+export default withSuspense(Rooms, { loaderType: "card", count: 3 });

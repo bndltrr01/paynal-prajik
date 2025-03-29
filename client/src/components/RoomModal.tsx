@@ -44,6 +44,7 @@ const RoomModal: FC<RoomModalProps> = ({ isOpen, onClose, room }) => {
         {/* Modal Content */}
         <div className="p-6 space-y-4">
           <img
+            loading="lazy"
             src={room.image}
             alt={room.title}
             className="w-full h-56 object-cover rounded-md"

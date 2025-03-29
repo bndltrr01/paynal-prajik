@@ -1,18 +1,21 @@
-import AboutUs from "../components/AboutUs";
+import { Suspense, lazy } from "react";
 import Promotion from "../components/Promotion";
 import Values from "../components/Values";
-import Footer from "../layout/Footer";
 import Hero from "../layout/Hero";
+import AboutUs from "./AboutUs";
+
+const LoadingHydrate = lazy(() => import("../motions/loaders/LoadingHydrate"));
 
 const Homepage = () => {
   return (
-    <section>
-      <Hero />
-      <Promotion />
-      <AboutUs />
-      <Values />
-      <Footer />
-    </section>
+    <Suspense fallback={<LoadingHydrate />} >
+      <section>
+        <Hero />
+        <Promotion />
+        <AboutUs />
+        <Values />
+      </section>
+    </Suspense>
   );
 };
 

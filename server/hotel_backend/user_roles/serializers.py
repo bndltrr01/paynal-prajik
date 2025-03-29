@@ -6,10 +6,20 @@ class CustomUserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomUsers
-        fields = ['id', 'email', 'first_name', 'last_name', 'age', 'guest_type', 'gender', 'profile_image']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'role', 'profile_image']
         extra_kwargs = { 'password': { 'write_only': True } }
         
     def get_profile_image(self, obj):
         if obj.profile_image:
             return obj.profile_image.url
         return ""
+
+    def create(self, validated_data):
+        if not validated_data.get('username'):
+            validated_data['username'] = validated_data.get('email')
+        password = validated_data.pop('password', None)
+        user = CustomUsers(**validated_data)
+        if password:
+            user.set_password(password)
+        user.save()
+        return user

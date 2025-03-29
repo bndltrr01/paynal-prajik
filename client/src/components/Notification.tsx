@@ -1,5 +1,5 @@
-import { FC, useEffect } from "react"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion";
+import { FC, memo, useCallback, useEffect } from "react";
 
 interface NotificationProps {
   icon?: string;
@@ -22,12 +22,14 @@ const typeStyles: Record<string, string> = {
 };
 
 const Notification: FC<NotificationProps> = ({ icon, message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4000);
-    return () => clearTimeout(timer);
+  const handleClose = useCallback(() => {
+    onClose();
   }, [onClose]);
+
+  useEffect(() => {
+    const timer = setTimeout(handleClose, 4000);
+    return () => clearTimeout(timer);
+  }, [handleClose]);
 
   return (
     <AnimatePresence mode="wait">
@@ -51,8 +53,7 @@ const Notification: FC<NotificationProps> = ({ icon, message, type, onClose }) =
         </div>
       </motion.div>
     </AnimatePresence>
-
   )
 }
 
-export default Notification
+export default memo(Notification);

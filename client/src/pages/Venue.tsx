@@ -1,5 +1,5 @@
 import VenueList from "../components/bookings/VenueList";
-import Footer from "../layout/Footer";
+import withSuspense from "../hoc/withSuspense";
 import VenueHero from "../layout/VenueHero";
 
 const Venue = () => {
@@ -7,9 +7,8 @@ const Venue = () => {
     <>
       <VenueHero />
       <VenueList />
-      <Footer />
     </>
   );
 };
 
-export default Venue;
+export default withSuspense(Venue, { loaderType: "card", count: 3 });

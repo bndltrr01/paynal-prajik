@@ -72,7 +72,7 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Active Bookings" value={data.active_bookings} borderColor="border-blue-500" />
         <StatCard title="Available Rooms" value={data.available_rooms} borderColor="border-green-500" />
-        <StatCard title="Upcoming Reservations" value={data.upcoming_reservations} borderColor="border-yellow-500" />
+        <StatCard title="Area Reservations" value={data.upcoming_reservations} borderColor="border-yellow-500" />
         <StatCard title="Revenue This Month" value={`$ ${data.revenue}`} borderColor="border-orange-500" />
       </div>
 

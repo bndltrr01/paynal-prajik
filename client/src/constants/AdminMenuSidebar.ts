@@ -2,8 +2,7 @@ import {
   faGauge,
   faBookBookmark,
   faBed, 
-  faUsers, 
-  faMapMarkerAlt,
+  faUsers,
   faChartLine,
   faComment,
   faConciergeBell,
@@ -18,13 +17,8 @@ export const menuItems = [
   },
   {
     icon: faBookBookmark,
-    label: "Bookings",
+    label: "Manage Bookings",
     link: '/admin/bookings'
-  },
-  {
-    icon: faMapMarkerAlt,
-    label: "Reservations",
-    link: '/admin/reservations'
   },
   {
     icon: faCalendarCheck, 
@@ -43,17 +37,17 @@ export const menuItems = [
   },
   {
     icon: faUsers,
-    label: "Manage Users",
-    link: '/admin/users'
+    label: "Manage Staff",
+    link: '/admin/staff'
   },
   {
     icon: faComment,
-    label: "Comments/Feedback",
+    label: "Comments",
     link: '/admin/comments'
   },
   {
     icon: faChartLine,
-    label: "Reports & Analytics",
+    label: "Reports",
     link: '/admin/reports'
   },
 ];
