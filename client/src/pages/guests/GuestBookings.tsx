@@ -279,11 +279,57 @@ const GuestBookings: FC = () => {
                     if (isVenueBooking) {
                       itemName = booking.area_name || booking.area_details?.area_name || "Venue";
                       itemImage = booking.area_image || booking.area_details?.area_image;
-                      totalAmount = booking.total_price || 0;
+
+                      // For venues - Calculate based on hours
+                      const startTime = booking.start_time || booking.check_in_date;
+                      const endTime = booking.end_time || booking.check_out_date;
+                      let duration = 1; // Default to 1 hour
+
+                      if (startTime && endTime) {
+                        try {
+                          const start = new Date(startTime);
+                          const end = new Date(endTime);
+                          const diffTime = Math.abs(end.getTime() - start.getTime());
+                          duration = Math.ceil(diffTime / (1000 * 60 * 60)) || 1; // Hours
+                        } catch (e) {
+                          console.error("Error calculating venue duration:", e);
+                        }
+                      }
+
+                      // Get hourly rate and calculate total
+                      const hourlyRate =
+                        parseFloat((booking.price_per_hour || booking.area_details?.price_per_hour || "0")
+                          .toString()
+                          .replace(/[^0-9.]/g, '')) || 0;
+
+                      totalAmount = booking.total_price || (hourlyRate * duration);
                     } else {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemImage = booking.room_image || booking.room_details?.room_image;
-                      totalAmount = booking.total_amount || booking.room_details?.room_price || 0;
+
+                      // For rooms - Calculate based on nights
+                      const checkInDate = booking.check_in_date;
+                      const checkOutDate = booking.check_out_date;
+                      let nights = 1; // Default to 1 night
+
+                      if (checkInDate && checkOutDate) {
+                        try {
+                          const checkIn = new Date(checkInDate);
+                          const checkOut = new Date(checkOutDate);
+                          const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1; // Days
+                        } catch (e) {
+                          console.error("Error calculating room nights:", e);
+                        }
+                      }
+
+                      // Get nightly rate and calculate total
+                      const nightlyRate =
+                        parseFloat((booking.room_price || booking.room_details?.room_price || "0")
+                          .toString()
+                          .replace(/[^0-9.]/g, '')) || 0;
+
+                      totalAmount = booking.total_price || booking.total_amount || (nightlyRate * nights);
                     }
 
                     const checkInDate = booking.check_in_date;

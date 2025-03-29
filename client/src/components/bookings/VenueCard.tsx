@@ -29,16 +29,9 @@ const VenueCard: FC<AreaCardProps> = ({
     navigate(`/venues/${id}`);
   };
 
-  const isBookingDisabled = (): boolean => {
-    const lowerStatus = status.toLowerCase();
-    return lowerStatus === 'maintenance' || lowerStatus === 'occupied' || lowerStatus === 'reserved';
-  };
-
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isBookingDisabled()) {
-      navigate(`/venue-booking/${id}`);
-    }
+    navigate(`/venue-booking/${id}`);
   };
 
   const getStatusBadgeColor = (status: string): string => {
@@ -81,9 +74,6 @@ const VenueCard: FC<AreaCardProps> = ({
           {/* Title + Featured Tag */}
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xl font-bold">{title}</h3>
-            <span className={`text-sm font-bold uppercase px-2 py-1 rounded-full ${getStatusBadgeColor(status)}`}>
-              {getDisplayStatus(status)}
-            </span>
           </div>
 
           {/* Capacity Section */}
@@ -109,13 +99,9 @@ const VenueCard: FC<AreaCardProps> = ({
             </button>
 
             <button
-              className={`text-sm text-white px-3 py-2 rounded-lg font-montserrat transition flex items-center gap-1 ${isBookingDisabled()
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 cursor-pointer'
-                }`}
+              className="bg-green-600 hover:bg-green-700 text-sm text-white px-3 py-2 rounded-lg font-montserrat transition cursor-pointer flex items-center gap-1"
               onClick={handleBookNow}
-              disabled={isBookingDisabled()}
-              title={isBookingDisabled() ? `Cannot book a venue that is ${status}` : "Book this venue"}
+              title="Book this venue"
             >
               <Book size={16} /> <span>Book</span>
             </button>

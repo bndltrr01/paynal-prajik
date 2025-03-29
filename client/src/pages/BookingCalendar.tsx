@@ -158,10 +158,11 @@ const BookingCalendar = () => {
         const booking = bookingsByDate[dateString];
 
         // Check if this date is already booked with specific statuses
-        if (booking && booking.status && ['checked_in', 'reserved', 'occupied'].includes(booking.status.toLowerCase())) {
+        if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending', 'no_show'].includes(booking.status.toLowerCase())) {
             return true;
         }
 
+        // Dates with checked_out status are considered available
         return false;
     };
 
@@ -240,16 +241,26 @@ const BookingCalendar = () => {
                     className += " bg-green-100 text-green-800 border border-green-500";
                     break;
                 case 'checked_in':
+                case 'occupied':
                     className += " bg-blue-100 text-blue-800 border border-blue-500";
                     break;
                 case 'checked_out':
-                    className += " bg-gray-100 text-gray-800 border border-gray-500";
+                    // Make checked_out dates appear as normal available dates
+                    if (isCheckinDate || isCheckoutDate) {
+                        className += " bg-blue-600 text-white";
+                    } else if (isInRange) {
+                        className += " bg-blue-200 text-blue-800";
+                    } else if (isHovered) {
+                        className += " bg-blue-100 border border-blue-300";
+                    } else {
+                        className += " bg-white border border-gray-300 hover:bg-gray-100";
+                    }
+                    break;
+                case 'no_show':
+                    className += " bg-purple-100 text-purple-800 border border-purple-500";
                     break;
                 case 'rejected':
                     className += " bg-red-100 text-red-800 border border-red-500";
-                    break;
-                case 'missed_reservation':
-                    className += " bg-orange-100 text-orange-800 border border-orange-500";
                     break;
                 default:
                     // Apply standard styles if status doesn't match any of the above
@@ -454,24 +465,12 @@ const BookingCalendar = () => {
                                             <span className="text-sm">Unavailable Date</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <div className="h-6 w-6 border-2 border-blue-500 bg-white mr-2 rounded-full"></div>
-                                            <span className="text-sm">Today</span>
-                                        </div>
-                                        <div className="flex items-center">
                                             <div className="h-6 w-6 bg-green-100 border border-green-500 mr-2 rounded-full"></div>
                                             <span className="text-sm">Reserved</span>
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-blue-100 border border-blue-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Checked In</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-red-100 border border-red-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Rejected</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-orange-100 border border-orange-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Missed Reservation</span>
+                                            <span className="text-sm">Occupied</span>
                                         </div>
                                     </div>
                                 </div>
@@ -508,14 +507,6 @@ const BookingCalendar = () => {
                             </div>
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-xl font-bold">{roomData.room_name}</h3>
-                                <span className={`px-2 py-1 ${roomData.status === 'available'
-                                    ? 'bg-green-100 text-green-800'
-                                    : roomData.status === 'reserved'
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-red-100 text-red-800'
-                                    } text-sm font-medium rounded-full`}>
-                                    {roomData.status.toUpperCase()}
-                                </span>
                             </div>
                             <p className="text-lg font-semibold text-blue-600 mb-3">
                                 {roomData.price_per_night || roomData.room_price || '₱0'}

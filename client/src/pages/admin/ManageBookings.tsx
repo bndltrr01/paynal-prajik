@@ -39,7 +39,7 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
     case "rejected":
       bgColor = "bg-red-100 text-red-800";
       break;
-    case "missed_reservation":
+    case "no_show":
       bgColor = "bg-purple-100 text-purple-800";
       break;
     default:
@@ -75,7 +75,7 @@ const RejectionReasonModal: FC<{
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+      <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative">
         <h2 className="text-xl font-bold mb-4">Reject Booking</h2>
         <p className="mb-4 text-gray-600">Please provide a reason for rejecting this booking:</p>
 
@@ -108,6 +108,67 @@ const RejectionReasonModal: FC<{
   );
 };
 
+// Extract the booking price and convert to number
+const getBookingPrice = (booking: BookingResponse): number => {
+  try {
+    // First check if total_price is available and use it if present
+    if (booking.total_price) {
+      const totalPrice = typeof booking.total_price === 'string'
+        ? parseFloat(booking.total_price.replace(/[^\d.]/g, ''))
+        : booking.total_price;
+      return totalPrice || 0;
+    }
+
+    // If no total_price, calculate based on duration and base price
+    let basePrice = 0;
+    let duration = 1;
+
+    if (booking.is_venue_booking && booking.area_details) {
+      // For venues - Calculate based on hours
+      const checkIn = booking.check_in_date;
+      const checkOut = booking.check_out_date;
+
+      if (checkIn && checkOut) {
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        // For venues, we use hours as duration
+        duration = Math.max(Math.ceil(diffTime / (1000 * 60 * 60)), 1);
+      }
+
+      // Get hourly rate from price_per_hour
+      if (booking.area_details.price_per_hour) {
+        const priceString = booking.area_details.price_per_hour;
+        basePrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
+      }
+    } else if (!booking.is_venue_booking && booking.room_details) {
+      // For rooms - Calculate based on nights
+      const checkIn = booking.check_in_date;
+      const checkOut = booking.check_out_date;
+
+      if (checkIn && checkOut) {
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        // For rooms, we use days as duration
+        duration = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+      }
+
+      // Get nightly rate from room_price
+      if (booking.room_details.room_price) {
+        const priceString = booking.room_details.room_price;
+        basePrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
+      }
+    }
+
+    // Calculate total price based on duration and base price
+    return basePrice * duration;
+  } catch (error) {
+    console.error('Error parsing booking price:', error);
+    return 0;
+  }
+};
+
 const BookingDetailsModal: FC<{
   booking: BookingResponse | null;
   onClose: () => void;
@@ -115,9 +176,11 @@ const BookingDetailsModal: FC<{
   onReject: () => void;
   onCheckIn?: () => void;
   onCheckOut?: () => void;
-  onMissedReservation?: () => void;
+  onNoShow?: () => void;
   canManage: boolean;
-}> = ({ booking, onClose, onConfirm, onReject, onCheckIn, onCheckOut, onMissedReservation, canManage }) => {
+}> = ({ booking, onClose, onConfirm, onReject, onCheckIn, onCheckOut, onNoShow, canManage }) => {
+  const [paymentAmount, setPaymentAmount] = useState<string>("");
+
   if (!booking) return null;
 
   const isVenueBooking = booking.is_venue_booking;
@@ -143,9 +206,18 @@ const BookingDetailsModal: FC<{
     );
   };
 
+  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPaymentAmount(e.target.value);
+  };
+
+  const bookingPrice = getBookingPrice(booking);
+  const currentPayment = parseFloat(paymentAmount) || 0;
+  const isPaymentComplete = currentPayment === bookingPrice;
+  const isReservedStatus = booking.status === "reserved";
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-auto p-4 sm:p-6 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
@@ -153,82 +225,149 @@ const BookingDetailsModal: FC<{
           <X size={24} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-4 text-center pb-2 border-b">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center pb-2 border-b">
           User Booking Details
         </h2>
 
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span className="font-semibold">Fullname:</span>
-            <span>{booking.user?.first_name} {booking.user?.last_name}</span>
+        <div className="space-y-3 overflow-y-auto max-h-[70vh]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Fullname:</span>
+              <span className="sm:text-right">{booking.user?.first_name} {booking.user?.last_name}</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Email:</span>
+              <span className="sm:text-right break-words">{booking.user?.email}</span>
+            </div>
+
+            {booking.user?.address && (
+              <div className="flex flex-col sm:flex-row justify-between sm:col-span-2">
+                <span className="font-semibold">Address:</span>
+                <span className="sm:text-right">{booking.user?.address}</span>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Property Type:</span>
+              <span>
+                {isVenueBooking ? (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Venue</span>
+                ) : (
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Room</span>
+                )}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">{isVenueBooking ? "Venue:" : "Room:"}</span>
+              <span className="sm:text-right">{isVenueBooking
+                ? (booking.area_details?.area_name || "Unknown Venue")
+                : (booking.room_details?.room_name || "Unknown Room")}
+              </span>
+            </div>
+
+            {isVenueBooking && booking.area_details?.capacity && (
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Capacity:</span>
+                <span>{booking.area_details.capacity} people</span>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Date of Reservation:</span>
+              <span>{formatDate(booking.created_at)}</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Check-in:</span>
+              <span>{formatDate(booking.check_in_date)}</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Check-out:</span>
+              <span>{formatDate(booking.check_out_date)}</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Price:</span>
+              <span className="font-medium">
+                {isVenueBooking
+                  ? booking.area_details?.price_per_hour
+                  : booking.room_details?.room_price}
+                {isVenueBooking ? '/hour' : '/night'}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Duration:</span>
+              <span className="font-medium">
+                {(() => {
+                  try {
+                    const checkIn = new Date(booking.check_in_date);
+                    const checkOut = new Date(booking.check_out_date);
+                    const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+
+                    if (isVenueBooking) {
+                      // For venues, show hours
+                      const hours = Math.max(Math.ceil(diffTime / (1000 * 60 * 60)), 1);
+                      return `${hours} hour${hours !== 1 ? 's' : ''}`;
+                    } else {
+                      // For rooms, show nights
+                      const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+                      return `${nights} night${nights !== 1 ? 's' : ''}`;
+                    }
+                  } catch (e) {
+                    return isVenueBooking ? '1 hour' : '1 night';
+                  }
+                })()}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Total Amount:</span>
+              <span className="font-medium">
+                ₱{bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-between">
+              <span className="font-semibold">Status:</span>
+              <BookingStatusBadge status={booking.status} />
+            </div>
           </div>
 
-          <div className="flex justify-between">
-            <span className="font-semibold">Email:</span>
-            <span>{booking.user?.email}</span>
-          </div>
-
-          {booking.user?.address && (
-            <div className="flex justify-between">
-              <span className="font-semibold">Address:</span>
-              <span>{booking.user?.address}</span>
+          {/* Payment Input Field - Only show for reserved status */}
+          {isReservedStatus && (
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+              <h3 className="font-semibold mb-2">Payment Details</h3>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="relative flex-1 w-full">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span className="text-gray-500">₱</span>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={paymentAmount}
+                    onChange={handlePaymentChange}
+                    placeholder={`Enter amount (${bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                    className="w-full pl-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="mt-2 text-sm">
+                {currentPayment > 0 && (
+                  <p className={isPaymentComplete ? "text-green-600" : "text-red-600"}>
+                    {isPaymentComplete
+                      ? "✓ Payment amount matches the required total."
+                      : `Payment must be exactly ₱${bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to check in the guest.`}
+                  </p>
+                )}
+              </div>
             </div>
           )}
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Property Type:</span>
-            <span>
-              {isVenueBooking ? (
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Venue</span>
-              ) : (
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Room</span>
-              )}
-            </span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">{isVenueBooking ? "Venue:" : "Room:"}</span>
-            <span>{isVenueBooking
-              ? (booking.area_details?.area_name || "Unknown Venue")
-              : (booking.room_details?.room_name || "Unknown Room")}
-            </span>
-          </div>
-
-          {isVenueBooking && booking.area_details?.capacity && (
-            <div className="flex justify-between">
-              <span className="font-semibold">Capacity:</span>
-              <span>{booking.area_details.capacity} people</span>
-            </div>
-          )}
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Date of Reservation:</span>
-            <span>{formatDate(booking.created_at)}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Check-in:</span>
-            <span>{formatDate(booking.check_in_date)}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Check-out:</span>
-            <span>{formatDate(booking.check_out_date)}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Price:</span>
-            <span className="font-medium">
-              {isVenueBooking
-                ? booking.total_price
-                : booking.room_details?.room_price}
-            </span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Status:</span>
-            <BookingStatusBadge status={booking.status} />
-          </div>
 
           {/* Valid ID Section */}
           <div className="mt-4">
@@ -238,17 +377,17 @@ const BookingDetailsModal: FC<{
         </div>
 
         {canManage && booking.status === "pending" && (
-          <div className="flex justify-between mt-6">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
             <button
               onClick={onReject}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
             >
               <X size={18} />
               Reject Booking
             </button>
             <button
               onClick={onConfirm}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <Check size={18} />
               Reserve Booking
@@ -257,17 +396,21 @@ const BookingDetailsModal: FC<{
         )}
 
         {canManage && booking.status === "reserved" && (
-          <div className="flex justify-between mt-6">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
             <button
-              onClick={onMissedReservation}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-2"
+              onClick={onNoShow}
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
             >
               <X size={18} />
-              Mark as Missed
+              No Show
             </button>
             <button
               onClick={onCheckIn}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+              disabled={!isPaymentComplete}
+              className={`px-4 py-2 rounded-md text-white flex items-center justify-center gap-2 transition-colors ${isPaymentComplete
+                ? 'bg-green-600 hover:bg-green-700 cursor-pointer'
+                : 'bg-gray-400 cursor-not-allowed'
+                }`}
             >
               <Check size={18} />
               Check In Guest
@@ -279,7 +422,7 @@ const BookingDetailsModal: FC<{
           <div className="flex justify-center mt-6">
             <button
               onClick={onCheckOut}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
             >
               <Check size={18} />
               Check Out Guest
@@ -385,11 +528,11 @@ const ManageBookings: FC = () => {
     }
   };
 
-  const handleMissedReservation = () => {
+  const handleNoShow = () => {
     if (selectedBooking) {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
-        status: "missed_reservation",
+        status: "no_show",
       });
     }
   };
@@ -474,7 +617,7 @@ const ManageBookings: FC = () => {
             <option value="checked_out">Checked Out</option>
             <option value="cancelled">Cancelled</option>
             <option value="rejected">Rejected</option>
-            <option value="missed_reservation">Missed Reservation</option>
+            <option value="no_show">No Show</option>
           </select>
         </div>
       </div>
@@ -510,7 +653,7 @@ const ManageBookings: FC = () => {
                   Status
                 </th>
                 <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
+                  Total Amount
                 </th>
                 <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -524,9 +667,6 @@ const ManageBookings: FC = () => {
                   const propertyName = isVenueBooking
                     ? booking.area_details?.area_name || "Unknown Venue"
                     : booking.room_details?.room_name || "Unknown Room";
-                  const price = isVenueBooking
-                    ? booking.total_price
-                    : booking.room_details?.room_price || '';
 
                   return (
                     <tr key={booking.id} className="hover:bg-gray-50">
@@ -559,7 +699,7 @@ const ManageBookings: FC = () => {
                         <BookingStatusBadge status={booking.status} />
                       </td>
                       <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
-                        {price}
+                        ₱{getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center space-x-2">
@@ -604,7 +744,7 @@ const ManageBookings: FC = () => {
           onReject={handleRejectInitiate}
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
-          onMissedReservation={handleMissedReservation}
+          onNoShow={handleNoShow}
           canManage={true}
         />
       )}

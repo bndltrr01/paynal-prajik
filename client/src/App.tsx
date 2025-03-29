@@ -54,7 +54,8 @@ const App = () => {
   const isAdminRoute =
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/guest") ||
-    location.pathname.startsWith("/registration");
+    location.pathname.startsWith("/registration") ||
+    location.pathname.startsWith("/forgot-password");
 
   return (
     <>
