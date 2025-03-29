@@ -37,6 +37,18 @@ export const fetchStats = async () => {
   }
 };
 
+export const fetchBookingStatusCounts = async () => {
+  try {
+    const response = await ADMIN.get("/booking_status_counts", {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch booking status counts: ${error}`);
+    throw error;
+  }
+};
+
 export const areaReservations = async () => {
   try {
     const response = await ADMIN.get("/area_reservations", {

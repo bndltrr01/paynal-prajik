@@ -49,10 +49,27 @@ def dashboard_stats(request):
         occupied_rooms = Rooms.objects.filter(status='occupied').count()
         maintenance_rooms = Rooms.objects.filter(status='maintenance').count()
         upcoming_reservations = Reservations.objects.filter(start_time__gte=now).count()
-        revenue = Transactions.objects.filter(status='completed').aggregate(total=Sum('amount'))['total']
         
+        # Get total revenue
+        revenue = Transactions.objects.filter(status='completed').aggregate(total=Sum('amount'))['total']
         if revenue is None:
             revenue = 0.0
+            
+        # Calculate room revenue - transactions associated with non-venue bookings
+        room_transactions = Transactions.objects.filter(
+            status='completed',
+            booking__isnull=False,
+            booking__is_venue_booking=False
+        )
+        room_revenue = room_transactions.aggregate(total=Sum('amount'))['total'] or 0.0
+        
+        # Calculate venue revenue - transactions associated with venue bookings
+        venue_transactions = Transactions.objects.filter(
+            status='completed',
+            booking__isnull=False,
+            booking__is_venue_booking=True
+        )
+        venue_revenue = venue_transactions.aggregate(total=Sum('amount'))['total'] or 0.0
         
         return Response({
             "active_bookings": active_bookings,
@@ -60,7 +77,9 @@ def dashboard_stats(request):
             "occupied_rooms": occupied_rooms,
             "maintenance_rooms": maintenance_rooms,
             "upcoming_reservations": upcoming_reservations,
-            "revenue": float(revenue)
+            "revenue": float(revenue),
+            "room_revenue": float(room_revenue),
+            "venue_revenue": float(venue_revenue)
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -725,5 +744,34 @@ def record_payment(request, booking_id):
         
     except ValueError:
         return Response({"error": "Invalid payment amount"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# Add a new view to get booking status counts
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def booking_status_counts(request):
+    """
+    Get counts of bookings by their status
+    """
+    try:
+        # Count bookings by status
+        pending_count = Bookings.objects.filter(status='pending').count()
+        reserved_count = Bookings.objects.filter(status='reserved').count()
+        checked_in_count = Bookings.objects.filter(status='checked_in').count()
+        checked_out_count = Bookings.objects.filter(status='checked_out').count()
+        cancelled_count = Bookings.objects.filter(status='cancelled').count()
+        no_show_count = Bookings.objects.filter(status='no_show').count() 
+        rejected_count = Bookings.objects.filter(status='rejected').count()
+        
+        return Response({
+            "pending": pending_count,
+            "reserved": reserved_count,
+            "checked_in": checked_in_count,
+            "checked_out": checked_out_count,
+            "cancelled": cancelled_count,
+            "no_show": no_show_count,
+            "rejected": rejected_count
+        }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
