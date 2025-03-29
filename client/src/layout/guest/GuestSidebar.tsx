@@ -1,10 +1,9 @@
-import { FC, ChangeEvent, Suspense, lazy } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { getGuestDetails, updateProfileImage } from "../../services/Guest";
-import { useUserContext } from "../../contexts/AuthContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, Calendar, CreditCard, ImageUp } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { ChangeEvent, FC, Suspense, lazy } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useUserContext } from "../../contexts/AuthContext";
+import { getGuestDetails, updateProfileImage } from "../../services/Guest";
 
 const LoadingHydrate = lazy(() => import("../../motions/loaders/LoadingHydrate"));
 const Error = lazy(() => import("../../pages/_ErrorBoundary"));
@@ -42,7 +41,6 @@ const GuestSidebar: FC = () => {
 
   const menuItems = [
     { icon: <Calendar size={18} />, label: "Bookings", link: "/guest/bookings" },
-    { icon: <Calendar size={18} />, label: "Reservations", link: "/guest/reservations" },
     { icon: <Ban size={18} />, label: "Cancellations", link: "/guest/cancellations" },
     { icon: <CreditCard size={18} />, label: "Payment History", link: "/guest/payments" },
   ];

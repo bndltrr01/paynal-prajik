@@ -8,16 +8,17 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { motion } from "framer-motion";
 import { FC, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../services/Auth";
 import { useUserContext } from "../contexts/AuthContext";
+import { login } from "../services/Auth";
 import Notification from "./Notification";
 
 interface LoginProps {
   toggleLoginModal: () => void;
   openSignupModal: () => void;
+  onSuccessfulLogin?: () => void;
 }
 
-const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal }) => {
+const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSuccessfulLogin }) => {
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -54,11 +55,19 @@ const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal }) => {
         setProfileImage(user.profile_image || "");
         setIsAuthenticated(true);
         setRole(user.role || "guest");
+
         setNotification({
           message: "Logged in successfully",
           type: "success",
           icon: "fas fa-check-circle",
         });
+
+        if (onSuccessfulLogin) {
+          toggleLoginModal();
+          onSuccessfulLogin();
+          return;
+        }
+
         if (user.role === "admin" || user.role === "staff") {
           navigate("/admin");
         } else {

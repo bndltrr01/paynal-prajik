@@ -157,8 +157,8 @@ const CancelReservation = () => {
                             type="submit"
                             disabled={cancelMutation.isPending}
                             className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${cancelMutation.isPending
-                                    ? 'bg-red-400 cursor-not-allowed'
-                                    : 'bg-red-600 hover:bg-red-700 transition-colors'
+                                ? 'bg-red-400 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700 transition-colors'
                                 }`}
                         >
                             {cancelMutation.isPending ? 'Processing...' : 'Cancel Booking'}

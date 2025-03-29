@@ -39,7 +39,6 @@ const AdminDashboard = () => {
     venueRevenue: data?.venue_revenue || 0
   }
 
-  // Extract booking status counts from API response
   const bookingStatusCounts = {
     pending: bookingStatusData?.pending || 0,
     reserved: bookingStatusData?.reserved || 0,

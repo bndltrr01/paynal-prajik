@@ -695,16 +695,16 @@ const ManageBookings: FC = () => {
 
                   return (
                     <tr key={booking.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
                         {formatDate(booking.created_at)}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
                         {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
                         {booking.user?.email || ''}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span>{propertyName}</span>
                           {isVenueBooking ? (
@@ -714,16 +714,16 @@ const ManageBookings: FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
                         {formatDate(booking.check_in_date)}
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
                         {formatDate(booking.check_out_date)}
                       </td>
-                      <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
                         <BookingStatusBadge status={booking.status} />
                       </td>
-                      <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
+                      <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
                         ₱{getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-3 px-4 text-center whitespace-nowrap">

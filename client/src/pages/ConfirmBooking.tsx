@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
+import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
 import { BookingFormData, createBooking, fetchRoomById } from '../services/Booking';
 
@@ -26,8 +27,10 @@ interface RoomData {
 const ConfirmBooking = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated } = useUserContext();
+  const { isAuthenticated, setIsAuthenticated } = useUserContext();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [savedFormData, setSavedFormData] = useState<any>(null);
 
   const roomId = searchParams.get('roomId');
   const arrival = searchParams.get('arrival');
@@ -156,20 +159,82 @@ const ConfirmBooking = () => {
     setDateError(null);
   };
 
+  // Function to handle automatic form submission after login
+  const handleSuccessfulLogin = useCallback(async () => {
+    if (!savedFormData) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Call API to create booking
+      const response = await createBooking(savedFormData);
+
+      // Handle successful booking
+      setSuccess(true);
+
+      // Redirect to booking confirmation page after 2 seconds
+      setTimeout(() => {
+        navigate(`/my-booking?bookingId=${response.id}&success=true`);
+      }, 2000);
+
+    } catch (err) {
+      setError('Failed to create booking. Please try again.');
+      console.error('Error creating booking:', err);
+    } finally {
+      setIsSubmitting(false);
+      setSavedFormData(null);
+    }
+  }, [navigate, savedFormData]);
+
+  // Effect to check if auth status changed and we have saved form data
+  useEffect(() => {
+    if (isAuthenticated && savedFormData) {
+      handleSuccessfulLogin();
+    }
+  }, [isAuthenticated, savedFormData, handleSuccessfulLogin]);
+
   const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+
+    // Validate form data first
+    if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.emailAddress) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    if (!formData.validId) {
+      setError('Please upload a valid ID');
+      return;
+    }
+
+    // Create booking data object
+    const bookingData: BookingFormData = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      emailAddress: formData.emailAddress,
+      specialRequests: formData.specialRequests,
+      validId: formData.validId,
+      roomId: roomId || '',
+      checkIn: selectedArrival,
+      checkOut: selectedDeparture,
+      status: 'pending',
+      totalPrice: calculatedTotalPrice
+    };
+
+    setSavedFormData(bookingData);
+
     if (!isAuthenticated) {
       setShowLoginModal(true);
+    } else {
+      // If user is already authenticated, submit the form
+      handleSuccessfulLogin();
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
-    }
 
     if (!roomId || !selectedArrival || !selectedDeparture) {
       setError('Missing required booking information');
@@ -178,6 +243,27 @@ const ConfirmBooking = () => {
 
     if (!formData.validId) {
       setError('Please upload a valid ID');
+      return;
+    }
+
+    // If not authenticated, trigger the login modal
+    if (!isAuthenticated) {
+      const bookingData: BookingFormData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        emailAddress: formData.emailAddress,
+        specialRequests: formData.specialRequests,
+        validId: formData.validId,
+        roomId: roomId,
+        checkIn: selectedArrival,
+        checkOut: selectedDeparture,
+        status: 'pending',
+        totalPrice: calculatedTotalPrice
+      };
+
+      setSavedFormData(bookingData);
+      setShowLoginModal(true);
       return;
     }
 
@@ -248,6 +334,17 @@ const ConfirmBooking = () => {
   const nights = calculateNights();
   const formattedArrivalDate = formatDate(selectedArrival);
   const formattedDepartureDate = formatDate(selectedDeparture);
+
+  // Toggle between login and signup modals
+  const openSignupModal = () => {
+    setShowLoginModal(false);
+    setShowSignupModal(true);
+  };
+
+  const openLoginModal = () => {
+    setShowSignupModal(false);
+    setShowLoginModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -556,22 +653,15 @@ const ConfirmBooking = () => {
             {/* Submit Button for Mobile View */}
             <div className="lg:hidden mt-6">
               <button
-                type="submit"
-                disabled={isSubmitting || !isAuthenticated}
-                onClick={!isAuthenticated ? handleProceedClick : undefined}
-                className={`w-full py-3 px-6 rounded-md text-white text-center cursor-pointer font-semibold ${!isAuthenticated
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : isSubmitting
-                    ? 'bg-blue-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleProceedClick}
+                className={`w-full py-3 px-6 rounded-md text-white text-center cursor-pointer font-semibold ${isSubmitting
+                  ? 'bg-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
                   }`}
               >
-                {!isAuthenticated
-                  ? 'Please Login to Proceed'
-                  : isSubmitting
-                    ? 'Processing...'
-                    : 'Proceed'
-                }
+                {isSubmitting ? 'Processing...' : 'Proceed'}
               </button>
             </div>
           </form>
@@ -650,23 +740,15 @@ const ConfirmBooking = () => {
 
           <div className="hidden lg:block">
             <button
-              type="submit"
-              form="booking-form"
-              disabled={isSubmitting || !isAuthenticated}
-              onClick={!isAuthenticated ? handleProceedClick : undefined}
-              className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${!isAuthenticated
-                ? 'bg-gray-400 cursor-not-allowed'
-                : isSubmitting
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleProceedClick}
+              className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${isSubmitting
+                ? 'bg-blue-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
                 }`}
             >
-              {!isAuthenticated
-                ? 'Please Login to Proceed'
-                : isSubmitting
-                  ? 'Processing...'
-                  : 'Proceed'
-              }
+              {isSubmitting ? 'Processing...' : 'Proceed'}
             </button>
           </div>
         </div>
@@ -677,10 +759,19 @@ const ConfirmBooking = () => {
         <div className="fixed inset-0 bg-black/50 z-50">
           <LoginModal
             toggleLoginModal={() => setShowLoginModal(false)}
-            openSignupModal={() => {
-              setShowLoginModal(false);
-              // You can add signup modal state here if needed
-            }}
+            openSignupModal={openSignupModal}
+            onSuccessfulLogin={handleSuccessfulLogin}
+          />
+        </div>
+      )}
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <SignupModal
+            toggleRegisterModal={() => setShowSignupModal(false)}
+            openLoginModal={openLoginModal}
+            onSuccessfulSignup={handleSuccessfulLogin}
           />
         </div>
       )}

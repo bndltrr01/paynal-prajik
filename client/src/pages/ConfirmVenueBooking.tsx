@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
+import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
 import { ReservationFormData, createReservation, fetchAreaById } from '../services/Booking';
 
@@ -19,8 +20,10 @@ interface AreaData {
 const ConfirmVenueBooking = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { isAuthenticated } = useUserContext();
+  const { isAuthenticated, setIsAuthenticated } = useUserContext();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [savedFormData, setSavedFormData] = useState<any>(null);
 
   const areaId = searchParams.get('areaId');
   const startTime = searchParams.get('startTime');
@@ -94,18 +97,69 @@ const ConfirmVenueBooking = () => {
     };
   }, [validIdPreview]);
 
+  // Function to handle automatic form submission after login
+  const handleSuccessfulLogin = useCallback(async () => {
+    if (!savedFormData) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Call API to create reservation
+      const response = await createReservation(savedFormData);
+      console.log('Venue booking response:', response);
+
+      if (!response || !response.id) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Handle successful booking
+      setSuccess(true);
+
+      // Redirect to booking confirmation page after 2 seconds
+      setTimeout(() => {
+        navigate(`/my-booking?bookingId=${response.id}&success=true`);
+      }, 2000);
+
+    } catch (err: any) {
+      console.error('Error creating venue booking:', err);
+      let errorMessage = 'Failed to create venue booking. Please try again.';
+
+      // Extract more detailed error message if available
+      if (err.response && err.response.data && err.response.data.error) {
+        if (typeof err.response.data.error === 'string') {
+          errorMessage = err.response.data.error;
+        } else if (typeof err.response.data.error === 'object') {
+          // If error is an object with multiple fields
+          errorMessage = Object.values(err.response.data.error).join('. ');
+        }
+      }
+
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+      setSavedFormData(null);
+    }
+  }, [navigate, savedFormData]);
+
+  // Effect to check if auth status changed and we have saved form data
+  useEffect(() => {
+    if (isAuthenticated && savedFormData) {
+      handleSuccessfulLogin();
+    }
+  }, [isAuthenticated, savedFormData, handleSuccessfulLogin]);
+
   const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
+
+    // Validate form data first
+    if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.emailAddress) {
+      setError('Please fill in all required fields');
+      return;
     }
-  };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
+    if (!formData.validId) {
+      setError('Please upload a valid ID');
       return;
     }
 
@@ -114,8 +168,72 @@ const ConfirmVenueBooking = () => {
       return;
     }
 
+    // Parse the datetime strings to ensure consistent format
+    const parsedStartTime = startTime ? new Date(startTime).toISOString() : null;
+    const parsedEndTime = endTime ? new Date(endTime).toISOString() : null;
+
+    // Create reservation data object
+    const reservationData: ReservationFormData = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      emailAddress: formData.emailAddress,
+      specialRequests: formData.specialRequests,
+      validId: formData.validId,
+      areaId: areaId,
+      startTime: parsedStartTime,
+      endTime: parsedEndTime,
+      totalPrice: parseFloat(totalPrice || '0'),
+      status: 'pending',
+      isVenueBooking: true
+    };
+
+    setSavedFormData(reservationData);
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+    } else {
+      // If user is already authenticated, submit the form
+      handleSuccessfulLogin();
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (!areaId || !startTime || !endTime || !totalPrice) {
+      setError('Missing required booking information');
+      return;
+    }
+
     if (!formData.validId) {
       setError('Please upload a valid ID');
+      return;
+    }
+
+    // If not authenticated, trigger the login modal
+    if (!isAuthenticated) {
+      // Parse the datetime strings to ensure consistent format
+      const parsedStartTime = startTime ? new Date(startTime).toISOString() : null;
+      const parsedEndTime = endTime ? new Date(endTime).toISOString() : null;
+
+      const reservationData: ReservationFormData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        emailAddress: formData.emailAddress,
+        specialRequests: formData.specialRequests,
+        validId: formData.validId,
+        areaId: areaId,
+        startTime: parsedStartTime,
+        endTime: parsedEndTime,
+        totalPrice: parseFloat(totalPrice || '0'),
+        status: 'pending',
+        isVenueBooking: true
+      };
+
+      setSavedFormData(reservationData);
+      setShowLoginModal(true);
       return;
     }
 
@@ -218,6 +336,17 @@ const ConfirmVenueBooking = () => {
   const formattedStartTime = formatDateTime(startTime);
   const formattedEndTime = formatDateTime(endTime);
   const durationHours = calculateDuration();
+
+  // Toggle between login and signup modals
+  const openSignupModal = () => {
+    setShowLoginModal(false);
+    setShowSignupModal(true);
+  };
+
+  const openLoginModal = () => {
+    setShowSignupModal(false);
+    setShowLoginModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -415,22 +544,15 @@ const ConfirmVenueBooking = () => {
             {/* Submit Button for Mobile View */}
             <div className="lg:hidden mt-6">
               <button
-                type="submit"
-                disabled={isSubmitting || !isAuthenticated}
-                onClick={!isAuthenticated ? handleProceedClick : undefined}
-                className={`w-full py-3 px-6 rounded-md text-white text-center cursor-pointer font-semibold ${!isAuthenticated
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : isSubmitting
-                    ? 'bg-blue-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleProceedClick}
+                className={`w-full py-3 px-6 rounded-md text-white text-center cursor-pointer font-semibold ${isSubmitting
+                  ? 'bg-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
                   }`}
               >
-                {!isAuthenticated
-                  ? 'Please Login to Proceed'
-                  : isSubmitting
-                    ? 'Processing...'
-                    : 'Proceed'
-                }
+                {isSubmitting ? 'Processing...' : 'Proceed'}
               </button>
             </div>
           </form>
@@ -510,23 +632,15 @@ const ConfirmVenueBooking = () => {
 
           <div className="hidden lg:block">
             <button
-              type="submit"
-              form="booking-form"
-              disabled={isSubmitting || !isAuthenticated}
-              onClick={!isAuthenticated ? handleProceedClick : undefined}
-              className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${!isAuthenticated
-                ? 'bg-gray-400 cursor-not-allowed'
-                : isSubmitting
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleProceedClick}
+              className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${isSubmitting
+                ? 'bg-blue-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
                 }`}
             >
-              {!isAuthenticated
-                ? 'Please Login to Proceed'
-                : isSubmitting
-                  ? 'Processing...'
-                  : 'Proceed'
-              }
+              {isSubmitting ? 'Processing...' : 'Proceed'}
             </button>
           </div>
         </div>
@@ -537,10 +651,19 @@ const ConfirmVenueBooking = () => {
         <div className="fixed inset-0 bg-black/50 z-50">
           <LoginModal
             toggleLoginModal={() => setShowLoginModal(false)}
-            openSignupModal={() => {
-              setShowLoginModal(false);
-              // You can add signup modal state here if needed
-            }}
+            openSignupModal={openSignupModal}
+            onSuccessfulLogin={handleSuccessfulLogin}
+          />
+        </div>
+      )}
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <SignupModal
+            toggleRegisterModal={() => setShowSignupModal(false)}
+            openLoginModal={openLoginModal}
+            onSuccessfulSignup={handleSuccessfulLogin}
           />
         </div>
       )}
