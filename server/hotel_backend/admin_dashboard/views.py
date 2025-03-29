@@ -622,6 +622,9 @@ def update_booking_status(request, booking_id):
             room = booking.room
             room.status = 'occupied'
             room.save()
+            
+        # We no longer create a transaction record here since it's now handled by the dedicated payment endpoint
+        # This prevents double-counting of revenue
     
     # Special handling for 'checked_out' status - mark the room/area as available and ready for cleaning
     if status_value == 'checked_out' and booking.status != 'checked_out':
@@ -675,3 +678,52 @@ def update_booking_status(request, booking_id):
         "message": f"Booking status updated to {status_value}",
         "data": serializer.data
     }, status=status.HTTP_200_OK)
+
+# Add the new record_payment view
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def record_payment(request, booking_id):
+    """
+    Record a payment for a booking and create a transaction record
+    """
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get payment details from request data
+    amount = request.data.get('amount')
+    transaction_type = request.data.get('transaction_type', 'booking')
+    
+    if not amount:
+        return Response({"error": "Payment amount is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Convert amount to decimal if it's a string
+        if isinstance(amount, str):
+            amount = float(amount)
+            
+        # Mark the booking as paid
+        booking.payment_status = 'paid'
+        booking.save()
+        
+        # Create transaction record
+        transaction = Transactions.objects.create(
+            booking=booking,
+            user=booking.user,
+            transaction_type=transaction_type,
+            amount=amount,
+            status='completed'
+        )
+        
+        return Response({
+            "message": "Payment recorded successfully",
+            "transaction_id": transaction.id,
+            "booking_id": booking.id,
+            "amount": amount
+        }, status=status.HTTP_201_CREATED)
+        
+    except ValueError:
+        return Response({"error": "Invalid payment amount"}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

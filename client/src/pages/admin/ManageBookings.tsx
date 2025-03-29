@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
-import { updateBookingStatus } from "../../services/Admin";
+import { recordPayment, updateBookingStatus } from "../../services/Admin";
 import { BookingResponse, fetchBookings } from "../../services/Booking";
 import { formatDate } from "../../utils/formatters";
 
@@ -174,7 +174,7 @@ const BookingDetailsModal: FC<{
   onClose: () => void;
   onConfirm: () => void;
   onReject: () => void;
-  onCheckIn?: () => void;
+  onCheckIn?: (paymentAmount: number) => void;
   onCheckOut?: () => void;
   onNoShow?: () => void;
   canManage: boolean;
@@ -399,18 +399,17 @@ const BookingDetailsModal: FC<{
           <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
             <button
               onClick={onNoShow}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
             >
-              <X size={18} />
               No Show
             </button>
             <button
-              onClick={onCheckIn}
-              disabled={!isPaymentComplete}
-              className={`px-4 py-2 rounded-md text-white flex items-center justify-center gap-2 transition-colors ${isPaymentComplete
-                ? 'bg-green-600 hover:bg-green-700 cursor-pointer'
+              onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
+              className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${isPaymentComplete
+                ? 'bg-blue-600 hover:bg-blue-700'
                 : 'bg-gray-400 cursor-not-allowed'
                 }`}
+              disabled={!isPaymentComplete}
             >
               <Check size={18} />
               Check In Guest
@@ -470,11 +469,36 @@ const ManageBookings: FC = () => {
   });
 
   const updateBookingStatusMutation = useMutation({
-    mutationFn: async ({ bookingId, status, reason }: { bookingId: number; status: string; reason?: string }) => {
-      return await updateBookingStatus(bookingId, status, reason);
+    mutationFn: async ({
+      bookingId,
+      status,
+      reason,
+      paymentAmount
+    }: {
+      bookingId: number;
+      status: string;
+      reason?: string;
+      paymentAmount?: number;
+    }) => {
+      const result = await updateBookingStatus(bookingId, status, reason);
+
+      // Create a transaction record when checking in
+      if (status === 'checked_in' && paymentAmount) {
+        try {
+          await recordPayment(bookingId, paymentAmount);
+          console.log('Payment recorded successfully');
+        } catch (error) {
+          console.error('Failed to record payment:', error);
+          // We don't throw an error here to not block the check-in process
+        }
+      }
+
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
+      // Also invalidate the stats query to update the revenue in dashboard
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
       toast.success("Booking status updated successfully");
       setSelectedBooking(null);
       setShowRejectionModal(false);
@@ -510,11 +534,12 @@ const ManageBookings: FC = () => {
     }
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = (paymentAmount?: number) => {
     if (selectedBooking) {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
         status: "checked_in",
+        paymentAmount
       });
     }
   };

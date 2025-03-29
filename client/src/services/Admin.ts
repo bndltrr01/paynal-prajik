@@ -338,6 +338,28 @@ export const updateBookingStatus = async (bookingId: number, status: string, rea
   }
 };
 
+export const recordPayment = async (
+  bookingId: number, 
+  amount: number,
+  transactionType: 'booking' | 'reservation' | 'cancellation_refund' = 'booking'
+) => {
+  try {
+    const response = await ADMIN.post(`/booking/${bookingId}/payment`, {
+      amount,
+      transaction_type: transactionType,
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to record payment: ${error}`);
+    throw error;
+  }
+};
+
 export const getBookingDetails = async (bookingId: number) => {
   try {
     const response = await ADMIN.get(`/booking/${bookingId}`, {
