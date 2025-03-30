@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, Clock, Hotel, MessageSquare } from "lucide-react";
 import { FC } from "react";
 import { useUserContext } from "../../contexts/AuthContext";
+import withSuspense from "../../hoc/withSuspense";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import { getGuestBookings, getGuestDetails } from "../../services/Guest";
 
@@ -187,4 +188,4 @@ function getStatusColor(status: string): string {
   }
 }
 
-export default GuestDashboard;
+export default withSuspense(GuestDashboard, { height: "400px" });

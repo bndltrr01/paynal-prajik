@@ -160,4 +160,4 @@ const RoomDetails = () => {
   );
 };
 
-export default withSuspense(RoomDetails, { loaderType: "card", count: 1 });
+export default withSuspense(RoomDetails, { height: "400px" });

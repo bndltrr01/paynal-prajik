@@ -4,6 +4,7 @@ import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
 import Modal from "../../components/Modal";
+import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import {
@@ -559,4 +560,4 @@ const ManageRooms: FC = () => {
   );
 };
 
-export default ManageRooms;
+export default withSuspense(ManageRooms, { height: "500px" });

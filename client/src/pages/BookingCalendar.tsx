@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { addMonths, eachDayOfInterval, endOfMonth, format, isBefore, isEqual, isWithinInterval, parseISO, startOfDay, startOfMonth } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import withSuspense from "../hoc/withSuspense";
 import { fetchRoomBookings, fetchRoomById } from '../services/Booking';
 
 interface AmenityObject {
@@ -568,4 +569,4 @@ const BookingCalendar = () => {
     );
 };
 
-export default BookingCalendar; 
+export default withSuspense(BookingCalendar, { height: "400px" }); 

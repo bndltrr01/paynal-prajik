@@ -2,8 +2,7 @@ import { ComponentType, Suspense } from 'react';
 import ContentLoader from '../motions/loaders/ContentLoader';
 
 interface WithSuspenseProps {
-    loaderType?: "card" | "table" | "list" | "text";
-    count?: number;
+    height?: string;
 }
 
 /**
@@ -14,11 +13,11 @@ interface WithSuspenseProps {
  */
 const withSuspense = <P extends object>(
     Component: ComponentType<P>,
-    { loaderType = "card", count = 3 }: WithSuspenseProps = {}
+    { height = "200px" }: WithSuspenseProps = {}
 ) => {
     const WithSuspenseComponent = (props: P) => {
         return (
-            <Suspense fallback={<ContentLoader type={loaderType} count={count} />}>
+            <Suspense fallback={<ContentLoader height={height} />}>
                 <Component {...props} />
             </Suspense>
         );

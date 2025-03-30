@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, FC, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, FC, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { authenticateUser } from "../services/Auth";
 
 interface User {
@@ -35,13 +35,13 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [profileImage, setProfileImage] = useState<string>("");
 
-    const clearAuthState = () => {
+    const clearAuthState = useCallback(() => {
         setIsAuthenticated(false);
         setUserDetails(null);
         setSessionExpired(false);
         setRole("");
         setProfileImage("");
-    };
+    }, []);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -62,26 +62,17 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
                 } else {
                     clearAuthState();
                 }
-            } catch (error) {
-                console.error("Authentication check failed:", error);
+            } catch {
                 clearAuthState();
             } finally {
-                // Short delay to ensure UI has time to process auth state
-                setTimeout(() => {
-                    setIsLoading(false);
-                }, 300);
+                setIsLoading(false);
             }
         };
 
         checkAuth();
-
-        // Set up periodic authentication check to maintain session
-        const intervalId = setInterval(checkAuth, 15 * 60 * 1000); // Check every 15 minutes
-
-        return () => clearInterval(intervalId);
     }, []);
 
-    const contextValue: UserContextType = {
+    const contextValue = useMemo(() => ({
         isAuthenticated,
         userDetails,
         sessionExpired,
@@ -94,7 +85,15 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
         setRole,
         setProfileImage,
         clearAuthState
-    }
+    }), [
+        isAuthenticated,
+        userDetails,
+        sessionExpired,
+        role,
+        isLoading,
+        profileImage,
+        clearAuthState
+    ]);
 
     return (
         <UserContext.Provider value={contextValue}>

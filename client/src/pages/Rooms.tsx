@@ -17,4 +17,4 @@ const Rooms = () => {
   );
 };
 
-export default withSuspense(Rooms, { loaderType: "card", count: 3 });
+export default withSuspense(Rooms, { height: "300px" });

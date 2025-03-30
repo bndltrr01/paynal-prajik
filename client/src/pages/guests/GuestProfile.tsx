@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle, Edit, Eye, EyeOff, Mail, MapPin, Phone, Save, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { AlertCircle, CheckCircle, Edit, Eye, EyeOff, ImageUp, Mail, Save, X } from "lucide-react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUserContext } from "../../contexts/AuthContext";
 import { changePassword } from "../../services/Auth";
-import { getGuestDetails, updateGuestDetails } from "../../services/Guest";
+import { getGuestDetails, updateGuestDetails, updateProfileImage } from "../../services/Guest";
 
 interface FormFields {
   first_name: string;
@@ -24,7 +24,7 @@ const GuestProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { userDetails } = useUserContext();
+  const { userDetails, profileImage, setProfileImage } = useUserContext();
 
   const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState("personal");
@@ -49,15 +49,14 @@ const GuestProfile = () => {
   });
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  // Fetch guest details
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ["guest", id],
     queryFn: () => getGuestDetails(id as string),
     enabled: !!id,
   });
 
-  // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: (data: FormFields) => {
       const updateData = [
@@ -78,7 +77,25 @@ const GuestProfile = () => {
     }
   });
 
-  // Change password mutation
+  const imageUploadMutation = useMutation({
+    mutationFn: (file: File) => {
+      const formData = new FormData();
+      formData.append("profile_image", file);
+      return updateProfileImage(formData);
+    },
+    onSuccess: (response) => {
+      if (response?.data?.profile_image) {
+        setProfileImage(response.data.profile_image);
+      }
+      queryClient.invalidateQueries({ queryKey: ["guest", id] });
+      setUploadError(null);
+    },
+    onError: (error) => {
+      console.error("Failed to upload image:", error);
+      setUploadError("Failed to upload image. Please try again.");
+    }
+  });
+
   const changePasswordMutation = useMutation({
     mutationFn: (data: PasswordFields) => {
       return changePassword(data.oldPassword, data.newPassword, data.confirmPassword);
@@ -90,16 +107,11 @@ const GuestProfile = () => {
         newPassword: '',
         confirmPassword: ''
       });
-
-      // Close modal after a delay
-      setTimeout(() => {
-        setShowPasswordModal(false);
-        setPasswordSuccess(null);
-      }, 2000);
+      setShowPasswordModal(false);
+      setPasswordSuccess(null);
     },
     onError: (error: any) => {
-      setPasswordError(error.response?.data?.message || "Failed to change password. Please try again.");
-    }
+      setPasswordError(error.response?.data?.message || "Failed to change password. Please try again.")}
   });
 
   useEffect(() => {
@@ -134,7 +146,6 @@ const GuestProfile = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user types
     setPasswordError(null);
   };
 
@@ -145,8 +156,6 @@ const GuestProfile = () => {
 
   const handleChangePassword = (e: FormEvent) => {
     e.preventDefault();
-
-    // Validate passwords
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setPasswordError("New password and confirm password don't match");
       return;
@@ -160,6 +169,17 @@ const GuestProfile = () => {
     changePasswordMutation.mutate(passwordData);
   };
 
+  const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        setUploadError("Image size should be less than 2MB");
+        return;
+      }
+      imageUploadMutation.mutate(file);
+    }
+  }, [imageUploadMutation]);
+
   const togglePasswordVisibility = (field: 'old' | 'new' | 'confirm') => {
     setShowPassword(prev => ({
       ...prev,
@@ -168,6 +188,7 @@ const GuestProfile = () => {
   };
 
   const guestData = profile?.data;
+  const displayImage = guestData?.profile_image || profileImage || "/default-avatar.png";
 
   if (profileLoading) {
     return (
@@ -186,48 +207,45 @@ const GuestProfile = () => {
     );
   }
 
-  const formattedDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   return (
     <div className="max-w-6xl container mx-auto">
       {/* Profile header */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+          <div className="relative group w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
             <img
-              src={guestData?.profile_image || "/default-avatar.png"}
-              alt={guestData?.first_name || "Guest"}
+              src={displayImage}
+              alt={guestData?.first_name}
               className="w-full h-full object-cover"
             />
+            <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              {imageUploadMutation.isPending ? (
+                <span className="text-white text-xs">Uploading...</span>
+              ) : (
+                <>
+                  <ImageUp size={35} className="text-white" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </>
+              )}
+            </label>
           </div>
           <div className="flex-1">
             <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-              <div>
-                <h2 className="text-2xl font-bold">
+              <div className="space-y-2">
+                <h2 className="text-4xl font-semibold">
                   {guestData?.first_name} {guestData?.last_name}
                 </h2>
                 <div className="flex items-center text-gray-600 mt-1">
-                  <Mail className="h-4 w-4 mr-2" />
-                  <span>{guestData?.email}</span>
+                  <Mail size={40} className="mr-2" />
+                  <span className="text-xl">{guestData?.email}</span>
                 </div>
-                {guestData?.phone && (
-                  <div className="flex items-center text-gray-600 mt-1">
-                    <Phone className="h-4 w-4 mr-2" />
-                    <span>{guestData?.phone}</span>
-                  </div>
-                )}
-                {guestData?.address && (
-                  <div className="flex items-center text-gray-600 mt-1">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    <span>{guestData?.address}</span>
-                  </div>
+                {uploadError && (
+                  <div className="mt-2 text-sm text-red-500">{uploadError}</div>
                 )}
               </div>
               <button
@@ -337,8 +355,8 @@ const GuestProfile = () => {
                 <textarea
                   name="address"
                   disabled={!editMode}
-                  rows={3}
-                  className={`w-full p-2 border rounded-md ${editMode ? "bg-white" : "bg-gray-50"
+                  rows={6}
+                  className={`w-full p-2 border rounded-md resize-none ${editMode ? "bg-white" : "bg-gray-50"
                     }`}
                   value={formData.address}
                   onChange={handleInputChange}
@@ -373,25 +391,7 @@ const GuestProfile = () => {
             <div className="space-y-4">
               <div className="flex justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-600">Username</span>
-                <span className="font-medium">{guestData?.username || "N/A"}</span>
-              </div>
-
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Account Created</span>
-                <span className="font-medium">{formattedDate(guestData?.created_at || "")}</span>
-              </div>
-
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Last Login</span>
-                <span className="font-medium">{formattedDate(guestData?.last_login || "")}</span>
-              </div>
-
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Account Status</span>
-                <span className="font-medium">
-                  <span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-2"></span>
-                  Active
-                </span>
+                <span className="font-medium">{guestData?.username}</span>
               </div>
             </div>
 

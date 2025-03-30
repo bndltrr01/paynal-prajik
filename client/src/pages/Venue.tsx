@@ -1,6 +1,6 @@
-import VenueList from "./visitors/areas/VenueList";
-import VenueHero from "./visitors/areas/VenueHero";
 import withSuspense from "../hoc/withSuspense";
+import VenueHero from "./visitors/areas/VenueHero";
+import VenueList from "./visitors/areas/VenueList";
 
 const Venue = () => {
   return (
@@ -11,4 +11,4 @@ const Venue = () => {
   );
 };
 
-export default withSuspense(Venue, { loaderType: "card", count: 3 });
+export default withSuspense(Venue, { height: "300px" });

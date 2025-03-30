@@ -85,9 +85,12 @@ const GuestBookings: FC = () => {
   });
 
   const cancelBookingMutation = useMutation({
-    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) =>
-      cancelBooking(bookingId, reason),
-    onSuccess: () => {
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) => {
+      console.log('Attempting to cancel booking:', bookingId, 'with reason:', reason);
+      return cancelBooking(bookingId, reason);
+    },
+    onSuccess: (data) => {
+      console.log('Cancellation successful:', data);
       searchParams.set('cancelled', 'true');
       setSearchParams(searchParams);
 
@@ -100,6 +103,10 @@ const GuestBookings: FC = () => {
           queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize]
         });
       }
+    },
+    onError: (error: any) => {
+      console.error('Cancellation failed:', error);
+      // Show error directly in UI if needed
     }
   });
 
@@ -152,7 +159,15 @@ const GuestBookings: FC = () => {
   }, [bookings, searchTerm, filterStatus]);
 
   const handleCancelBooking = useCallback((reason: string) => {
-    if (!cancellationBookingId || !reason.trim()) return;
+    if (!cancellationBookingId || !reason.trim()) {
+      console.log('Cannot cancel: missing bookingId or reason', {
+        cancellationBookingId,
+        reasonLength: reason?.length || 0
+      });
+      return;
+    }
+
+    console.log('Handling booking cancellation for ID:', cancellationBookingId, 'with reason:', reason);
 
     cancelBookingMutation.mutate({
       bookingId: cancellationBookingId,
@@ -316,7 +331,7 @@ const GuestBookings: FC = () => {
 
                       const startTime = booking.start_time || booking.check_in_date;
                       const endTime = booking.end_time || booking.check_out_date;
-                      let duration = 1; 
+                      let duration = 1;
 
                       if (startTime && endTime) {
                         try {
@@ -489,6 +504,13 @@ const GuestBookings: FC = () => {
         isOpen={showCancelModal}
         onClose={closeCancelModal}
         onConfirm={handleCancelBooking}
+        bookingId={cancellationBookingId}
+        title="Cancel Booking"
+        description="Please provide a reason for cancelling this booking. Note that cancellations may be subject to fees according to our cancellation policy."
+        reasonLabel="Reason for Cancellation"
+        reasonPlaceholder="Enter detailed reason for cancelling this booking..."
+        confirmButtonText="Confirm Cancellation"
+        showPolicyNote={true}
       />
     </div>
   );

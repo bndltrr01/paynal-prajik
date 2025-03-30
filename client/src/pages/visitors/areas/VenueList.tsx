@@ -28,7 +28,7 @@ const VenueList = () => {
         <h2 className="text-center text-3xl sm:text-4xl font-bold mb-8">
           Select Your Perfect Event Space
         </h2>
-        <ContentLoader type="card" count={3} />
+        <ContentLoader />
       </div>
     );
   }

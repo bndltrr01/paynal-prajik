@@ -191,4 +191,4 @@ const VenueDetails = () => {
     );
 };
 
-export default withSuspense(VenueDetails, { loaderType: "card", count: 1 }); 
+export default withSuspense(VenueDetails, { height: "400px" }); 

@@ -5,7 +5,7 @@ import {
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import DefaultImg from "../assets/Default_pfp.jpg";
 import hotelLogo from "../assets/hotel_logo.png";
@@ -43,7 +43,7 @@ const Navbar: FC = () => {
     clearAuthState,
   } = useUserContext();
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     setLoading(true);
     try {
       console.log("Starting logout process");
@@ -70,10 +70,12 @@ const Navbar: FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clearAuthState, navigate]);
 
-  const toggleLoginModal = () => setLoginModal(!loginModal);
-  const toggleRegisterModal = () => setRegisterModal(!registerModal);
+  const toggleLoginModal = useCallback(() => setLoginModal(prev => !prev), []);
+  const toggleRegisterModal = useCallback(() => setRegisterModal(prev => !prev), []);
+  const toggleMenu = useCallback(() => setMenuOpen(prev => !prev), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -200,7 +202,7 @@ const Navbar: FC = () => {
 
           {/* Mobile Menu */}
           <div className="lg:hidden flex items-center">
-            <button onClick={() => setMenuOpen(true)} className="text-2xl p-2">
+            <button onClick={toggleMenu} className="text-2xl p-2">
               <i className="fa fa-bars"></i>
             </button>
           </div>
@@ -211,7 +213,7 @@ const Navbar: FC = () => {
         <div className="lg:hidden">
           <div
             className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setMenuOpen(false)}
+            onClick={closeMenu}
           ></div>
           <ul className="fixed top-0 right-0 w-full h-screen md:w-3/5 sm:w-4/5 bg-white shadow-md text-black z-50 flex flex-col">
             <div className="flex justify-between items-center p-7 sm:p-9 md:p-9 bg-gray-200">
@@ -223,7 +225,7 @@ const Navbar: FC = () => {
                   className="h-12 w-auto cursor-pointer block sm:hidden md:hidden"
                 />
               </Link>
-              <button onClick={() => setMenuOpen(false)}>
+              <button onClick={closeMenu}>
                 <i className="fa fa-times text-3xl mr-3 sm:mr-0"></i>
               </button>
             </div>
@@ -234,7 +236,7 @@ const Navbar: FC = () => {
               <li
                 key={index}
                 className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
               >
                 <NavLink
                   to={link.link}

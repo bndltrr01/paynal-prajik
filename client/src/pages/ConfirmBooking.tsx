@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { BookCheck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BookCheck } from 'lucide-react';
 import LoginModal from '../components/LoginModal';
 import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
+import withSuspense from "../hoc/withSuspense";
 import { BookingFormData, createBooking, fetchRoomById } from '../services/Booking';
 
 interface Amenity {
@@ -167,18 +168,11 @@ const ConfirmBooking = () => {
     setError(null);
 
     try {
-      // Call API to create booking
       const response = await createBooking(savedFormData);
 
-      // Handle successful booking
       setSuccess(true);
-      // Clear saved form data to prevent duplicate submissions
       setSavedFormData(null);
-
-      // Redirect to booking confirmation page after 2 seconds
-      setTimeout(() => {
-        navigate(`/my-booking?bookingId=${response.id}&success=true`);
-      }, 2000);
+      navigate(`/guest/bookings?bookingId=${response.id}&success=true`);
 
     } catch (err) {
       setError('Failed to create booking. Please try again.');
@@ -188,9 +182,7 @@ const ConfirmBooking = () => {
     }
   }, [navigate, savedFormData, isSubmitting]);
 
-  // Effect to check if auth status changed and we have saved form data
   useEffect(() => {
-    // Only proceed if not already submitting and not previously submitted
     if (isAuthenticated && savedFormData && !isSubmitting && !success) {
       handleSuccessfulLogin();
     }
@@ -198,11 +190,7 @@ const ConfirmBooking = () => {
 
   const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
-    // Prevent duplicate submissions
     if (isSubmitting) return;
-
-    // Validate form data first
     if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.emailAddress) {
       setError('Please fill in all required fields');
       return;
@@ -229,21 +217,15 @@ const ConfirmBooking = () => {
     };
 
     if (!isAuthenticated) {
-      // Save form data and show login modal if not authenticated
       setSavedFormData(bookingData);
       setShowLoginModal(true);
     } else {
-      // Set saved form data and let the effect handle submission
       setSavedFormData(bookingData);
-      // We'll let the useEffect trigger handleSuccessfulLogin
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Prevent form submission - use the button handler to ensure consistent flow
-    // This prevents potential duplicate submissions from different handlers
     handleProceedClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
   };
 
@@ -751,4 +733,4 @@ const ConfirmBooking = () => {
   );
 };
 
-export default ConfirmBooking;
+export default withSuspense(ConfirmBooking, { height: "400px" });

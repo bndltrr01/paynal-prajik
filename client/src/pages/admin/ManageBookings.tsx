@@ -12,6 +12,7 @@ import {
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import CancellationModal from "../../components/bookings/CancellationModal";
+import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
 import { BookingResponse } from "../../services/Booking";
@@ -377,9 +378,9 @@ const ManageBookings: FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 9; 
+  const pageSize = 9;
 
-  const { data: bookingsResponse, error, isLoading } = useQuery<{
+  const { data: bookingsResponse, error } = useQuery<{
     data: BookingResponse[],
     pagination?: {
       total_pages: number;
@@ -422,7 +423,7 @@ const ManageBookings: FC = () => {
         }
       }
 
-      return result;
+      return { result, status };
     },
     onSuccess: (variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
@@ -537,7 +538,6 @@ const ManageBookings: FC = () => {
     const guestName = `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.toLowerCase();
     const email = booking.user?.email?.toLowerCase() || '';
 
-    // Get property name based on if it's a venue booking or room booking
     const propertyName = booking.is_venue_booking
       ? booking.area_details?.area_name?.toLowerCase() || ''
       : booking.room_details?.room_name?.toLowerCase() || '';
@@ -596,162 +596,154 @@ const ManageBookings: FC = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
-          <EventLoader size="80px" color="white" text="Loading bookings..." />
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto shadow-md rounded-lg">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date of Reservation
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Guest Name
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Property
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check-in
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check-out
-                  </th>
-                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredBookings.length > 0 ? (
-                  filteredBookings.map((booking) => {
-                    const isVenueBooking = booking.is_venue_booking;
-                    const propertyName = isVenueBooking
-                      ? booking.area_details?.area_name || "Unknown Venue"
-                      : booking.room_details?.room_name || "Unknown Room";
+      <div className="overflow-x-auto shadow-md rounded-lg">
+        <table className="min-w-full bg-white border border-gray-200">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date of Reservation
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Guest Name
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Property
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Check-in
+              </th>
+              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Check-out
+              </th>
+              <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total Amount
+              </th>
+              <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {filteredBookings.length > 0 ? (
+              filteredBookings.map((booking) => {
+                const isVenueBooking = booking.is_venue_booking;
+                const propertyName = isVenueBooking
+                  ? booking.area_details?.area_name || "Unknown Venue"
+                  : booking.room_details?.room_name || "Unknown Room";
 
-                    return (
-                      <tr key={booking.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {formatDate(booking.created_at)}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {booking.user?.email || ''}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span>{propertyName}</span>
-                            {isVenueBooking ? (
-                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
-                            ) : (
-                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {formatDate(booking.check_in_date)}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {formatDate(booking.check_out_date)}
-                        </td>
-                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                          <BookingStatusBadge status={booking.status} />
-                        </td>
-                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                          ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={() => handleViewBooking(booking)}
-                              className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                              title="View Details"
-                            >
-                              <Eye size={25} />
-                            </button>
-                            {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
-                              <button
-                                className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                                title="Edit Booking"
-                              >
-                                <FileEdit size={25} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={9} className="py-6 text-center text-gray-500">
-                      No bookings found.
+                return (
+                  <tr key={booking.id} className="hover:bg-gray-50">
+                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                      {formatDate(booking.created_at)}
+                    </td>
+                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                      {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
+                    </td>
+                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                      {booking.user?.email || ''}
+                    </td>
+                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span>{propertyName}</span>
+                        {isVenueBooking ? (
+                          <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                      {formatDate(booking.check_in_date)}
+                    </td>
+                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                      {formatDate(booking.check_out_date)}
+                    </td>
+                    <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
+                      <BookingStatusBadge status={booking.status} />
+                    </td>
+                    <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
+                      ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-3 px-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center space-x-2">
+                        <button
+                          onClick={() => handleViewBooking(booking)}
+                          className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
+                          title="View Details"
+                        >
+                          <Eye size={25} />
+                        </button>
+                        {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
+                          <button
+                            className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
+                            title="Edit Booking"
+                          >
+                            <FileEdit size={25} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={9} className="py-6 text-center text-gray-500">
+                  No bookings found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6">
-              <nav className="flex items-center">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-l-md border ${currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-blue-600 hover:bg-blue-50'
-                    }`}
-                >
-                  <ChevronLeft size={20} />
-                </button>
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-6">
+          <nav className="flex items-center">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded-l-md border ${currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-blue-600 hover:bg-blue-50'
+                }`}
+            >
+              <ChevronLeft size={20} />
+            </button>
 
-                {/* Page number buttons */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`px-3 py-1 border-t border-b ${currentPage === page
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-blue-600 hover:bg-blue-50'
-                      }`}
-                  >
-                    {page}
-                  </button>
-                ))}
+            {/* Page number buttons */}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => handlePageChange(page)}
+                className={`px-3 py-1 border-t border-b ${currentPage === page
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-blue-600 hover:bg-blue-50'
+                  }`}
+              >
+                {page}
+              </button>
+            ))}
 
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-blue-600 hover:bg-blue-50'
-                    }`}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </nav>
-            </div>
-          )}
-        </>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-blue-600 hover:bg-blue-50'
+                }`}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </nav>
+        </div>
       )}
 
       {/* Booking Details Modal */}
@@ -788,4 +780,4 @@ const ManageBookings: FC = () => {
   );
 };
 
-export default ManageBookings;
+export default withSuspense(ManageBookings, { height: "500px" });

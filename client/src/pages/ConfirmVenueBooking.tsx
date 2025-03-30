@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { BookCheck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
 import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
+import withSuspense from "../hoc/withSuspense";
 import { ReservationFormData, createReservation, fetchAreaById } from '../services/Booking';
-import { BookCheck } from 'lucide-react';
 
 // Define area data interface
 interface AreaData {
@@ -596,4 +597,4 @@ const ConfirmVenueBooking = () => {
   );
 };
 
-export default ConfirmVenueBooking;
+export default withSuspense(ConfirmVenueBooking, { height: "400px" });

@@ -6,6 +6,7 @@ import EditAreaModal, {
   IArea as IEditArea,
 } from "../../components/admin/EditAreaModal";
 import Modal from "../../components/Modal";
+import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import {
@@ -499,4 +500,4 @@ const ManageAreas = () => {
   );
 };
 
-export default ManageAreas;
+export default withSuspense(ManageAreas, { height: "500px" });

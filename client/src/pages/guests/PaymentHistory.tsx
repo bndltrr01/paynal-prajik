@@ -1,3 +1,4 @@
+import withSuspense from "../../hoc/withSuspense";
 
 const PaymentHistory = () => {
   return (
@@ -5,4 +6,4 @@ const PaymentHistory = () => {
   )
 }
 
-export default PaymentHistory
+export default withSuspense(PaymentHistory, { height: "400px" });

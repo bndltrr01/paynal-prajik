@@ -3,17 +3,17 @@ import "aos/dist/aos.css";
 import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
+import GuestChangePassword from "./components/guests/GuestChangePassword";
 import ScrollToTop from "./components/ScrollToTop";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
 import AdminLayout from "./layout/admin/AdminLayout";
 import Footer from "./layout/Footer";
 import Navbar from "./layout/Navbar";
-import GuestChangePassword from "./components/guests/GuestChangePassword";
 
-// Import the new PageTransitionLoader
-const PageTransitionLoader = lazy(() => import("./motions/loaders/PageTransitionLoader"));
 const LoadingHydrate = lazy(() => import("./motions/loaders/LoadingHydrate"));
+
+// Lazy load page components
 const NotFound = lazy(() => import("./pages/_NotFound"));
 const Homepage = lazy(() => import("./pages/Homepage"));
 const AvailabilityResults = lazy(() => import("./pages/AvailabilityResults"));
@@ -81,74 +81,71 @@ const App = () => {
       <Suspense fallback={<LoadingHydrate />}>
         {!isAdminRoute && <Navbar />}
         <ScrollToTop />
-
-        <Suspense fallback={<PageTransitionLoader />}>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                isAuthenticated ? (
-                  role === "admin" ? (
-                    <Navigate to="/admin" replace />
-                  ) : (
-                    <Homepage />
-                  )
+        <Routes>
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                role === "admin" ? (
+                  <Navigate to="/admin" replace />
                 ) : (
                   <Homepage />
                 )
-              }
-            />
+              ) : (
+                <Homepage />
+              )
+            }
+          />
 
-            <Route path="/confirm-booking" element={<ConfirmBooking />} />
-            <Route path="/confirm-venue-booking" element={<ConfirmVenueBooking />} />
-            <Route path="/registration" element={<RegistrationFlow />} />
+          <Route path="/confirm-booking" element={<ConfirmBooking />} />
+          <Route path="/confirm-venue-booking" element={<ConfirmVenueBooking />} />
+          <Route path="/registration" element={<RegistrationFlow />} />
 
-            {/* Legacy guest profile route for compatibility */}
-            <Route path="/venues" element={<Venue />} />
-            <Route path="/venues/:id" element={<VenueDetails />} />
-            <Route path="/venue-booking/:areaId" element={<VenueBookingCalendar />} />
-            <Route path="/rooms" element={<Rooms />} />
-            <Route path="/rooms/:id" element={<RoomDetails />} />
-            <Route path="/booking/:roomId" element={<BookingCalendar />} />
-            <Route path="/availability" element={<AvailabilityResults />} />
+          {/* Legacy guest profile route for compatibility */}
+          <Route path="/venues" element={<Venue />} />
+          <Route path="/venues/:id" element={<VenueDetails />} />
+          <Route path="/venue-booking/:areaId" element={<VenueBookingCalendar />} />
+          <Route path="/rooms" element={<Rooms />} />
+          <Route path="/rooms/:id" element={<RoomDetails />} />
+          <Route path="/booking/:roomId" element={<BookingCalendar />} />
+          <Route path="/availability" element={<AvailabilityResults />} />
 
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/about-us" element={<AboutUs />} />
-            <Route path="/cancel-reservation" element={<CancelReservation />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/cancel-reservation" element={<CancelReservation />} />
 
-            {/* Protected guest routes with GuestLayout */}
-            <Route element={<ProtectedRoute requiredRole="guest" />}>
-              <Route path="/guest" element={<GuestLayout />}>
-                <Route index element={<GuestDashboard />} />
-                <Route path=":id" element={<GuestProfile />} />
-                <Route path="change-password" element={<GuestChangePassword />} />
-                <Route path="bookings" element={<GuestBookings />} />
-                <Route path="reservations" element={<GuestReservations />} />
-                <Route path="cancellations" element={<GuestCancellations />} />
-                <Route path="payments" element={<PaymentHistory />} />
-              </Route>
+          {/* Protected guest routes with GuestLayout */}
+          <Route element={<ProtectedRoute requiredRole="guest" />}>
+            <Route path="/guest" element={<GuestLayout />}>
+              <Route index element={<GuestDashboard />} />
+              <Route path=":id" element={<GuestProfile />} />
+              <Route path="change-password" element={<GuestChangePassword />} />
+              <Route path="bookings" element={<GuestBookings />} />
+              <Route path="reservations" element={<GuestReservations />} />
+              <Route path="cancellations" element={<GuestCancellations />} />
+              <Route path="payments" element={<PaymentHistory />} />
             </Route>
+          </Route>
 
-            {/* Protected admin routes */}
-            <Route element={<ProtectedRoute requiredRole="admin" />}>
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="bookings" element={<ManageBookings />} />
-                <Route path="reservations" element={<Reservations />} />
-                <Route path="areas" element={<ManageAreas />} />
-                <Route path="rooms" element={<ManageRooms />} />
-                <Route path="amenities" element={<ManageAmenities />} />
-                <Route path="users" element={<ManageUsers />} />
-                <Route path="comments" element={<Comments />} />
-                <Route path="reports" element={<Reports />} />
-              </Route>
+          {/* Protected admin routes */}
+          <Route element={<ProtectedRoute requiredRole="admin" />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="bookings" element={<ManageBookings />} />
+              <Route path="reservations" element={<Reservations />} />
+              <Route path="areas" element={<ManageAreas />} />
+              <Route path="rooms" element={<ManageRooms />} />
+              <Route path="amenities" element={<ManageAmenities />} />
+              <Route path="users" element={<ManageUsers />} />
+              <Route path="comments" element={<Comments />} />
+              <Route path="reports" element={<Reports />} />
             </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
         {!isAdminRoute && <Footer />}
       </Suspense>
+
     </>
   );
 };

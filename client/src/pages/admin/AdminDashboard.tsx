@@ -10,6 +10,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut, Pie } from "react-chartjs-2";
 import StatCard from "../../components/admin/StatCard";
+import withSuspense from "../../hoc/withSuspense";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import { fetchBookingStatusCounts, fetchStats } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
@@ -263,4 +264,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default withSuspense(AdminDashboard, { height: "500px" });

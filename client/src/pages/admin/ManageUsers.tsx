@@ -4,6 +4,7 @@ import { PencilIcon, TrashIcon } from "lucide-react";
 import { FC, useCallback, useState } from "react";
 import { toast } from "react-toastify";
 import EditUserModal, { IUser } from "../../components/admin/EditUserModal";
+import withSuspense from "../../hoc/withSuspense";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import { archiveUser, fetchAllUsers, manageUser } from "../../services/Admin";
 
@@ -175,4 +176,4 @@ const ManageUsers: FC = () => {
   );
 };
 
-export default ManageUsers;
+export default withSuspense(ManageUsers, { height: "500px" });

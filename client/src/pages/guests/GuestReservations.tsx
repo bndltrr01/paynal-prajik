@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { FC, useState } from "react";
 import { useUserContext } from "../../contexts/AuthContext";
+import withSuspense from "../../hoc/withSuspense";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import Error from "../../pages/_ErrorBoundary";
 import { getGuestReservations } from "../../services/Reservation";
@@ -176,4 +177,4 @@ const GuestReservations: FC = () => {
   );
 };
 
-export default GuestReservations;
+export default withSuspense(GuestReservations, { height: "400px" });

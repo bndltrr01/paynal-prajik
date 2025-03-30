@@ -1,90 +1,97 @@
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface AlertProps {
   message: string;
   type?: "success" | "error" | "info" | "warning";
   onClose: () => void;
+  autoClose?: boolean;
+  duration?: number;
 }
 
-const Alert = ({ message, type, onClose }: AlertProps) => {
-  const [show, setShow] = useState(true);
+const Alert = ({
+  message,
+  type = "info",
+  onClose,
+  autoClose = true,
+  duration = 5000
+}: AlertProps) => {
+  const [visible, setVisible] = useState(true);
+  const timerRef = useRef<number | null>(null);
 
-  // Animation variants for Framer Motion
-  const alertVariants = {
-    hidden: { opacity: 0, y: -20 },
-    visible: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-  };
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
-  // Map alert type to Tailwind CSS background colors
-  let bgColor: string;
-  switch (type) {
-    case "success":
-      bgColor = "bg-green-500";
-      break;
-    case "error":
-      bgColor = "bg-red-500";
-      break;
-    case "warning":
-      bgColor = "bg-yellow-500";
-      break;
-    default:
-      bgColor = "bg-blue-500";
-      break;
-  }
-
-  // Choose icon based on alert type using switch-case
-  let Icon;
-  switch (type) {
-    case "success":
-      Icon = CheckCircle;
-      break;
-    case "error":
-      Icon = XCircle;
-      break;
-    case "warning":
-      Icon = AlertTriangle;
-      break;
-    default:
-      Icon = Info;
-      break;
-  }
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    clearTimer();
+    setTimeout(() => {
+      onClose();
+    }, 300); // Allow exit animation to play
+  }, [onClose, clearTimer]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
+    if (autoClose) {
+      timerRef.current = window.setTimeout(() => {
+        handleClose();
+      }, duration);
+    }
+
+    return clearTimer;
+  }, [autoClose, duration, handleClose, clearTimer]);
+
+  const getIcon = () => {
+  switch (type) {
+    case "success":
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
+    case "error":
+        return <XCircle className="w-5 h-5 text-red-500" />;
+    case "warning":
+        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case "info":
+    default:
+        return <Info className="w-5 h-5 text-blue-500" />;
+  }
+  };
+
+  const getBgColor = () => {
+  switch (type) {
+    case "success":
+        return "bg-green-50 border-green-100";
+    case "error":
+        return "bg-red-50 border-red-100";
+    case "warning":
+        return "bg-yellow-50 border-yellow-100";
+      case "info":
+    default:
+        return "bg-blue-50 border-blue-100";
+    }
+  };
 
   return (
     <AnimatePresence>
-      {show && (
+      {visible && (
         <motion.div
-          className={`fixed top-25 left-1/2 transform -translate-x-1/2 z-[9999] max-w-md w-full mx-4 p-4 rounded shadow-lg text-white ${bgColor}`}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          variants={alertVariants}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+          className={`${getBgColor()} flex items-start p-4 mb-4 rounded-md border`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Icon className="h-10 w-10 mr-1" />
-              <span className="text-lg text-center">{message}</span>
-            </div>
-            <button onClick={() => setShow(false)} className="ml-4 focus:outline-none">
-              <svg className="h-5 w-5 fill-current" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                  clipRule="evenodd"
-                />
-              </svg>
+          <div className="flex-shrink-0 mr-3">{getIcon()}</div>
+          <div className="flex-1 mr-2">{message}</div>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 focus:outline-none"
+            aria-label="Close alert"
+          >
+            <XCircle className="w-5 h-5" />
             </button>
-          </div>
         </motion.div>
       )}
     </AnimatePresence>
