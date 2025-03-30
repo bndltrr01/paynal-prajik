@@ -14,11 +14,13 @@ import Notification from "./Notification";
 interface SignupModalProps {
   toggleRegisterModal: () => void;
   openLoginModal: () => void;
+  onSuccessfulSignup?: () => void;
 }
 
 const SignupModal: FC<SignupModalProps> = ({
   toggleRegisterModal,
   openLoginModal,
+  onSuccessfulSignup,
 }) => {
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] =
@@ -81,6 +83,12 @@ const SignupModal: FC<SignupModalProps> = ({
           type: "success",
           icon: "fas fa-check-circle",
         });
+
+        if (onSuccessfulSignup) {
+          localStorage.setItem('pendingBookingCallback', 'true');
+          localStorage.setItem('bookingReturnUrl', window.location.pathname + window.location.search);
+        }
+
         navigate("/registration", { state: { email, password } });
       }
     } catch (error: any) {

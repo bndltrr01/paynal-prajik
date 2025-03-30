@@ -7,12 +7,12 @@ import { fetchAmenities } from "../../services/Admin";
 export interface IRoom {
     id: number;
     roomName: string;
-    roomType: string;  // e.g., "Deluxe", "Suite"
-    capacity: string;  // e.g., "2 Adults, 1 Child"
-    amenities: number[]; // array of Amenity IDs
+    roomType: string;  
+    capacity: string;  
+    amenities: number[]; 
     roomPrice: number;
     roomImage: File | string;
-    status: "Available" | "Occupied" | "Maintenance"; // Shown only if editing
+    status: "Available" | "Occupied" | "Maintenance";
     description: string;
 }
 
@@ -31,7 +31,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
     roomData,
     loading = false,
 }) => {
-    // Local form state
     const [formState, setFormState] = useState<IRoom>({
         id: roomData?.id || 0,
         roomName: roomData?.roomName || "",
@@ -44,7 +43,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         roomImage: roomData?.roomImage || "",
     });
 
-    // Fetch amenities only when modal is open
     const {
         data: amenitiesData,
         isLoading: isLoadingAmenities,
@@ -57,13 +55,10 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
 
     const availableAmenities = amenitiesData?.data || [];
 
-    // For image preview
     const [previewUrl, setPreviewUrl] = useState<string>("");
 
-    // For storing field-level errors from the server
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Map front-end fields to API fields if needed
     const fieldMapping: Record<string, string> = {
         roomName: "room_name",
         roomType: "room_type",
@@ -75,7 +70,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         roomImage: "room_image",
     };
 
-    // Generate preview if roomImage is a File
     useEffect(() => {
         if (formState.roomImage instanceof File) {
             const objectUrl = URL.createObjectURL(formState.roomImage);
@@ -88,7 +82,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         }
     }, [formState.roomImage]);
 
-    // Handle text/select/textarea changes
     const handleChange = (
         e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -96,7 +89,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         setFormState((prev) => ({ ...prev, [name]: value }));
     };
 
-    // Toggle an amenity in the local state
     const handleAmenityChange = (amenityId: number) => {
         setFormState((prev) => {
             const amenitySet = new Set(prev.amenities);
@@ -109,7 +101,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         });
     };
 
-    // Handle image file
     const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
@@ -117,7 +108,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         }
     };
 
-    // Submit form
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -128,7 +118,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         }
     };
 
-    // Close modal on ESC
     useEffect(() => {
         const handleKeyDown = (evt: KeyboardEvent) => {
             if (evt.key === "Escape") {
@@ -158,7 +147,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 20, opacity: 0 }}
                         transition={{ duration: 0.3 }}
-                        // Widened modal: max-w-4xl
                         className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg p-6 relative max-h-[90vh] overflow-y-auto"
                     >
                         <h2 className="text-xl font-semibold mb-4">

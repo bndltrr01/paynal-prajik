@@ -158,10 +158,11 @@ const BookingCalendar = () => {
         const booking = bookingsByDate[dateString];
 
         // Check if this date is already booked with specific statuses
-        if (booking && booking.status && ['checked_in', 'reserved', 'occupied'].includes(booking.status.toLowerCase())) {
+        if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending', 'no_show'].includes(booking.status.toLowerCase())) {
             return true;
         }
 
+        // Dates with checked_out status are considered available
         return false;
     };
 
@@ -240,16 +241,26 @@ const BookingCalendar = () => {
                     className += " bg-green-100 text-green-800 border border-green-500";
                     break;
                 case 'checked_in':
+                case 'occupied':
                     className += " bg-blue-100 text-blue-800 border border-blue-500";
                     break;
                 case 'checked_out':
-                    className += " bg-gray-100 text-gray-800 border border-gray-500";
+                    // Make checked_out dates appear as normal available dates
+                    if (isCheckinDate || isCheckoutDate) {
+                        className += " bg-blue-600 text-white";
+                    } else if (isInRange) {
+                        className += " bg-blue-200 text-blue-800";
+                    } else if (isHovered) {
+                        className += " bg-blue-100 border border-blue-300";
+                    } else {
+                        className += " bg-white border border-gray-300 hover:bg-gray-100";
+                    }
+                    break;
+                case 'no_show':
+                    className += " bg-purple-100 text-purple-800 border border-purple-500";
                     break;
                 case 'rejected':
                     className += " bg-red-100 text-red-800 border border-red-500";
-                    break;
-                case 'missed_reservation':
-                    className += " bg-orange-100 text-orange-800 border border-orange-500";
                     break;
                 default:
                     // Apply standard styles if status doesn't match any of the above
@@ -308,12 +319,12 @@ const BookingCalendar = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 mt-16">
+        <div className="container mx-auto px-4 py-10 mt-16">
             <h2 className="text-4xl font-semibold mb-6 text-center">Book Your Room</h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="bg-white rounded-lg shadow-xl p-6">
                         <h3 className="text-2xl font-bold mb-4">Select Your Stay Dates</h3>
 
                         {/* Selected Dates */}
@@ -331,7 +342,7 @@ const BookingCalendar = () => {
                                 </span>
                             </div>
                             <div className="mt-2 md:mt-0">
-                                <span className="text-gray-600">Nights:</span>
+                                <span className="text-gray-600">Days:</span>
                                 <span className="ml-2 font-semibold">
                                     {checkInDate && checkOutDate ? numberOfNights : 0}
                                 </span>
@@ -454,24 +465,12 @@ const BookingCalendar = () => {
                                             <span className="text-sm">Unavailable Date</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <div className="h-6 w-6 border-2 border-blue-500 bg-white mr-2 rounded-full"></div>
-                                            <span className="text-sm">Today</span>
-                                        </div>
-                                        <div className="flex items-center">
                                             <div className="h-6 w-6 bg-green-100 border border-green-500 mr-2 rounded-full"></div>
                                             <span className="text-sm">Reserved</span>
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-blue-100 border border-blue-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Checked In</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-red-100 border border-red-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Rejected</span>
-                                        </div>
-                                        <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-orange-100 border border-orange-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Missed Reservation</span>
+                                            <span className="text-sm">Occupied</span>
                                         </div>
                                     </div>
                                 </div>
@@ -497,7 +496,7 @@ const BookingCalendar = () => {
                 {/* Room Info Card - Right Side */}
                 <div className="lg:col-span-1">
                     {roomData && (
-                        <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                        <div className="bg-white rounded-lg shadow-xl p-6 sticky top-24">
                             <div className="mb-4">
                                 <img
                                     loading="lazy"
@@ -508,14 +507,6 @@ const BookingCalendar = () => {
                             </div>
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-xl font-bold">{roomData.room_name}</h3>
-                                <span className={`px-2 py-1 ${roomData.status === 'available'
-                                    ? 'bg-green-100 text-green-800'
-                                    : roomData.status === 'reserved'
-                                        ? 'bg-amber-100 text-amber-800'
-                                        : 'bg-red-100 text-red-800'
-                                    } text-sm font-medium rounded-full`}>
-                                    {roomData.status.toUpperCase()}
-                                </span>
                             </div>
                             <p className="text-lg font-semibold text-blue-600 mb-3">
                                 {roomData.price_per_night || roomData.room_price || '₱0'}
@@ -528,17 +519,17 @@ const BookingCalendar = () => {
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                     <span className="mr-2">👥</span>
-                                    <span>Capacity: {roomData.capacity} guests</span>
+                                    <span>{roomData.capacity}</span>
                                 </div>
                             </div>
 
                             <div className="border-t border-gray-200 pt-3 mb-3">
-                                <h4 className="font-medium mb-2">Amenities</h4>
+                                <h4 className="font-semibold text-lg mb-2">Amenities:</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {roomData.amenities && roomData.amenities.map((amenity, index) => (
                                         <span
                                             key={index}
-                                            className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                                            className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
                                         >
                                             {isAmenityObject(amenity) ? amenity.description : String(amenity)}
                                         </span>
@@ -548,21 +539,21 @@ const BookingCalendar = () => {
 
                             {checkInDate && checkOutDate && (
                                 <div className="border-t border-gray-200 pt-3 mt-3">
-                                    <h4 className="font-medium mb-2">Your Booking</h4>
-                                    <div className="bg-gray-50 p-3 rounded-md space-y-2">
+                                    <h4 className="font-semibold text-lg mb-3">Booking Details:</h4>
+                                    <div className="p-1 rounded-md space-y-2">
                                         <div className="flex justify-between">
                                             <span>Check-in:</span>
-                                            <span className="font-medium">{format(checkInDate, 'EEE, MMM dd, yyyy')}</span>
+                                            <span className="font-medium">{format(checkInDate, 'MMM dd, yyyy')}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Check-out:</span>
-                                            <span className="font-medium">{format(checkOutDate, 'EEE, MMM dd, yyyy')}</span>
+                                            <span className="font-medium">{format(checkOutDate, 'MMM dd, yyyy')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span>Nights:</span>
+                                            <span>Days:</span>
                                             <span className="font-medium">{numberOfNights}</span>
                                         </div>
-                                        <div className="flex justify-between text-lg font-semibold text-blue-600 pt-2 border-t border-gray-200">
+                                        <div className="flex justify-between text-3xl font-semibold text-blue-600 pt-2 border-t border-gray-200">
                                             <span>Total Price:</span>
                                             <span>₱{totalPrice.toLocaleString()}</span>
                                         </div>

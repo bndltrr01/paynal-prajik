@@ -52,21 +52,6 @@ const RoomDetails = () => {
     return status === 'maintenance' || status === 'occupied' || status === 'reserved';
   };
 
-  const getStatusBadgeColor = (status: string): string => {
-    switch (status?.toLowerCase()) {
-      case 'available':
-        return 'bg-green-100 text-green-700';
-      case 'occupied':
-        return 'bg-red-100 text-red-700';
-      case 'maintenance':
-        return 'bg-gray-100 text-gray-700';
-      case 'reserved':
-        return 'bg-yellow-100 text-yellow-700';
-      default:
-        return 'bg-blue-100 text-blue-700';
-    }
-  };
-
   return (
     <div className="container mx-auto py-10 px-4">
       <section className="container mx-auto min-h-screen mt-[100px] overflow-x-hidden">
@@ -89,9 +74,6 @@ const RoomDetails = () => {
               <h1 className="text-4xl md:text-5xl lg:text-7xl font-montserrat font-bold tracking-wider uppercase">
                 {roomDetail.room_name}
               </h1>
-              <span className={`inline-block mt-4 px-4 py-2 rounded-full text-lg font-bold ${getStatusBadgeColor(roomDetail.status)}`}>
-                {roomDetail.status?.toUpperCase()}
-              </span>
             </div>
           </div>
         </div>

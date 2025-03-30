@@ -6,6 +6,7 @@ urlpatterns = [
     path('details', views.get_admin_details, name='get_admin_details'),
     path('stats', views.dashboard_stats, name='dashboard_stats'),
     path('area_reservations', views.area_reservations, name='area_reservations'),
+    path('booking_status_counts', views.booking_status_counts, name='booking_status_counts'),
     
     # CRUD Rooms
     path('rooms', views.fetch_rooms, name='fetch_rooms'),
@@ -28,15 +29,15 @@ urlpatterns = [
     path('edit_amenity/<int:pk>', views.update_amenity, name='update_amenity'),
     path('delete_amenity/<int:pk>', views.delete_amenity, name='delete_amenity'),
     
-    # CRUD Users
-    path('staff', views.fetch_all_staff, name='fetch_all_staff'),
-    path('add_staff', views.add_new_staff, name='add_new_staff'),
-    path('show_staff/<int:staff_id>', views.show_staff_details, name='show_staff_details'),
-    path('edit_staff/<int:staff_id>', views.edit_staff, name='edit_staff'),
-    path('delete_staff/<int:staff_id>', views.archive_staff, name='delete_staff'),
+    # Regular Users Management
+    path('users', views.fetch_all_users, name='fetch_all_users'),
+    path('show_user/<int:user_id>', views.show_user_details, name='show_user_details'),
+    path('edit_user/<int:user_id>', views.edit_user, name='edit_user'),
+    path('archive_user/<int:user_id>', views.archive_user, name='archive_user'),
 
     # Add booking management endpoints
     path('bookings', views.admin_bookings, name='admin_bookings'),
     path('booking/<int:booking_id>', views.booking_detail, name='admin_booking_detail'),
     path('booking/<int:booking_id>/status', views.update_booking_status, name='update_booking_status'),
+    path('booking/<int:booking_id>/payment', views.record_payment, name='record_payment'),
 ]

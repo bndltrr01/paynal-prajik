@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, KeyboardEvent, FormEvent, useEffect, FC } from "react";
 import { motion } from "framer-motion";
+import { FC, FormEvent, KeyboardEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useUserContext } from "../contexts/AuthContext";
 import Notification from "../components/Notification";
-import { verifyOtp, resendOtp } from "../services/Auth";
+import { useUserContext } from "../contexts/AuthContext";
+import { resendOtp, verifyOtp } from "../services/Auth";
 
 const RegistrationFlow: FC = () => {
     const [otp, setOTP] = useState<string[]>(Array(6).fill(""));
@@ -97,7 +97,26 @@ const RegistrationFlow: FC = () => {
                 });
                 setIsAuthenticated(true);
                 setUserDetails(response.data.user);
-                navigate("/");
+
+                // Check if there's a pending booking callback
+                const hasPendingBooking = localStorage.getItem('pendingBookingCallback');
+                const returnUrl = localStorage.getItem('bookingReturnUrl');
+
+                if (hasPendingBooking) {
+                    localStorage.removeItem('pendingBookingCallback');
+
+                    if (returnUrl) {
+                        localStorage.removeItem('bookingReturnUrl');
+                        // Navigate back to the booking page
+                        navigate(returnUrl);
+                    } else {
+                        // Fallback to previous page if no specific URL
+                        navigate(-1);
+                    }
+                } else {
+                    // Default navigation to home
+                    navigate("/");
+                }
             }
         } catch (error: any) {
             if (error.response) {

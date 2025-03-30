@@ -37,6 +37,18 @@ export const fetchStats = async () => {
   }
 };
 
+export const fetchBookingStatusCounts = async () => {
+  try {
+    const response = await ADMIN.get("/booking_status_counts", {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch booking status counts: ${error}`);
+    throw error;
+  }
+};
+
 export const areaReservations = async () => {
   try {
     const response = await ADMIN.get("/area_reservations", {
@@ -116,10 +128,54 @@ export const archiveStaff = async (staffId: number) => {
   }
 }
 
-// CRUD Rooms
-export const fetchRooms = async () => {
+export const fetchAllUsers = async () => {
   try {
+    const response = await ADMIN.get("/users", {
+      withCredentials: true,
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error(`Failed to fetch users: ${error}`);
+    throw error;
+  }
+};
+
+export const manageUser = async (userId: number, payload: FormData) => {
+  try {
+    const response = await ADMIN.put(`/edit_user/${userId}`, payload, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to manage user: ${error}`);
+    throw error;
+  }
+};
+
+export const archiveUser = async (userId: number) => {
+  try {
+    const response = await ADMIN.delete(`/archive_user/${userId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to archive user: ${error}`);
+    throw error;
+  }
+}
+
+// CRUD Rooms
+export const fetchRooms = async ({ queryKey }: any) => {
+  try {
+    const [, page = 1, pageSize = 9] = queryKey;
     const response = await ADMIN.get("/rooms", {
+      params: {
+        page,
+        page_size: pageSize
+      },
       withCredentials: true,
     });
     return response.data;
@@ -184,9 +240,14 @@ export const deleteRoom = async (roomId: number) => {
 };
 
 // CRUD Areas
-export const fetchAreas = async () => {
+export const fetchAreas = async ({ queryKey }: any) => {
   try {
+    const [, page = 1, pageSize = 9] = queryKey;
     const response = await ADMIN.get("/areas", {
+      params: {
+        page,
+        page_size: pageSize
+      },
       withCredentials: true,
     });
     return response.data;
@@ -338,6 +399,28 @@ export const updateBookingStatus = async (bookingId: number, status: string, rea
   }
 };
 
+export const recordPayment = async (
+  bookingId: number, 
+  amount: number,
+  transactionType: 'booking' | 'reservation' | 'cancellation_refund' = 'booking'
+) => {
+  try {
+    const response = await ADMIN.post(`/booking/${bookingId}/payment`, {
+      amount,
+      transaction_type: transactionType,
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to record payment: ${error}`);
+    throw error;
+  }
+};
+
 export const getBookingDetails = async (bookingId: number) => {
   try {
     const response = await ADMIN.get(`/booking/${bookingId}`, {
@@ -350,9 +433,19 @@ export const getBookingDetails = async (bookingId: number) => {
   }
 };
 
-export const getAllBookings = async () => {
+export const getAllBookings = async ({
+  page = 1,
+  pageSize = 9
+}: {
+  page?: number;
+  pageSize?: number;
+} = {}) => {
   try {
     const response = await ADMIN.get('/bookings', {
+      params: {
+        page,
+        page_size: pageSize
+      },
       withCredentials: true,
     });
     return response.data;

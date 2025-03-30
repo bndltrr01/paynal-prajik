@@ -75,9 +75,27 @@ export interface ReservationFormData {
     isVenueBooking?: boolean;
 }
 
-export const fetchBookings = async (): Promise<{ data: BookingResponse[] }> => {
+export const fetchBookings = async ({
+  page = 1, 
+  pageSize = 9
+}: { 
+  page?: number; 
+  pageSize?: number;
+} = {}): Promise<{ 
+  data: BookingResponse[];
+  pagination?: {
+    total_pages: number;
+    current_page: number;
+    total_items: number;
+    page_size: number;
+  }
+}> => {
     try {
         const response = await booking.get('/bookings', {
+            params: {
+                page,
+                page_size: pageSize
+            },
             withCredentials: true
         });
         return response.data;
@@ -248,13 +266,23 @@ export const fetchBookingDetail = async (bookingId: string) => {
     }
 };
 
-export const fetchUserBookings = async () => {
+export const fetchUserBookings = async ({
+  page = 1,
+  pageSize = 9
+}: {
+  page?: number;
+  pageSize?: number;
+} = {}) => {
     try {
         const response = await booking.get('/user/bookings', {
+            params: {
+                page,
+                page_size: pageSize
+            },
             headers: { 'Content-Type': 'application/json' },
             withCredentials: true
         });
-        return response.data.data;
+        return response.data;
     } catch (error) {
         console.error(`Failed to fetch user bookings: ${error}`);
         throw error;

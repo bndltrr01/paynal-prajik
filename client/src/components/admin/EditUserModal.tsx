@@ -232,4 +232,4 @@ const EditUserModal: FC<IUserFormModalProps> = ({
     );
 };
 
-export default memo(EditUserModal);
+export default memo(EditUserModal); 

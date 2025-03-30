@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
+import { Book, Eye } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, Book } from "lucide-react";
 import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
@@ -81,29 +81,9 @@ const AvailabilityResults = () => {
                       />
                     )}
                     {/* Room Name & Basic Info */}
-                    <h3 className="text-lg font-bold mb-1">{room.room_name}</h3>
-                    {room.room_type && (
-                      <p className="text-sm text-gray-500 mb-1">
-                        Room Type:{" "}
-                        <span className="font-medium">{room.room_type}</span>
-                      </p>
-                    )}
-                    <div className="text-sm text-gray-700 mb-2">
-                      {room.bed_size && (
-                        <p>
-                          <span className="font-medium">Bed Size:</span>{" "}
-                          {room.bed_size}
-                        </p>
-                      )}
-                      {room.pax && (
-                        <p>
-                          <span className="font-medium">Capacity:</span>{" "}
-                          {room.pax} pax
-                        </p>
-                      )}
-                    </div>
+                    <h3 className="text-xl font-semibold mb-1">{room.room_name}</h3>
                     {/* Price & Action */}
-                    <p className="text-gray-800 font-semibold text-lg mb-3">
+                    <p className="text-gray-900 font-semibold text-lg mb-3">
                       {room.room_price}
                     </p>
                     <div className="mt-auto flex flex-wrap justify-start gap-2 font-montserrat">
@@ -151,20 +131,13 @@ const AvailabilityResults = () => {
                         className="w-full h-40 object-cover mb-3 rounded"
                       />
                     )}
+
                     {/* Area Name & Basic Info */}
-                    <h3 className="text-lg font-bold mb-1">{area.area_name}</h3>
-                    {/* Additional Details (Capacity, etc.) */}
-                    <div className="text-sm text-gray-700 mb-2">
-                      {area.capacity && (
-                        <p>
-                          <span className="font-medium">Capacity:</span>{" "}
-                          {area.capacity} persons
-                        </p>
-                      )}
-                    </div>
+                    <h3 className="text-xl font-semibold mb-1">{area.area_name}</h3>
+
                     {/* Price & Action */}
-                    <p className="text-gray-800 font-semibold text-lg mb-3">
-                      {area.price_per_hour} / hour
+                    <p className="text-gray-900 font-semibold text-lg mb-3">
+                      {area.price_per_hour}
                     </p>
                     <div className="mt-auto flex flex-wrap justify-start gap-2 font-montserrat">
                       <button

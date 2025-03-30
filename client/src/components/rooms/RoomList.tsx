@@ -49,7 +49,6 @@ const RoomList: FC = () => {
     };
   });
 
-  // Filter rooms based on status filter if set
   const filteredRooms = statusFilter
     ? rooms.filter(room => room.status.toLowerCase() === statusFilter.toLowerCase())
     : rooms;

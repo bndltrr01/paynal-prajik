@@ -64,16 +64,6 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
         };
 
         checkAuth();
-
-        const handleFocus = () => {
-            checkAuth();
-        };
-
-        window.addEventListener('focus', handleFocus);
-
-        return () => {
-            window.removeEventListener('focus', handleFocus);
-        };
     }, []);
 
     const contextValue: UserContextType = {

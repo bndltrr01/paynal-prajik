@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FC, useState } from "react";
+import { toast } from "react-toastify";
 import EditAreaModal, {
   IArea as IEditArea,
 } from "../../components/admin/EditAreaModal";
@@ -15,7 +16,7 @@ import {
 } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
-import { Edit, Eye, MapPin, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Eye, MapPin, Trash2 } from "lucide-react";
 
 interface Area {
   id: number;
@@ -29,6 +30,13 @@ interface Area {
 
 interface AddAreaResponse {
   data: any;
+}
+
+interface PaginationData {
+  total_pages: number;
+  current_page: number;
+  total_items: number;
+  page_size: number;
 }
 
 // View Area Modal Component
@@ -87,7 +95,7 @@ const ViewAreaModal: FC<{
             {/* Price + button */}
             <div className="mt-auto">
               <p className="text-2xl font-bold mb-4">
-                {areaData.price_per_hour.toLocaleString()} per hour
+                {areaData.price_per_hour.toLocaleString()}
               </p>
               <button
                 onClick={onClose}
@@ -106,6 +114,8 @@ const ViewAreaModal: FC<{
 const ManageAreas = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editAreaData, setEditAreaData] = useState<IEditArea | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(9);
 
   // For view modal
   const [showViewModal, setShowViewModal] = useState(false);
@@ -118,15 +128,36 @@ const ManageAreas = () => {
   const queryClient = useQueryClient();
 
   const {
-    data: areasData,
+    data: areasResponse,
     isLoading,
     isError,
-  } = useQuery<{ data: Area[] }>({
-    queryKey: ["areas"],
+  } = useQuery<{
+    data: Area[];
+    pagination: PaginationData;
+  }>({
+    queryKey: ["areas", currentPage, pageSize],
     queryFn: fetchAreas,
   });
 
-  const areas = areasData?.data || [];
+  const areas = areasResponse?.data || [];
+  const pagination = areasResponse?.pagination;
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination && currentPage < pagination.total_pages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const addAreaMutation = useMutation<AddAreaResponse, unknown, FormData>({
     mutationFn: addNewArea,
@@ -135,8 +166,16 @@ const ManageAreas = () => {
       setLoaderText("Adding area...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "areas"
+      });
       setShowFormModal(false);
+      toast.success("Area added successfully!");
+
+      setCurrentPage(1);
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to add area: ${error.message || 'Unknown error'}`);
     },
     onSettled: () => {
       setLoading(false);
@@ -155,8 +194,15 @@ const ManageAreas = () => {
       setLoaderText("Updating area...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "areas"
+      });
       setShowFormModal(false);
+      toast.success("Area updated successfully!");
+    },
+    onError: (error: any) => {
+      toast.error(`Failed to update area: ${error.message || 'Unknown error'}`);
+      console.error("Error updating area:", error);
     },
     onSettled: () => {
       setLoading(false);
@@ -171,8 +217,16 @@ const ManageAreas = () => {
       setLoaderText("Deleting area...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["areas"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "areas"
+      });
       setShowModal(false);
+
+      // If we're on a page with only one item and it's not the first page,
+      // go back to the previous page
+      if (areas.length === 1 && currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      }
     },
     onSettled: () => {
       setLoading(false);
@@ -228,17 +282,25 @@ const ManageAreas = () => {
   const handleSave = async (areaData: IEditArea): Promise<void> => {
     const formData = new FormData();
     formData.append("area_name", areaData.area_name);
-    formData.append("description", areaData.description);
+    formData.append("description", areaData.description || "");
     formData.append("capacity", areaData.capacity.toString());
     formData.append("price_per_hour", areaData.price_per_hour.toString());
     formData.append("status", areaData.status);
+
+    // Only append the image if it's a File object (new upload)
     if (areaData.area_image instanceof File) {
       formData.append("area_image", areaData.area_image);
     }
-    if (!areaData.id) {
-      await addAreaMutation.mutateAsync(formData);
-    } else {
-      await editAreaMutation.mutateAsync({ areaId: areaData.id, formData });
+
+    try {
+      if (!areaData.id) {
+        await addAreaMutation.mutateAsync(formData);
+      } else {
+        await editAreaMutation.mutateAsync({ areaId: areaData.id, formData });
+      }
+    } catch (error) {
+      console.error("Error saving area:", error);
+      throw error;
     }
   };
 
@@ -254,8 +316,16 @@ const ManageAreas = () => {
           </div>
         )}
 
+        {/* Add New Area Button */}
         <div className="flex flex-row items-center mb-5 justify-between">
-          <h1 className="text-3xl font-semibold">Manage Areas</h1>
+          <div>
+            <h1 className="text-3xl font-semibold">Manage Areas</h1>
+            {pagination && (
+              <p className="text-gray-500 mt-1">
+                Total: {pagination.total_items} area{pagination.total_items !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
           <button
             onClick={handleAddNew}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors duration-300"
@@ -331,6 +401,66 @@ const ManageAreas = () => {
               It looks like you haven't added any areas yet. Click the button
               below to create your first area.
             </p>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {pagination && pagination.total_pages > 1 && (
+          <div className="flex justify-center items-center gap-2 my-5">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-full ${currentPage === 1
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <div className="flex gap-1">
+              {Array.from({ length: pagination.total_pages }).map((_, index) => {
+                const pageNumber = index + 1;
+                // Show current page, first page, last page, and pages around current
+                const isVisible =
+                  pageNumber === 1 ||
+                  pageNumber === pagination.total_pages ||
+                  Math.abs(pageNumber - currentPage) <= 1;
+
+                // Show ellipsis for gaps
+                if (!isVisible) {
+                  // Show ellipsis only once between gaps
+                  if (pageNumber === 2 || pageNumber === pagination.total_pages - 1) {
+                    return <span key={`ellipsis-${pageNumber}`} className="px-3 py-1">...</span>;
+                  }
+                  return null;
+                }
+
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => goToPage(pageNumber)}
+                    className={`w-8 h-8 rounded-full ${currentPage === pageNumber
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 hover:bg-blue-100"
+                      }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={pagination && currentPage === pagination.total_pages}
+              className={`p-2 rounded-full ${pagination && currentPage === pagination.total_pages
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
+            >
+              <ChevronRight size={20} />
+            </button>
           </div>
         )}
 

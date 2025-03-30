@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   FileEdit,
   Filter,
@@ -9,8 +11,10 @@ import {
 } from "lucide-react";
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
-import { updateBookingStatus } from "../../services/Admin";
-import { BookingResponse, fetchBookings } from "../../services/Booking";
+import CancellationModal from "../../components/bookings/CancellationModal";
+import EventLoader from "../../motions/loaders/EventLoader";
+import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
+import { BookingResponse } from "../../services/Booking";
 import { formatDate } from "../../utils/formatters";
 
 const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
@@ -39,7 +43,7 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
     case "rejected":
       bgColor = "bg-red-100 text-red-800";
       break;
-    case "missed_reservation":
+    case "no_show":
       bgColor = "bg-purple-100 text-purple-800";
       break;
     default:
@@ -53,59 +57,47 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
   );
 };
 
-// Rejection modal component
-const RejectionReasonModal: FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (reason: string) => void;
-}> = ({ isOpen, onClose, onConfirm }) => {
-  const [reason, setReason] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    if (!reason.trim()) {
-      toast.error('Please provide a reason for rejection');
-      return;
+const getBookingPrice = (booking: BookingResponse): number => {
+  try {
+    if (booking.total_price) {
+      const totalPrice = typeof booking.total_price === 'string'
+        ? parseFloat(booking.total_price.replace(/[^\d.]/g, ''))
+        : booking.total_price;
+      return totalPrice || 0;
     }
-    setIsSubmitting(true);
-    onConfirm(reason);
-  };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
-        <h2 className="text-xl font-bold mb-4">Reject Booking</h2>
-        <p className="mb-4 text-gray-600">Please provide a reason for rejecting this booking:</p>
+    let basePrice = 0;
 
-        <textarea
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-          rows={4}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Enter rejection reason..."
-        />
+    if (booking.is_venue_booking && booking.area_details) {
+      if (booking.area_details.price_per_hour) {
+        const priceString = booking.area_details.price_per_hour;
+        basePrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
+      }
+      return basePrice;
+    } else if (!booking.is_venue_booking && booking.room_details) {
+      const checkIn = booking.check_in_date;
+      const checkOut = booking.check_out_date;
+      let nights = 1;
+      if (checkIn && checkOut) {
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+      }
 
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Processing...' : 'Confirm Rejection'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+      if (booking.room_details.room_price) {
+        const priceString = booking.room_details.room_price;
+        basePrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
+      }
+
+      return basePrice * nights;
+    }
+
+    return basePrice;
+  } catch (error) {
+    console.error('Error parsing booking price:', error);
+    return 0;
+  }
 };
 
 const BookingDetailsModal: FC<{
@@ -113,11 +105,14 @@ const BookingDetailsModal: FC<{
   onClose: () => void;
   onConfirm: () => void;
   onReject: () => void;
-  onCheckIn?: () => void;
+  onCheckIn?: (paymentAmount: number) => void;
   onCheckOut?: () => void;
-  onMissedReservation?: () => void;
+  onNoShow?: () => void;
   canManage: boolean;
-}> = ({ booking, onClose, onConfirm, onReject, onCheckIn, onCheckOut, onMissedReservation, canManage }) => {
+  isUpdating: boolean;
+}> = ({ booking, onClose, onConfirm, onReject, onCheckIn, onCheckOut, onNoShow, canManage, isUpdating }) => {
+  const [paymentAmount, setPaymentAmount] = useState<string>("");
+
   if (!booking) return null;
 
   const isVenueBooking = booking.is_venue_booking;
@@ -143,9 +138,18 @@ const BookingDetailsModal: FC<{
     );
   };
 
+  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPaymentAmount(e.target.value);
+  };
+
+  const bookingPrice = getBookingPrice(booking);
+  const currentPayment = parseFloat(paymentAmount) || 0;
+  const isPaymentComplete = currentPayment === bookingPrice;
+  const isReservedStatus = booking.status === "reserved";
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-auto p-4 sm:p-6 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
@@ -153,102 +157,174 @@ const BookingDetailsModal: FC<{
           <X size={24} />
         </button>
 
-        <h2 className="text-2xl font-bold mb-4 text-center pb-2 border-b">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center pb-2 border-b">
           User Booking Details
         </h2>
 
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span className="font-semibold">Fullname:</span>
-            <span>{booking.user?.first_name} {booking.user?.last_name}</span>
+        {isUpdating ? (
+          <div className="py-12">
+            <EventLoader text="Processing booking..." />
           </div>
+        ) : (
+          <div className="space-y-3 overflow-y-auto max-h-[70vh]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Fullname:</span>
+                <span className="sm:text-right">{booking.user?.first_name} {booking.user?.last_name}</span>
+              </div>
 
-          <div className="flex justify-between">
-            <span className="font-semibold">Email:</span>
-            <span>{booking.user?.email}</span>
-          </div>
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Email:</span>
+                <span className="sm:text-right break-words">{booking.user?.email}</span>
+              </div>
 
-          {booking.user?.address && (
-            <div className="flex justify-between">
-              <span className="font-semibold">Address:</span>
-              <span>{booking.user?.address}</span>
-            </div>
-          )}
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Property Type:</span>
-            <span>
-              {isVenueBooking ? (
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Venue</span>
-              ) : (
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Room</span>
+              {booking.user?.address && (
+                <div className="flex flex-col sm:flex-row justify-between sm:col-span-2">
+                  <span className="font-semibold">Address:</span>
+                  <span className="sm:text-right">{booking.user?.address}</span>
+                </div>
               )}
-            </span>
-          </div>
 
-          <div className="flex justify-between">
-            <span className="font-semibold">{isVenueBooking ? "Venue:" : "Room:"}</span>
-            <span>{isVenueBooking
-              ? (booking.area_details?.area_name || "Unknown Venue")
-              : (booking.room_details?.room_name || "Unknown Room")}
-            </span>
-          </div>
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Property Type:</span>
+                <span>
+                  {isVenueBooking ? (
+                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Venue</span>
+                  ) : (
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Room</span>
+                  )}
+                </span>
+              </div>
 
-          {isVenueBooking && booking.area_details?.capacity && (
-            <div className="flex justify-between">
-              <span className="font-semibold">Capacity:</span>
-              <span>{booking.area_details.capacity} people</span>
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">{isVenueBooking ? "Venue:" : "Room:"}</span>
+                <span className="sm:text-right">{isVenueBooking
+                  ? (booking.area_details?.area_name || "Unknown Venue")
+                  : (booking.room_details?.room_name || "Unknown Room")}
+                </span>
+              </div>
+
+              {isVenueBooking && booking.area_details?.capacity && (
+                <div className="flex flex-col sm:flex-row justify-between">
+                  <span className="font-semibold">Capacity:</span>
+                  <span>{booking.area_details.capacity} people</span>
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Date of Reservation:</span>
+                <span>{formatDate(booking.created_at)}</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Check-in:</span>
+                <span>{formatDate(booking.check_in_date)}</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Check-out:</span>
+                <span>{formatDate(booking.check_out_date)}</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Price:</span>
+                <span className="font-medium">
+                  {isVenueBooking
+                    ? booking.area_details?.price_per_hour
+                    : booking.room_details?.room_price}
+                  {isVenueBooking ? '/hour' : '/night'}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Duration:</span>
+                <span className="font-medium">
+                  {(() => {
+                    try {
+                      const checkIn = new Date(booking.check_in_date);
+                      const checkOut = new Date(booking.check_out_date);
+                      const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+
+                      if (isVenueBooking) {
+                        // For venues, show hours
+                        const hours = Math.max(Math.ceil(diffTime / (1000 * 60 * 60)), 1);
+                        return `${hours} hour${hours !== 1 ? 's' : ''}`;
+                      } else {
+                        // For rooms, show nights
+                        const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+                        return `${nights} night${nights !== 1 ? 's' : ''}`;
+                      }
+                    } catch (e) {
+                      return isVenueBooking ? '1 hour' : '1 night';
+                    }
+                  })()}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Total Amount:</span>
+                <span className="font-medium">
+                  ₱{bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between">
+                <span className="font-semibold">Status:</span>
+                <BookingStatusBadge status={booking.status} />
+              </div>
             </div>
-          )}
 
-          <div className="flex justify-between">
-            <span className="font-semibold">Date of Reservation:</span>
-            <span>{formatDate(booking.created_at)}</span>
+            {isReservedStatus && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold mb-2">Payment Details</h3>
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <div className="relative flex-1 w-full">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <span className="text-gray-500">₱</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={paymentAmount}
+                      onChange={handlePaymentChange}
+                      placeholder={`Enter amount (${bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                      className="w-full pl-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="mt-2 text-sm">
+                  {currentPayment > 0 && (
+                    <p className={isPaymentComplete ? "text-green-600" : "text-red-600"}>
+                      {isPaymentComplete
+                        ? "✓ Payment amount matches the required total."
+                        : `Payment must be exactly ₱${bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to check in the guest.`}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Valid ID Section */}
+            <div className="mt-4">
+              <h3 className="font-semibold mb-2">Valid ID:</h3>
+              {renderValidId()}
+            </div>
           </div>
+        )}
 
-          <div className="flex justify-between">
-            <span className="font-semibold">Check-in:</span>
-            <span>{formatDate(booking.check_in_date)}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Check-out:</span>
-            <span>{formatDate(booking.check_out_date)}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Price:</span>
-            <span className="font-medium">
-              {isVenueBooking
-                ? booking.total_price
-                : booking.room_details?.room_price}
-            </span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="font-semibold">Status:</span>
-            <BookingStatusBadge status={booking.status} />
-          </div>
-
-          {/* Valid ID Section */}
-          <div className="mt-4">
-            <h3 className="font-semibold mb-2">Valid ID:</h3>
-            {renderValidId()}
-          </div>
-        </div>
-
-        {canManage && booking.status === "pending" && (
-          <div className="flex justify-between mt-6">
+        {!isUpdating && canManage && booking.status === "pending" && (
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
             <button
               onClick={onReject}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
             >
               <X size={18} />
               Reject Booking
             </button>
             <button
               onClick={onConfirm}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <Check size={18} />
               Reserve Booking
@@ -256,18 +332,21 @@ const BookingDetailsModal: FC<{
           </div>
         )}
 
-        {canManage && booking.status === "reserved" && (
-          <div className="flex justify-between mt-6">
+        {!isUpdating && canManage && booking.status === "reserved" && (
+          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
             <button
-              onClick={onMissedReservation}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-2"
+              onClick={onNoShow}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
             >
-              <X size={18} />
-              Mark as Missed
+              Marked as No Show
             </button>
             <button
-              onClick={onCheckIn}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+              onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
+              className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${isPaymentComplete
+                ? 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-gray-400 cursor-not-allowed'
+                }`}
+              disabled={!isPaymentComplete}
             >
               <Check size={18} />
               Check In Guest
@@ -275,11 +354,11 @@ const BookingDetailsModal: FC<{
           </div>
         )}
 
-        {canManage && booking.status === "checked_in" && (
+        {!isUpdating && canManage && booking.status === "checked_in" && (
           <div className="flex justify-center mt-6">
             <button
               onClick={onCheckOut}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
             >
               <Check size={18} />
               Check Out Guest
@@ -297,27 +376,23 @@ const ManageBookings: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 9; // Show 9 bookings per page
 
-  const { data: bookingsResponse, error, isLoading } = useQuery<{ data: BookingResponse[] }, Error>({
-    queryKey: ["admin-bookings"],
+  const { data: bookingsResponse, error, isLoading } = useQuery<{
+    data: BookingResponse[],
+    pagination?: {
+      total_pages: number;
+      current_page: number;
+      total_items: number;
+      page_size: number;
+    }
+  }, Error>({
+    queryKey: ["admin-bookings", currentPage, pageSize],
     queryFn: async () => {
       try {
-        const response = await fetchBookings();
+        const response = await getAllBookings({ page: currentPage, pageSize });
         console.log('Admin bookings response:', response);
-
-        // Check if any bookings have valid_id field
-        if (response.data && response.data.length > 0) {
-          response.data.forEach((booking, index) => {
-            console.log(`Booking ${index} valid_id:`, booking.valid_id);
-            console.log(`Booking ${index} user details:`, booking.user);
-            console.log(`Booking ${index} is venue booking:`, booking.is_venue_booking);
-            if (booking.is_venue_booking) {
-              console.log(`Booking ${index} area details:`, booking.area_details);
-              console.log(`Booking ${index} total price:`, booking.total_price);
-            }
-          });
-        }
-
         return response;
       } catch (err) {
         console.error('Error fetching admin bookings:', err);
@@ -327,12 +402,53 @@ const ManageBookings: FC = () => {
   });
 
   const updateBookingStatusMutation = useMutation({
-    mutationFn: async ({ bookingId, status, reason }: { bookingId: number; status: string; reason?: string }) => {
-      return await updateBookingStatus(bookingId, status, reason);
+    mutationFn: async ({
+      bookingId,
+      status,
+      reason,
+      paymentAmount
+    }: {
+      bookingId: number;
+      status: string;
+      reason?: string;
+      paymentAmount?: number;
+    }) => {
+      const result = await updateBookingStatus(bookingId, status, reason);
+
+      // Create a transaction record when checking in
+      if (status === 'checked_in' && paymentAmount) {
+        try {
+          await recordPayment(bookingId, paymentAmount);
+          console.log('Payment recorded successfully');
+        } catch (error) {
+          console.error('Failed to record payment:', error);
+          // We don't throw an error here to not block the check-in process
+        }
+      }
+
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      toast.success("Booking status updated successfully");
+      // Also invalidate the stats query to update the revenue in dashboard
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+
+      const { status } = variables;
+
+      if (status === 'reserved') {
+        toast.success("Booking has been reserved successfully! A confirmation email has been sent to the guest.");
+      } else if (status === 'rejected') {
+        toast.success("Booking has been rejected. The guest has been notified with your reason.");
+      } else if (status === 'checked_in') {
+        toast.success("Guest has been checked in successfully and payment recorded.");
+      } else if (status === 'checked_out') {
+        toast.success("Guest has been checked out successfully.");
+      } else if (status === 'no_show') {
+        toast.success("Booking has been marked as 'No Show'.");
+      } else {
+        toast.success(`Booking status updated to ${status.replace('_', ' ')}`);
+      }
+
       setSelectedBooking(null);
       setShowRejectionModal(false);
     },
@@ -367,11 +483,12 @@ const ManageBookings: FC = () => {
     }
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = (paymentAmount?: number) => {
     if (selectedBooking) {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
         status: "checked_in",
+        paymentAmount
       });
     }
   };
@@ -385,11 +502,11 @@ const ManageBookings: FC = () => {
     }
   };
 
-  const handleMissedReservation = () => {
+  const handleNoShow = () => {
     if (selectedBooking) {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
-        status: "missed_reservation",
+        status: "no_show",
       });
     }
   };
@@ -416,6 +533,11 @@ const ManageBookings: FC = () => {
     setShowRejectionModal(false);
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const totalPages = bookingsResponse?.pagination?.total_pages || 1;
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
     const guestName = `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.toLowerCase();
     const email = booking.user?.email?.toLowerCase() || '';
@@ -474,125 +596,167 @@ const ManageBookings: FC = () => {
             <option value="checked_out">Checked Out</option>
             <option value="cancelled">Cancelled</option>
             <option value="rejected">Rejected</option>
-            <option value="missed_reservation">Missed Reservation</option>
+            <option value="no_show">No Show</option>
           </select>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
+          <EventLoader size="80px" color="white" text="Loading bookings..." />
         </div>
       ) : (
-        <div className="overflow-x-auto shadow-md rounded-lg">
-          <table className="min-w-full bg-white border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date of Reservation
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guest Name
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Property
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-in
-                </th>
-                <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Check-out
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
-                </th>
-                <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => {
-                  const isVenueBooking = booking.is_venue_booking;
-                  const propertyName = isVenueBooking
-                    ? booking.area_details?.area_name || "Unknown Venue"
-                    : booking.room_details?.room_name || "Unknown Room";
-                  const price = isVenueBooking
-                    ? booking.total_price
-                    : booking.room_details?.room_price || '';
-
-                  return (
-                    <tr key={booking.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                        {formatDate(booking.created_at)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                        {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                        {booking.user?.email || ''}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span>{propertyName}</span>
-                          {isVenueBooking ? (
-                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
-                          ) : (
-                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                        {formatDate(booking.check_in_date)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-gray-700 whitespace-nowrap">
-                        {formatDate(booking.check_out_date)}
-                      </td>
-                      <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
-                        <BookingStatusBadge status={booking.status} />
-                      </td>
-                      <td className="py-3 px-4 text-center text-sm text-gray-700 whitespace-nowrap">
-                        {price}
-                      </td>
-                      <td className="py-3 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center space-x-2">
-                          <button
-                            onClick={() => handleViewBooking(booking)}
-                            className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                            title="View Details"
-                          >
-                            <Eye size={25} />
-                          </button>
-                          {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
-                            <button
-                              className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                              title="Edit Booking"
-                            >
-                              <FileEdit size={25} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={9} className="py-6 text-center text-gray-500">
-                    No bookings found.
-                  </td>
+        <>
+          <div className="overflow-x-auto shadow-md rounded-lg">
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date of Reservation
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Guest Name
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Property
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check-in
+                  </th>
+                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Check-out
+                  </th>
+                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Amount
+                  </th>
+                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredBookings.length > 0 ? (
+                  filteredBookings.map((booking) => {
+                    const isVenueBooking = booking.is_venue_booking;
+                    const propertyName = isVenueBooking
+                      ? booking.area_details?.area_name || "Unknown Venue"
+                      : booking.room_details?.room_name || "Unknown Room";
+
+                    return (
+                      <tr key={booking.id} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {formatDate(booking.created_at)}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {booking.user?.email || ''}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span>{propertyName}</span>
+                            {isVenueBooking ? (
+                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
+                            ) : (
+                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {formatDate(booking.check_in_date)}
+                        </td>
+                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
+                          {formatDate(booking.check_out_date)}
+                        </td>
+                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
+                          <BookingStatusBadge status={booking.status} />
+                        </td>
+                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
+                          ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-3 px-4 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center space-x-2">
+                            <button
+                              onClick={() => handleViewBooking(booking)}
+                              className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
+                              title="View Details"
+                            >
+                              <Eye size={25} />
+                            </button>
+                            {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
+                              <button
+                                className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
+                                title="Edit Booking"
+                              >
+                                <FileEdit size={25} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={9} className="py-6 text-center text-gray-500">
+                      No bookings found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <nav className="flex items-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-l-md border ${currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                {/* Page number buttons */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 border-t border-b ${currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-50'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </nav>
+            </div>
+          )}
+        </>
       )}
 
       {/* Booking Details Modal */}
@@ -604,17 +768,25 @@ const ManageBookings: FC = () => {
           onReject={handleRejectInitiate}
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
-          onMissedReservation={handleMissedReservation}
+          onNoShow={handleNoShow}
           canManage={true}
+          isUpdating={updateBookingStatusMutation.isPending}
         />
       )}
 
-      {/* Rejection Reason Modal */}
+      {/* Use CancellationModal instead of RejectionReasonModal */}
       {showRejectionModal && (
-        <RejectionReasonModal
+        <CancellationModal
           isOpen={showRejectionModal}
           onClose={closeRejectionModal}
           onConfirm={handleRejectConfirm}
+          bookingId={selectedBooking?.id}
+          title="Reject Booking"
+          description="Please provide a reason for rejecting this booking. This will be shared with the guest."
+          reasonLabel="Reason for Rejection"
+          reasonPlaceholder="Enter detailed reason for rejecting this booking..."
+          confirmButtonText="Confirm Rejection"
+          showPolicyNote={false}
         />
       )}
     </div>

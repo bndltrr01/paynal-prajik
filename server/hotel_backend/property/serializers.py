@@ -29,7 +29,7 @@ class RoomSerializer(serializers.ModelSerializer):
         representation['room_image'] = instance.room_image.url if instance.room_image else None
         
         if instance.room_price is not None:
-            representation['room_price'] = f"₱{instance.room_price:,.2f}"
+            representation['room_price'] = f"₱{int(float(instance.room_price)):,.2f}"
         return representation
 
 class AreaSerializer(serializers.ModelSerializer):
@@ -50,5 +50,5 @@ class AreaSerializer(serializers.ModelSerializer):
         representation['area_image'] = instance.area_image.url if instance.area_image else None
         
         if instance.price_per_hour is not None:
-            representation['price_per_hour'] = f"₱{instance.price_per_hour:,.2f}"
+            representation['price_per_hour'] = f"₱{int(float(instance.price_per_hour)):,.2f}"
         return representation

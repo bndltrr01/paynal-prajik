@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
+import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
 import { ReservationFormData, createReservation, fetchAreaById } from '../services/Booking';
+import { BookCheck } from 'lucide-react';
 
 // Define area data interface
 interface AreaData {
@@ -21,13 +23,14 @@ const ConfirmVenueBooking = () => {
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useUserContext();
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [savedFormData, setSavedFormData] = useState<any>(null);
 
   const areaId = searchParams.get('areaId');
   const startTime = searchParams.get('startTime');
   const endTime = searchParams.get('endTime');
   const totalPrice = searchParams.get('totalPrice');
 
-  // Form state
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -37,14 +40,12 @@ const ConfirmVenueBooking = () => {
     specialRequests: ''
   });
 
-  // Add state for the ID preview
   const [validIdPreview, setValidIdPreview] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Fetch area data
   const { data: areaData, isLoading } = useQuery<AreaData>({
     queryKey: ['area', areaId],
     queryFn: () => fetchAreaById(areaId as string),
@@ -94,61 +95,16 @@ const ConfirmVenueBooking = () => {
     };
   }, [validIdPreview]);
 
-  const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!isAuthenticated) {
-      setShowLoginModal(true);
-      return;
-    }
-
-    if (!areaId || !startTime || !endTime || !totalPrice) {
-      setError('Missing required booking information');
-      return;
-    }
-
-    if (!formData.validId) {
-      setError('Please upload a valid ID');
-      return;
-    }
+  // Function to handle automatic form submission after login
+  const handleSuccessfulLogin = useCallback(async () => {
+    if (!savedFormData || isSubmitting) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Parse the datetime strings to ensure consistent format
-      const parsedStartTime = startTime ? new Date(startTime).toISOString() : null;
-      const parsedEndTime = endTime ? new Date(endTime).toISOString() : null;
-
-      console.log('Parsed start time:', parsedStartTime);
-      console.log('Parsed end time:', parsedEndTime);
-
-      const reservationData: ReservationFormData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber,
-        emailAddress: formData.emailAddress,
-        specialRequests: formData.specialRequests,
-        validId: formData.validId,
-        areaId: areaId,
-        startTime: parsedStartTime,
-        endTime: parsedEndTime,
-        totalPrice: parseFloat(totalPrice || '0'),
-        status: 'pending',
-        isVenueBooking: true
-      };
-
-      console.log('Submitting venue booking data:', reservationData);
-
       // Call API to create reservation
-      const response = await createReservation(reservationData);
+      const response = await createReservation(savedFormData);
       console.log('Venue booking response:', response);
 
       if (!response || !response.id) {
@@ -157,6 +113,8 @@ const ConfirmVenueBooking = () => {
 
       // Handle successful booking
       setSuccess(true);
+      // Clear saved form data to prevent duplicate submissions
+      setSavedFormData(null);
 
       // Redirect to booking confirmation page after 2 seconds
       setTimeout(() => {
@@ -181,9 +139,76 @@ const ConfirmVenueBooking = () => {
     } finally {
       setIsSubmitting(false);
     }
+  }, [navigate, savedFormData, isSubmitting]);
+
+  // Effect to check if auth status changed and we have saved form data
+  useEffect(() => {
+    // Only proceed if not already submitting and not previously submitted
+    if (isAuthenticated && savedFormData && !isSubmitting && !success) {
+      handleSuccessfulLogin();
+    }
+  }, [isAuthenticated, savedFormData, handleSuccessfulLogin, isSubmitting, success]);
+
+  const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+
+    // Prevent duplicate submissions
+    if (isSubmitting) return;
+
+    // Validate form data first
+    if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.emailAddress) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    if (!formData.validId) {
+      setError('Please upload a valid ID');
+      return;
+    }
+
+    if (!areaId || !startTime || !endTime || !totalPrice) {
+      setError('Missing required booking information');
+      return;
+    }
+
+    // Parse the datetime strings to ensure consistent format
+    const parsedStartTime = startTime ? new Date(startTime).toISOString() : null;
+    const parsedEndTime = endTime ? new Date(endTime).toISOString() : null;
+
+    // Create reservation data object
+    const reservationData: ReservationFormData = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phoneNumber: formData.phoneNumber,
+      emailAddress: formData.emailAddress,
+      specialRequests: formData.specialRequests,
+      validId: formData.validId,
+      areaId: areaId,
+      startTime: parsedStartTime,
+      endTime: parsedEndTime,
+      totalPrice: parseFloat(totalPrice || '0'),
+      status: 'pending',
+      isVenueBooking: true
+    };
+
+    setSavedFormData(reservationData);
+
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+    } else {
+      // If user is already authenticated, submit the form
+      handleSuccessfulLogin();
+    }
   };
 
-  // Format dates for display
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Use the same logic as button click to ensure consistent flow
+    // This prevents duplicate submission logic and potential bugs
+    handleProceedClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
+  };
+
   const formatDateTime = (dateTimeString: string | null) => {
     if (!dateTimeString) return '';
 
@@ -203,7 +228,6 @@ const ConfirmVenueBooking = () => {
     return `${day}, ${dayOfMonth} ${month}, ${year} at ${formattedHours}:${formattedMinutes} ${ampm}`;
   };
 
-  // Calculate duration in hours
   const calculateDuration = () => {
     if (!startTime || !endTime) return 1;
 
@@ -218,6 +242,16 @@ const ConfirmVenueBooking = () => {
   const formattedStartTime = formatDateTime(startTime);
   const formattedEndTime = formatDateTime(endTime);
   const durationHours = calculateDuration();
+
+  const openSignupModal = () => {
+    setShowLoginModal(false);
+    setShowSignupModal(true);
+  };
+
+  const openLoginModal = () => {
+    setShowSignupModal(false);
+    setShowLoginModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -236,6 +270,24 @@ const ConfirmVenueBooking = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl mt-16">
       <h1 className="text-2xl md:text-3xl font-bold text-center mb-8">Confirm Area Booking</h1>
+
+      {!isAuthenticated && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-300 text-blue-800 rounded-lg">
+          <div className="flex items-start">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-800">Login Required</h3>
+              <p className="text-sm mt-1">
+                You'll need to log in or create an account to complete your venue booking. Don't worry - your booking information will be saved during the process.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {success && (
         <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
@@ -415,22 +467,20 @@ const ConfirmVenueBooking = () => {
             {/* Submit Button for Mobile View */}
             <div className="lg:hidden mt-6">
               <button
-                type="submit"
-                disabled={isSubmitting || !isAuthenticated}
-                onClick={!isAuthenticated ? handleProceedClick : undefined}
-                className={`w-full py-3 px-6 rounded-md text-white text-center cursor-pointer font-semibold ${!isAuthenticated
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : isSubmitting
-                    ? 'bg-blue-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleProceedClick}
+                className={`w-full py-3 px-6 rounded-md text-white text-center cursor-pointer font-semibold ${isSubmitting
+                  ? 'bg-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
                   }`}
               >
-                {!isAuthenticated
-                  ? 'Please Login to Proceed'
-                  : isSubmitting
-                    ? 'Processing...'
-                    : 'Proceed'
-                }
+                {isSubmitting ? 'Processing...' : isAuthenticated ? (
+                  <>
+                    <BookCheck className="w-5 h-5 mr-2" />
+                    Complete Booking
+                  </>
+                ) : 'Continue to Login'}
               </button>
             </div>
           </form>
@@ -457,17 +507,8 @@ const ConfirmVenueBooking = () => {
                 <span className="font-semibold">{areaData?.capacity} people</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Price per hour:</span>
+                <span className="text-gray-600">Price:</span>
                 <span className="font-semibold">{areaData?.price_per_hour}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Status:</span>
-                <span className={`font-semibold ${areaData?.status.toLowerCase() === 'available'
-                  ? 'text-green-600'
-                  : 'text-red-600'
-                  }`}>
-                  {areaData?.status.toUpperCase()}
-                </span>
               </div>
             </div>
           </div>
@@ -497,7 +538,7 @@ const ConfirmVenueBooking = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 className="text-xl font-semibold mb-4">Pricing Summary</h3>
             <div className="text-md mb-2">
-              <p className="text-gray-600">1 area x {durationHours} hour{durationHours > 1 ? 's' : ''}</p>
+              <p className="text-gray-600">Full day booking ({durationHours} hour{durationHours > 1 ? 's' : ''})</p>
             </div>
             <div className="text-md mb-4">
               <p className="font-medium">{areaData?.area_name || "Venue"}</p>
@@ -510,23 +551,20 @@ const ConfirmVenueBooking = () => {
 
           <div className="hidden lg:block">
             <button
-              type="submit"
-              form="booking-form"
-              disabled={isSubmitting || !isAuthenticated}
-              onClick={!isAuthenticated ? handleProceedClick : undefined}
-              className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${!isAuthenticated
-                ? 'bg-gray-400 cursor-not-allowed'
-                : isSubmitting
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleProceedClick}
+              className={`w-full py-3 px-6 rounded-md text-white text-center text-xl font-semibold flex items-center justify-center ${isSubmitting
+                ? 'bg-blue-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500'
                 }`}
             >
-              {!isAuthenticated
-                ? 'Please Login to Proceed'
-                : isSubmitting
-                  ? 'Processing...'
-                  : 'Proceed'
-              }
+              {isSubmitting ? 'Processing...' : isAuthenticated ? (
+                <>
+                  <BookCheck className="w-8 h-8 mr-2" />
+                  Complete Booking
+                </>
+              ) : 'Continue to Login'}
             </button>
           </div>
         </div>
@@ -537,10 +575,20 @@ const ConfirmVenueBooking = () => {
         <div className="fixed inset-0 bg-black/50 z-50">
           <LoginModal
             toggleLoginModal={() => setShowLoginModal(false)}
-            openSignupModal={() => {
-              setShowLoginModal(false);
-              // You can add signup modal state here if needed
-            }}
+            openSignupModal={openSignupModal}
+            onSuccessfulLogin={handleSuccessfulLogin}
+            bookingInProgress={true}
+          />
+        </div>
+      )}
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <SignupModal
+            toggleRegisterModal={() => setShowSignupModal(false)}
+            openLoginModal={openLoginModal}
+            onSuccessfulSignup={handleSuccessfulLogin}
           />
         </div>
       )}

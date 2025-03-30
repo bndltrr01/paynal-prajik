@@ -1,17 +1,55 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Search, XCircle } from "lucide-react";
-import { FC, useState } from "react";
+import { ChevronLeft, ChevronRight, Eye, Search, XCircle } from "lucide-react";
+import { FC, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import BookingData from "../../components/bookings/BookingData";
 import CancellationModal from "../../components/bookings/CancellationModal";
 import { useUserContext } from "../../contexts/AuthContext";
+import withSuspense from "../../hoc/withSuspense";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import { cancelBooking, fetchBookingDetail, fetchUserBookings } from "../../services/Booking";
 import { getGuestBookings } from "../../services/Guest";
 
-// Helper function to format status display
 const formatStatus = (status: string): string => {
   return status.toUpperCase().replace(/_/g, ' ');
+};
+
+const formatDate = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+
+  try {
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  } catch (e) {
+    return dateString;
+  }
+};
+
+const getStatusColor = (status: string): string => {
+  const normalizedStatus = status.toLowerCase().replace(/_/g, ' ');
+
+  switch (normalizedStatus) {
+    case 'confirmed':
+      return 'bg-green-100 text-green-700';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-700';
+    case 'cancelled':
+      return 'bg-red-100 text-red-700';
+    case 'reserved':
+      return 'bg-green-100 text-green-700';
+    case 'checked in':
+      return 'bg-indigo-100 text-indigo-700';
+    case 'checked out':
+      return 'bg-purple-100 text-purple-700';
+    case 'missed reservation':
+      return 'bg-orange-100 text-orange-700';
+    default:
+      return 'bg-gray-100 text-gray-700';
+  }
 };
 
 const GuestBookings: FC = () => {
@@ -22,20 +60,21 @@ const GuestBookings: FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
-
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const pageSize = 5;
   const queryClient = useQueryClient();
 
   const isSuccess = searchParams.get('success') === 'true';
   const isCancelled = searchParams.get('cancelled') === 'true';
 
   const userBookingsQuery = useQuery({
-    queryKey: ['userBookings'],
-    queryFn: fetchUserBookings,
+    queryKey: ['userBookings', currentPage, pageSize],
+    queryFn: () => fetchUserBookings({ page: currentPage, pageSize }),
   });
 
   const guestBookingsQuery = useQuery({
-    queryKey: ['guestBookings', userDetails?.id],
-    queryFn: () => getGuestBookings(userDetails?.id || ''),
+    queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize],
+    queryFn: () => getGuestBookings(userDetails?.id || '', { page: currentPage, pageSize }),
     enabled: !!userDetails?.id && userBookingsQuery.isError,
   });
 
@@ -46,7 +85,8 @@ const GuestBookings: FC = () => {
   });
 
   const cancelBookingMutation = useMutation({
-    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) => cancelBooking(bookingId, reason),
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) =>
+      cancelBooking(bookingId, reason),
     onSuccess: () => {
       searchParams.set('cancelled', 'true');
       setSearchParams(searchParams);
@@ -54,119 +94,112 @@ const GuestBookings: FC = () => {
       setShowCancelModal(false);
       setCancellationBookingId(null);
 
-      queryClient.invalidateQueries({ queryKey: ['userBookings'] });
-      queryClient.invalidateQueries({ queryKey: ['guestBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['userBookings', currentPage, pageSize] });
+      if (userBookingsQuery.isError) {
+        queryClient.invalidateQueries({
+          queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize]
+        });
+      }
     }
   });
 
-  const bookings = userBookingsQuery.data ||
-    (guestBookingsQuery.data?.data || []);
+  const { bookings, totalPages, isLoading, errorMessage } = useMemo(() => {
+    return {
+      bookings: userBookingsQuery.data?.data || (guestBookingsQuery.data?.data || []),
+      totalPages: userBookingsQuery.data?.pagination?.total_pages ||
+        guestBookingsQuery.data?.pagination?.total_pages || 1,
+      isLoading: userBookingsQuery.isPending ||
+        (guestBookingsQuery.isPending && userBookingsQuery.isError) ||
+        (bookingDetailsQuery.isPending && !!bookingId) ||
+        cancelBookingMutation.isPending,
+      errorMessage: (userBookingsQuery.isError && guestBookingsQuery.isError)
+        ? "Failed to load bookings. Please try again later."
+        : (bookingDetailsQuery.isError && !!bookingId)
+          ? "Failed to load booking details. Please try again later."
+          : cancelBookingMutation.isError
+            ? "Failed to cancel booking. Please try again later."
+            : null
+    };
+  }, [
+    userBookingsQuery.data, userBookingsQuery.isPending, userBookingsQuery.isError,
+    guestBookingsQuery.data, guestBookingsQuery.isPending, guestBookingsQuery.isError,
+    bookingDetailsQuery.isPending, bookingDetailsQuery.isError, bookingId,
+    cancelBookingMutation.isPending, cancelBookingMutation.isError
+  ]);
 
-  const isLoading = userBookingsQuery.isPending ||
-    (guestBookingsQuery.isPending && userBookingsQuery.isError) ||
-    (bookingDetailsQuery.isPending && !!bookingId) ||
-    cancelBookingMutation.isPending;
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((booking: any) => {
+      const matchesSearch =
+        (booking.is_venue_booking
+          ? (booking.area_name || booking.area_details?.area_name || '')
+          : (booking.room_name || booking.room_details?.room_name || ''))
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (booking.room_type || booking.room_details?.room_type || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (booking.booking_reference || booking.id || '')
+          .toString()
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-  const errorMessage = (userBookingsQuery.isError && guestBookingsQuery.isError)
-    ? "Failed to load bookings. Please try again later."
-    : (bookingDetailsQuery.isError && !!bookingId)
-      ? "Failed to load booking details. Please try again later."
-      : cancelBookingMutation.isError
-        ? "Failed to cancel booking. Please try again later."
-        : null;
+      const matchesStatus = filterStatus
+        ? (booking.status || '').toLowerCase() === filterStatus.toLowerCase()
+        : true;
 
-  const handleCancelBooking = (reason: string) => {
+      return matchesSearch && matchesStatus;
+    });
+  }, [bookings, searchTerm, filterStatus]);
+
+  const handleCancelBooking = useCallback((reason: string) => {
     if (!cancellationBookingId || !reason.trim()) return;
 
     cancelBookingMutation.mutate({
       bookingId: cancellationBookingId,
       reason: reason
     });
-  };
+  }, [cancellationBookingId, cancelBookingMutation]);
 
-  const openCancelModal = (id: string) => {
+  const openCancelModal = useCallback((id: string) => {
     setCancellationBookingId(id);
     setShowCancelModal(true);
-  };
+  }, []);
 
-  const closeCancelModal = () => {
+  const closeCancelModal = useCallback(() => {
     setShowCancelModal(false);
     setCancellationBookingId(null);
-  };
+  }, []);
 
-  const viewBookingDetails = (id: string) => {
+  const viewBookingDetails = useCallback((id: string) => {
     searchParams.set('bookingId', id);
     setSearchParams(searchParams);
-  };
+  }, [searchParams, setSearchParams]);
 
-  const backToBookingsList = () => {
+  const backToBookingsList = useCallback(() => {
     searchParams.delete('bookingId');
     setSearchParams(searchParams);
-  };
+  }, [searchParams, setSearchParams]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setCurrentPage(newPage);
+    window.scrollTo(0, 0);
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterStatus(e.target.value);
+  }, []);
 
   if (isLoading) return <LoadingHydrate />;
   if (errorMessage) return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">{errorMessage}</div>;
 
-  const filteredBookings = bookings.filter((booking: any) => {
-    const matchesSearch =
-      (booking.is_venue_booking
-        ? (booking.area_name || booking.area_details?.area_name || '')
-        : (booking.room_name || booking.room_details?.room_name || ''))
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (booking.room_type || booking.room_details?.room_type || '')
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (booking.booking_reference || booking.id || '')
-        .toString()
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-
-    const matchesStatus = filterStatus
-      ? (booking.status || '').toLowerCase() === filterStatus.toLowerCase()
-      : true;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusColor = (status: string): string => {
-    const normalizedStatus = status.toLowerCase().replace(/_/g, ' ');
-
-    switch (normalizedStatus) {
-      case 'confirmed':
-        return 'bg-green-100 text-green-700';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'cancelled':
-        return 'bg-red-100 text-red-700';
-      case 'reserved':
-        return 'bg-green-100 text-green-700';
-      case 'checked in':
-        return 'bg-indigo-100 text-indigo-700';
-      case 'checked out':
-        return 'bg-purple-100 text-purple-700';
-      case 'missed reservation':
-        return 'bg-orange-100 text-orange-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return 'N/A';
-
-    try {
-      const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-      return new Date(dateString).toLocaleDateString(undefined, options);
-    } catch (e) {
-      return dateString;
-    }
-  };
-
   if (bookingId) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="max-w-7xl mx-auto space-y-6 overflow-y-auto h-[calc(100vh-3rem)] pr-2">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-gray-50 py-3 z-10">
           <h1 className="text-2xl font-bold text-gray-800">Booking Details</h1>
           <button
             onClick={backToBookingsList}
@@ -228,7 +261,7 @@ const GuestBookings: FC = () => {
             type="text"
             placeholder="Search by room name or booking reference..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearchChange}
             className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
@@ -240,7 +273,7 @@ const GuestBookings: FC = () => {
           <select
             id="statusFilter"
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={handleStatusChange}
             className="py-2 px-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Statuses</option>
@@ -264,6 +297,7 @@ const GuestBookings: FC = () => {
                 <thead>
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Reservation</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -279,17 +313,62 @@ const GuestBookings: FC = () => {
                     if (isVenueBooking) {
                       itemName = booking.area_name || booking.area_details?.area_name || "Venue";
                       itemImage = booking.area_image || booking.area_details?.area_image;
-                      totalAmount = booking.total_price || 0;
+
+                      const startTime = booking.start_time || booking.check_in_date;
+                      const endTime = booking.end_time || booking.check_out_date;
+                      let duration = 1; 
+
+                      if (startTime && endTime) {
+                        try {
+                          const start = new Date(startTime);
+                          const end = new Date(endTime);
+                          const diffTime = Math.abs(end.getTime() - start.getTime());
+                          duration = Math.ceil(diffTime / (1000 * 60 * 60)) || 1; // Hours
+                        } catch (e) {
+                          console.error("Error calculating venue duration:", e);
+                        }
+                      }
+
+                      const venuePrice =
+                        parseFloat((booking.price_per_hour || booking.area_details?.price_per_hour || "0")
+                          .toString()
+                          .replace(/[^0-9.]/g, '')) || 0;
+
+                      totalAmount = booking.total_price || booking.total_amount || venuePrice;
                     } else {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemImage = booking.room_image || booking.room_details?.room_image;
-                      totalAmount = booking.total_amount || booking.room_details?.room_price || 0;
+
+                      // For rooms - Calculate based on nights
+                      const checkInDate = booking.check_in_date;
+                      const checkOutDate = booking.check_out_date;
+                      let nights = 1; // Default to 1 night
+
+                      if (checkInDate && checkOutDate) {
+                        try {
+                          const checkIn = new Date(checkInDate);
+                          const checkOut = new Date(checkOutDate);
+                          const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1; // Days
+                        } catch (e) {
+                          console.error("Error calculating room nights:", e);
+                        }
+                      }
+
+                      // Get nightly rate and calculate total
+                      const nightlyRate =
+                        parseFloat((booking.room_price || booking.room_details?.room_price || "0")
+                          .toString()
+                          .replace(/[^0-9.]/g, '')) || 0;
+
+                      totalAmount = booking.total_price || booking.total_amount || (nightlyRate * nights);
                     }
 
                     const checkInDate = booking.check_in_date;
                     const checkOutDate = booking.check_out_date;
                     const status = formatStatus(booking.status);
                     const id = booking.id;
+                    const reservationDate = booking.created_at;
 
                     return (
                       <tr key={id} className="hover:bg-gray-50">
@@ -298,7 +377,7 @@ const GuestBookings: FC = () => {
                             <div className="h-10 w-10 flex-shrink-0">
                               <img
                                 loading="lazy"
-                                src={itemImage}
+                                src={itemImage || '/default-room.jpg'}
                                 alt={itemName}
                                 className="h-10 w-10 rounded-md object-cover"
                               />
@@ -312,6 +391,9 @@ const GuestBookings: FC = () => {
                               )}
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
+                          {formatDate(reservationDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
                           {formatDate(checkInDate)}
@@ -330,22 +412,19 @@ const GuestBookings: FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-lg font-medium">
                           <div className="flex justify-center space-x-2">
                             <button
-                              className="text-blue-600 hover:text-blue-900 bg-blue-100 px-4 py-2 rounded-full flex items-center cursor-pointer"
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                               onClick={() => viewBookingDetails(id.toString())}
                             >
                               <Eye size={16} className="mr-1" /> View
                             </button>
-                            {booking.status.toLowerCase() !== 'cancelled' &&
-                              booking.status.toLowerCase() !== 'completed' &&
-                              booking.status.toLowerCase() !== 'checked_out' &&
-                              booking.status.toLowerCase() !== 'checked_in' && (
-                                <button
-                                  className="text-red-600 hover:text-red-900 bg-red-100 px-4 py-2 rounded-full flex items-center cursor-pointer"
-                                  onClick={() => openCancelModal(id.toString())}
-                                >
-                                  <XCircle size={16} className="mr-1" /> Cancel
-                                </button>
-                              )}
+                            {booking.status.toLowerCase() === 'pending' && (
+                              <button
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
+                                onClick={() => openCancelModal(id.toString())}
+                              >
+                                <XCircle size={16} className="mr-1" /> Cancel
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -357,6 +436,49 @@ const GuestBookings: FC = () => {
           ) : (
             <div className="text-center py-8 text-gray-500">
               No bookings found matching your criteria.
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <nav className="flex items-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-l-md border ${currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                {/* Page number buttons */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 border-t border-b ${currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-50'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </nav>
             </div>
           )}
         </div>
@@ -372,4 +494,4 @@ const GuestBookings: FC = () => {
   );
 };
 
-export default GuestBookings;
+export default withSuspense(GuestBookings);

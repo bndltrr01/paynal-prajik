@@ -38,15 +38,8 @@ const RoomCard: FC<RoomCardProps> = ({
     }
   };
 
-  const isBookingDisabled = (): boolean => {
-    const lowerStatus = status.toLowerCase();
-    return lowerStatus === 'maintenance' || lowerStatus === 'occupied' || lowerStatus === 'reserved';
-  };
-
   const handleReserveClick = () => {
-    if (!isBookingDisabled()) {
-      navigate(`/booking/${id}`);
-    }
+    navigate(`/booking/${id}`);
   };
 
   return (
@@ -56,11 +49,6 @@ const RoomCard: FC<RoomCardProps> = ({
         <div className="mb-3">
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-bold text-gray-800">{name}</h1>
-            <span
-              className={`text-sm font-semibold px-2 py-1 rounded-full ${getStatusBadgeColor(status)}`}
-            >
-              {status.toUpperCase()}
-            </span>
           </div>
         </div>
         <div className="flex flex-wrap pb-4 gap-4 text-sm text-gray-600">
@@ -81,13 +69,9 @@ const RoomCard: FC<RoomCardProps> = ({
               <Eye size={16} /> <span>View</span>
             </button>
             <button
-              className={`text-white text-sm px-3 py-2 rounded-md transition-colors flex items-center gap-1 ${isBookingDisabled()
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 cursor-pointer'
-                }`}
+              className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-2 rounded-md transition-colors cursor-pointer flex items-center gap-1"
               onClick={handleReserveClick}
-              disabled={isBookingDisabled()}
-              title={isBookingDisabled() ? `Cannot book a room that is ${status}` : "Book this room"}
+              title="Book this room"
             >
               <Book size={16} /> <span>Book</span>
             </button>
