@@ -185,7 +185,7 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                     {/* Price Per Hour */}
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Price Per Hour (₱)
+                        Price (₱)
                       </label>
                       <input
                         type="number"

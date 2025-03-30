@@ -216,14 +216,14 @@ const BookingCard: FC<BookingCardProps> = memo(({
                 <span className="block text-lg text-gray-500">Booked On</span>
                 <span className="block font-semibold">{bookingDate || 'N/A'}</span>
               </div>
-            </div>
+        </div>
 
             <div className="flex items-center">
               <CreditCard className="w-5 h-5 text-indigo-600 mr-2 flex-shrink-0" />
               <div>
                 <span className="block text-lg text-gray-500">
                   {isVenueBooking ? 'Venue Type' : 'Room Type'}
-                </span>
+                  </span>
                 <span className="block font-semibold">{isVenueBooking ? 'Venue' : 'Room'}</span>
               </div>
             </div>
@@ -244,7 +244,7 @@ const BookingCard: FC<BookingCardProps> = memo(({
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500">Name</span>
                 <span className="font-medium">{userDetails.fullName}</span>
-              </div>
+                </div>
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500">Email</span>
                 <span className="font-medium">{userDetails.email}</span>

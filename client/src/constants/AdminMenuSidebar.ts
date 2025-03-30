@@ -37,8 +37,8 @@ export const menuItems = [
   },
   {
     icon: faUsers,
-    label: "Manage Staff",
-    link: '/admin/staff'
+    label: "Manage Users",
+    link: '/admin/users'
   },
   {
     icon: faComment,

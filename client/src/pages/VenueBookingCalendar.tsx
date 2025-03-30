@@ -126,13 +126,13 @@ const VenueBookingCalendar = () => {
     useEffect(() => {
         if (areaData) {
             try {
-                // Parse price from hourly rate (for full day)
+                // Parse price from price_per_hour (using it as is)
                 const priceString = areaData.price_per_hour || '0';
                 const numericValue = priceString.toString().replace(/[^\d.]/g, '');
-                const hourlyPrice = parseFloat(numericValue) || 0;
+                const venuePrice = parseFloat(numericValue) || 0;
 
-                // Calculate full-day price (using a fixed value of 24 hours for a full day)
-                setPrice(hourlyPrice * 24);
+                // Set the price as is, without multiplication by 24
+                setPrice(venuePrice);
             } catch (error) {
                 console.error('Error parsing area price:', error);
                 setPrice(0);
@@ -497,20 +497,22 @@ const VenueBookingCalendar = () => {
                             </div>
 
                             {selectedDate && (
-                                <div className="border-t border-gray-200 pt-3 mt-3">
-                                    <h4 className="font-medium mb-2">Your Selection</h4>
-                                    <div className="bg-gray-50 p-3 rounded-md space-y-2">
-                                        <div className="flex justify-between text-lg">
-                                            <span>Date:</span>
-                                            <span className="font-medium">{format(selectedDate, 'EEE, MMM dd, yyyy')}</span>
-                                        </div>
-                                        <div className="flex justify-between text-lg">
-                                            <span>Duration:</span>
-                                            <span className="font-medium">Full Day (8AM - 5PM)</span>
-                                        </div>
-                                        <div className="flex justify-between text-2xl font-semibold text-blue-600 pt-2 border-t border-gray-200">
-                                            <span>Total Price:</span>
-                                            <span>₱{price.toLocaleString()}</span>
+                                <div className="mt-auto">
+                                    <div className="border-t border-gray-200 pt-3 mt-3">
+                                        <h4 className="font-medium mb-2">Your Selection</h4>
+                                        <div className="bg-gray-50 p-3 rounded-md space-y-2">
+                                            <div className="flex justify-between text-lg">
+                                                <span>Date:</span>
+                                                <span className="font-medium">{format(selectedDate, 'EEE, MMM dd, yyyy')}</span>
+                                            </div>
+                                            <div className="flex justify-between text-lg">
+                                                <span>Duration:</span>
+                                                <span className="font-medium">Full Day (8AM - 5PM)</span>
+                                            </div>
+                                            <div className="flex justify-between text-2xl font-semibold text-blue-600 pt-2 border-t border-gray-200">
+                                                <span>Total Price:</span>
+                                                <span>₱{price.toLocaleString()}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

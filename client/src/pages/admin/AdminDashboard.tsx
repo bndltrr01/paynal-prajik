@@ -100,7 +100,7 @@ const AdminDashboard = () => {
     labels: ['Revenue This Month'],
     datasets: [
       {
-        label: 'Revenue (in $)',
+        label: 'Revenue (in ₱)',
         data: [stats.revenue],
         backgroundColor: ["#FF5722"],
       }
@@ -111,7 +111,7 @@ const AdminDashboard = () => {
     labels: ['Room Bookings', 'Venue Rentals'],
     datasets: [
       {
-        label: 'Revenue by Type ($)',
+        label: 'Revenue by Type (₱)',
         data: [stats.roomRevenue, stats.venueRevenue],
         backgroundColor: ["#3F51B5", "#E91E63"],
       }
@@ -142,13 +142,13 @@ const AdminDashboard = () => {
           bookingStatusCounts.rejected
         ],
         backgroundColor: [
-          "#FFC107", // Pending - Yellow
-          "#2196F3", // Reserved - Blue
-          "#4CAF50", // Checked In - Green
-          "#9E9E9E", // Checked Out - Grey
-          "#F44336", // Cancelled - Red
-          "#9C27B0", // No Show - Purple
-          "#FF5722"  // Rejected - Orange
+          "#FFC107",
+          "#2196F3",
+          "#4CAF50",
+          "#9E9E9E",
+          "#F44336",
+          "#9C27B0",
+          "#FF5722"
         ],
         borderWidth: 1,
       }
@@ -176,7 +176,7 @@ const AdminDashboard = () => {
         <StatCard title="Active Bookings" value={data.active_bookings} borderColor="border-blue-500" />
         <StatCard title="Available Rooms" value={data.available_rooms} borderColor="border-green-500" />
         <StatCard title="Area Reservations" value={data.upcoming_reservations} borderColor="border-yellow-500" />
-        <StatCard title="Revenue This Month" value={`$ ${data.revenue}`} borderColor="border-orange-500" />
+        <StatCard title="Revenue This Month" value={`₱ ${data.revenue}`} borderColor="border-orange-500" />
       </div>
 
       {/* Charts */}

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FC, useState } from "react";
+import { toast } from "react-toastify";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
 import Modal from "../../components/Modal";
 import EventLoader from "../../motions/loaders/EventLoader";
@@ -14,7 +15,7 @@ import {
 } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
-import { Edit, Eye, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Eye, Trash2 } from "lucide-react";
 
 interface Amenity {
   id: number;
@@ -35,6 +36,13 @@ interface Room {
 
 interface AddRoomResponse {
   data: any;
+}
+
+interface PaginationData {
+  total_pages: number;
+  current_page: number;
+  total_items: number;
+  page_size: number;
 }
 
 const ViewRoomModal: FC<{
@@ -140,6 +148,8 @@ const ViewRoomModal: FC<{
 const ManageRooms: FC = () => {
   const [showFormModal, setShowFormModal] = useState(false);
   const [editRoomData, setEditRoomData] = useState<IRoom | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(9);
 
   // For the read-only view
   const [showViewModal, setShowViewModal] = useState(false);
@@ -152,9 +162,16 @@ const ManageRooms: FC = () => {
 
   const queryClient = useQueryClient();
 
-  // 1. Fetch Rooms
-  const { data: roomsData, isLoading, isError } = useQuery<{ data: Room[] }>({
-    queryKey: ["rooms"],
+  // 1. Fetch Rooms with pagination
+  const {
+    data: roomsResponse,
+    isLoading,
+    isError
+  } = useQuery<{
+    data: Room[];
+    pagination: PaginationData;
+  }>({
+    queryKey: ["rooms", currentPage, pageSize],
     queryFn: fetchRooms,
   });
 
@@ -173,8 +190,21 @@ const ManageRooms: FC = () => {
       setLoaderText("Adding room...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      // Force a refetch to ensure data is fresh, all queries with the key "rooms"
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "rooms"
+      });
       setShowFormModal(false);
+      // Display success toast
+      toast.success("Room added successfully!");
+
+      // Set to first page to see the new room
+      setCurrentPage(1);
+    },
+    onError: (error: any) => {
+      // Display error toast
+      toast.error(`Failed to add room: ${error.message || 'Unknown error'}`);
+      console.error("Error adding room:", error);
     },
     onSettled: () => {
       setLoading(false);
@@ -193,8 +223,18 @@ const ManageRooms: FC = () => {
       setLoaderText("Updating room...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      // Force a refetch to ensure data is fresh, all queries with the key "rooms"
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "rooms"
+      });
       setShowFormModal(false);
+      // Display success toast
+      toast.success("Room updated successfully!");
+    },
+    onError: (error: any) => {
+      // Display error toast
+      toast.error(`Failed to update room: ${error.message || 'Unknown error'}`);
+      console.error("Error updating room:", error);
     },
     onSettled: () => {
       setLoading(false);
@@ -209,8 +249,16 @@ const ManageRooms: FC = () => {
       setLoaderText("Deleting room...");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey[0] === "rooms"
+      });
       setShowModal(false);
+
+      // If we're on a page with only one item and it's not the first page,
+      // go back to the previous page
+      if (rooms.length === 1 && currentPage > 1) {
+        setCurrentPage(prev => prev - 1);
+      }
     },
     onSettled: () => {
       setLoading(false);
@@ -278,26 +326,54 @@ const ManageRooms: FC = () => {
     formData.append("description", roomData.description || "");
     formData.append("capacity", roomData.capacity || "");
 
-    roomData.amenities.forEach((amenityId) => {
-      formData.append("amenities", String(amenityId));
-    });
+    // Only add amenities that are selected
+    if (roomData.amenities && roomData.amenities.length > 0) {
+      roomData.amenities.forEach((amenityId) => {
+        formData.append("amenities", String(amenityId));
+      });
+    }
+
+    // Only append the image if it's a File object (new upload)
     if (roomData.roomImage instanceof File) {
       formData.append("room_image", roomData.roomImage);
     }
 
-    if (!roomData.id) {
-      await addRoomMutation.mutateAsync(formData);
-    } else {
-      await editRoomMutation.mutateAsync({ roomId: roomData.id, formData });
+    try {
+      if (!roomData.id) {
+        await addRoomMutation.mutateAsync(formData);
+      } else {
+        await editRoomMutation.mutateAsync({ roomId: roomData.id, formData });
+      }
+    } catch (error) {
+      console.error("Error saving room:", error);
+      throw error;
     }
+  };
+
+  // Pagination handlers
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (roomsResponse?.pagination && currentPage < roomsResponse.pagination.total_pages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
   };
 
   // 5. Loading & Error States
   if (isLoading) return <DashboardSkeleton />;
   if (isError) return <Error />;
 
-  // 6. Rooms array from API
-  const rooms = roomsData?.data || [];
+  // 6. Rooms array and pagination data from API
+  const rooms = roomsResponse?.data || [];
+  const pagination = roomsResponse?.pagination;
 
   return (
     <div className="overflow-y-auto h-[calc(100vh-25px)]">
@@ -311,7 +387,14 @@ const ManageRooms: FC = () => {
 
         {/* Header */}
         <div className="flex flex-row items-center mb-5 justify-between">
-          <h1 className="text-3xl font-semibold">Manage Rooms</h1>
+          <div>
+            <h1 className="text-3xl font-semibold">Manage Rooms</h1>
+            {pagination && (
+              <p className="text-gray-500 mt-1">
+                Total: {pagination.total_items} room{pagination.total_items !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
           <button
             onClick={handleAddNew}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold transition-colors duration-300"
@@ -321,7 +404,7 @@ const ManageRooms: FC = () => {
         </div>
 
         {/* Grid of Room Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8">
           {rooms.map((room) => (
             <div
               key={room.id}
@@ -379,6 +462,66 @@ const ManageRooms: FC = () => {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {pagination && pagination.total_pages > 1 && (
+          <div className="flex justify-center items-center gap-2 my-5">
+            <button
+              onClick={handlePreviousPage}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-full ${currentPage === 1
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
+            >
+              <ChevronLeft size={20} />
+            </button>
+
+            <div className="flex gap-1">
+              {Array.from({ length: pagination.total_pages }).map((_, index) => {
+                const pageNumber = index + 1;
+                // Show current page, first page, last page, and pages around current
+                const isVisible =
+                  pageNumber === 1 ||
+                  pageNumber === pagination.total_pages ||
+                  Math.abs(pageNumber - currentPage) <= 1;
+
+                // Show ellipsis for gaps
+                if (!isVisible) {
+                  // Show ellipsis only once between gaps
+                  if (pageNumber === 2 || pageNumber === pagination.total_pages - 1) {
+                    return <span key={`ellipsis-${pageNumber}`} className="px-3 py-1">...</span>;
+                  }
+                  return null;
+                }
+
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => goToPage(pageNumber)}
+                    className={`w-8 h-8 rounded-full ${currentPage === pageNumber
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 hover:bg-blue-100"
+                      }`}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={pagination && currentPage === pagination.total_pages}
+              className={`p-2 rounded-full ${pagination && currentPage === pagination.total_pages
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
 
         {/* Edit/Add Room Modal */}
         {showFormModal && (

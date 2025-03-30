@@ -67,29 +67,21 @@ const GuestBookings: FC = () => {
   const isSuccess = searchParams.get('success') === 'true';
   const isCancelled = searchParams.get('cancelled') === 'true';
 
-  // Use proper staleTime to prevent unnecessary refetches
   const userBookingsQuery = useQuery({
     queryKey: ['userBookings', currentPage, pageSize],
     queryFn: () => fetchUserBookings({ page: currentPage, pageSize }),
-    staleTime: 60 * 1000, // Cache data for 1 minute
-    refetchOnWindowFocus: false
   });
 
   const guestBookingsQuery = useQuery({
     queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize],
     queryFn: () => getGuestBookings(userDetails?.id || '', { page: currentPage, pageSize }),
     enabled: !!userDetails?.id && userBookingsQuery.isError,
-    staleTime: 60 * 1000, // Cache data for 1 minute
-    refetchOnWindowFocus: false
   });
 
-  // Only fetch booking details when needed
   const bookingDetailsQuery = useQuery({
     queryKey: ['bookingDetails', bookingId],
     queryFn: () => fetchBookingDetail(bookingId || ''),
     enabled: !!bookingId,
-    staleTime: 60 * 1000, // Cache data for 1 minute
-    refetchOnWindowFocus: false
   });
 
   const cancelBookingMutation = useMutation({
@@ -102,7 +94,6 @@ const GuestBookings: FC = () => {
       setShowCancelModal(false);
       setCancellationBookingId(null);
 
-      // Only invalidate necessary queries
       queryClient.invalidateQueries({ queryKey: ['userBookings', currentPage, pageSize] });
       if (userBookingsQuery.isError) {
         queryClient.invalidateQueries({
@@ -112,7 +103,6 @@ const GuestBookings: FC = () => {
     }
   });
 
-  // Memoize data computation to prevent recalculation on every render
   const { bookings, totalPages, isLoading, errorMessage } = useMemo(() => {
     return {
       bookings: userBookingsQuery.data?.data || (guestBookingsQuery.data?.data || []),
@@ -137,7 +127,6 @@ const GuestBookings: FC = () => {
     cancelBookingMutation.isPending, cancelBookingMutation.isError
   ]);
 
-  // Memoize filtered bookings to prevent filtering on every render
   const filteredBookings = useMemo(() => {
     return bookings.filter((booking: any) => {
       const matchesSearch =
@@ -162,7 +151,6 @@ const GuestBookings: FC = () => {
     });
   }, [bookings, searchTerm, filterStatus]);
 
-  // Use callbacks for event handlers to prevent recreating functions on every render
   const handleCancelBooking = useCallback((reason: string) => {
     if (!cancellationBookingId || !reason.trim()) return;
 
@@ -326,10 +314,9 @@ const GuestBookings: FC = () => {
                       itemName = booking.area_name || booking.area_details?.area_name || "Venue";
                       itemImage = booking.area_image || booking.area_details?.area_image;
 
-                      // For venues - Calculate based on hours
                       const startTime = booking.start_time || booking.check_in_date;
                       const endTime = booking.end_time || booking.check_out_date;
-                      let duration = 1; // Default to 1 hour
+                      let duration = 1; 
 
                       if (startTime && endTime) {
                         try {
@@ -342,13 +329,12 @@ const GuestBookings: FC = () => {
                         }
                       }
 
-                      // Get hourly rate and calculate total
-                      const hourlyRate =
+                      const venuePrice =
                         parseFloat((booking.price_per_hour || booking.area_details?.price_per_hour || "0")
                           .toString()
                           .replace(/[^0-9.]/g, '')) || 0;
 
-                      totalAmount = booking.total_price || (hourlyRate * duration);
+                      totalAmount = booking.total_price || booking.total_amount || venuePrice;
                     } else {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemImage = booking.room_image || booking.room_details?.room_image;
@@ -426,14 +412,14 @@ const GuestBookings: FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-lg font-medium">
                           <div className="flex justify-center space-x-2">
                             <button
-                              className="text-blue-600 hover:text-blue-900 bg-blue-100 px-4 py-2 rounded-full flex items-center cursor-pointer"
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                               onClick={() => viewBookingDetails(id.toString())}
                             >
                               <Eye size={16} className="mr-1" /> View
                             </button>
                             {booking.status.toLowerCase() === 'pending' && (
                               <button
-                                className="text-red-600 hover:text-red-900 bg-red-100 px-4 py-2 rounded-full flex items-center cursor-pointer"
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                                 onClick={() => openCancelModal(id.toString())}
                               >
                                 <XCircle size={16} className="mr-1" /> Cancel

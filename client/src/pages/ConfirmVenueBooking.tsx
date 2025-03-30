@@ -579,7 +579,7 @@ const ConfirmVenueBooking = () => {
                 <span className="font-semibold">{areaData?.capacity} people</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Price per hour:</span>
+                <span className="text-gray-600">Price:</span>
                 <span className="font-semibold">{areaData?.price_per_hour}</span>
               </div>
               <div className="flex justify-between">
@@ -619,7 +619,7 @@ const ConfirmVenueBooking = () => {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 className="text-xl font-semibold mb-4">Pricing Summary</h3>
             <div className="text-md mb-2">
-              <p className="text-gray-600">1 area x {durationHours} hour{durationHours > 1 ? 's' : ''}</p>
+              <p className="text-gray-600">Full day booking ({durationHours} hour{durationHours > 1 ? 's' : ''})</p>
             </div>
             <div className="text-md mb-4">
               <p className="font-medium">{areaData?.area_name || "Venue"}</p>

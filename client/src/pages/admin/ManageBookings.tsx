@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
+import CancellationModal from "../../components/bookings/CancellationModal";
 import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
 import { BookingResponse } from "../../services/Booking";
 import { formatDate } from "../../utils/formatters";
@@ -55,61 +56,6 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
   );
 };
 
-// Rejection modal component
-const RejectionReasonModal: FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (reason: string) => void;
-}> = ({ isOpen, onClose, onConfirm }) => {
-  const [reason, setReason] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleConfirm = () => {
-    if (!reason.trim()) {
-      toast.error('Please provide a reason for rejection');
-      return;
-    }
-    setIsSubmitting(true);
-    onConfirm(reason);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg max-w-xl w-full p-6 relative">
-        <h2 className="text-xl font-bold mb-4">Reject Booking</h2>
-        <p className="mb-4 text-gray-600">Please provide a reason for rejecting this booking:</p>
-
-        <textarea
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-          rows={4}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Enter rejection reason..."
-        />
-
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Processing...' : 'Confirm Rejection'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Extract the booking price and convert to number
 const getBookingPrice = (booking: BookingResponse): number => {
   try {
@@ -121,39 +67,28 @@ const getBookingPrice = (booking: BookingResponse): number => {
       return totalPrice || 0;
     }
 
-    // If no total_price, calculate based on duration and base price
+    // If no total_price, calculate based on property type
     let basePrice = 0;
-    let duration = 1;
 
     if (booking.is_venue_booking && booking.area_details) {
-      // For venues - Calculate based on hours
-      const checkIn = booking.check_in_date;
-      const checkOut = booking.check_out_date;
-
-      if (checkIn && checkOut) {
-        const start = new Date(checkIn);
-        const end = new Date(checkOut);
-        const diffTime = Math.abs(end.getTime() - start.getTime());
-        // For venues, we use hours as duration
-        duration = Math.max(Math.ceil(diffTime / (1000 * 60 * 60)), 1);
-      }
-
-      // Get hourly rate from price_per_hour
+      // For venues - use price directly
       if (booking.area_details.price_per_hour) {
         const priceString = booking.area_details.price_per_hour;
         basePrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
       }
+      return basePrice;
     } else if (!booking.is_venue_booking && booking.room_details) {
       // For rooms - Calculate based on nights
       const checkIn = booking.check_in_date;
       const checkOut = booking.check_out_date;
+      let nights = 1; // Default to 1 night
 
       if (checkIn && checkOut) {
         const start = new Date(checkIn);
         const end = new Date(checkOut);
         const diffTime = Math.abs(end.getTime() - start.getTime());
         // For rooms, we use days as duration
-        duration = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
+        nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
       }
 
       // Get nightly rate from room_price
@@ -161,10 +96,12 @@ const getBookingPrice = (booking: BookingResponse): number => {
         const priceString = booking.room_details.room_price;
         basePrice = parseFloat(priceString.replace(/[^\d.]/g, '')) || 0;
       }
+
+      // Calculate total price based on duration and base price for rooms only
+      return basePrice * nights;
     }
 
-    // Calculate total price based on duration and base price
-    return basePrice * duration;
+    return basePrice;
   } catch (error) {
     console.error('Error parsing booking price:', error);
     return 0;
@@ -493,11 +430,27 @@ const ManageBookings: FC = () => {
 
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       // Also invalidate the stats query to update the revenue in dashboard
       queryClient.invalidateQueries({ queryKey: ["stats"] });
-      toast.success("Booking status updated successfully");
+
+      const { status } = variables;
+
+      if (status === 'reserved') {
+        toast.success("Booking has been reserved successfully! A confirmation email has been sent to the guest.");
+      } else if (status === 'rejected') {
+        toast.success("Booking has been rejected. The guest has been notified with your reason.");
+      } else if (status === 'checked_in') {
+        toast.success("Guest has been checked in successfully and payment recorded.");
+      } else if (status === 'checked_out') {
+        toast.success("Guest has been checked out successfully.");
+      } else if (status === 'no_show') {
+        toast.success("Booking has been marked as 'No Show'.");
+      } else {
+        toast.success(`Booking status updated to ${status.replace('_', ' ')}`);
+      }
+
       setSelectedBooking(null);
       setShowRejectionModal(false);
     },
@@ -822,12 +775,19 @@ const ManageBookings: FC = () => {
         />
       )}
 
-      {/* Rejection Reason Modal */}
+      {/* Use CancellationModal instead of RejectionReasonModal */}
       {showRejectionModal && (
-        <RejectionReasonModal
+        <CancellationModal
           isOpen={showRejectionModal}
           onClose={closeRejectionModal}
           onConfirm={handleRejectConfirm}
+          bookingId={selectedBooking?.id}
+          title="Reject Booking"
+          description="Please provide a reason for rejecting this booking. This will be shared with the guest."
+          reasonLabel="Reason for Rejection"
+          reasonPlaceholder="Enter detailed reason for rejecting this booking..."
+          confirmButtonText="Confirm Rejection"
+          showPolicyNote={false}
         />
       )}
     </div>

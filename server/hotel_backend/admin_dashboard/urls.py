@@ -30,11 +30,17 @@ urlpatterns = [
     path('delete_amenity/<int:pk>', views.delete_amenity, name='delete_amenity'),
     
     # CRUD Users
-    path('staff', views.fetch_all_staff, name='fetch_all_staff'),
-    path('add_staff', views.add_new_staff, name='add_new_staff'),
-    path('show_staff/<int:staff_id>', views.show_staff_details, name='show_staff_details'),
-    path('edit_staff/<int:staff_id>', views.edit_staff, name='edit_staff'),
-    path('delete_staff/<int:staff_id>', views.archive_staff, name='delete_staff'),
+    path('users', views.fetch_all_users, name='fetch_all_users'),
+    path('add_user', views.add_new_user, name='add_new_user'),
+    path('show_user/<int:user_id>', views.show_user_details, name='show_user_details'),
+    path('edit_user/<int:user_id>', views.edit_user, name='edit_user'),
+    path('delete_user/<int:user_id>', views.archive_user, name='delete_user'),
+    
+    # Regular Users Management
+    path('users', views.fetch_all_users, name='fetch_all_users'),
+    path('show_user/<int:user_id>', views.show_user_details, name='show_user_details'),
+    path('edit_user/<int:user_id>', views.edit_user, name='edit_user'),
+    path('archive_user/<int:user_id>', views.archive_user, name='archive_user'),
 
     # Add booking management endpoints
     path('bookings', views.admin_bookings, name='admin_bookings'),

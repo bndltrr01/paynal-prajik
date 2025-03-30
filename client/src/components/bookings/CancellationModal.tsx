@@ -6,16 +6,33 @@ interface CancellationModalProps {
     onClose: () => void;
     onConfirm: (reason: string) => void;
     bookingId?: string | number;
+    title?: string;
+    description?: string;
+    reasonLabel?: string;
+    reasonPlaceholder?: string;
+    confirmButtonText?: string;
+    showPolicyNote?: boolean;
 }
 
-const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: CancellationModalProps) => {
+const CancellationModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    bookingId,
+    title = "Cancel Reservation",
+    description = "Are you sure you want to cancel your reservation? Please provide a reason for cancellation:",
+    reasonLabel = "Reason for Cancellation",
+    reasonPlaceholder = "Please explain why you're cancelling this reservation...",
+    confirmButtonText = "Confirm Cancellation",
+    showPolicyNote = true
+}: CancellationModalProps) => {
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
     const handleConfirm = () => {
         if (!reason.trim()) {
-            setError('Please provide a reason for cancellation');
+            setError(`Please provide a ${reasonLabel.toLowerCase()}`);
             return;
         }
         setError('');
@@ -42,7 +59,7 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: Cancellati
                         transition={{ duration: 0.3 }}
                         className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl"
                     >
-                        <h2 className="text-xl font-bold mb-4">Cancel Reservation</h2>
+                        <h2 className="text-xl font-bold mb-4">{title}</h2>
 
                         {bookingId && (
                             <p className="text-sm text-gray-500 mb-3">
@@ -51,12 +68,12 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: Cancellati
                         )}
 
                         <p className="text-gray-600 mb-4">
-                            Are you sure you want to cancel your reservation? Please provide a reason for cancellation:
+                            {description}
                         </p>
 
                         <div className="mb-4">
                             <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
-                                Reason for Cancellation <span className="text-red-500">*</span>
+                                {reasonLabel} <span className="text-red-500">*</span>
                             </label>
                             <textarea
                                 id="reason"
@@ -67,7 +84,7 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: Cancellati
                                     setReason(e.target.value);
                                     if (e.target.value.trim()) setError('');
                                 }}
-                                placeholder="Please explain why you're cancelling this reservation..."
+                                placeholder={reasonPlaceholder}
                             />
                             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
                         </div>
@@ -87,14 +104,16 @@ const CancellationModal = ({ isOpen, onClose, onConfirm, bookingId }: Cancellati
                                 onClick={handleConfirm}
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Processing...' : 'Confirm Cancellation'}
+                                {isSubmitting ? 'Processing...' : confirmButtonText}
                             </button>
                         </div>
 
-                        <p className="text-xs text-gray-500 mt-4">
-                            Please note: Cancellations may be subject to a fee based on our policy.
-                            View our <a href="#" className="text-blue-600 hover:underline">Terms & Conditions</a> for more information.
-                        </p>
+                        {showPolicyNote && (
+                            <p className="text-xs text-gray-500 mt-4">
+                                Please note: Cancellations may be subject to a fee based on our policy.
+                                View our <a href="#" className="text-blue-600 hover:underline">Terms & Conditions</a> for more information.
+                            </p>
+                        )}
                     </motion.div>
                 </motion.div>
             )}
