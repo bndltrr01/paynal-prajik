@@ -16,9 +16,10 @@ interface LoginProps {
   toggleLoginModal: () => void;
   openSignupModal: () => void;
   onSuccessfulLogin?: () => void;
+  bookingInProgress?: boolean;
 }
 
-const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSuccessfulLogin }) => {
+const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSuccessfulLogin, bookingInProgress = false }) => {
   const [passwordVisible, setPasswordVisible] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -57,7 +58,7 @@ const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSucce
         setRole(user.role || "guest");
 
         setNotification({
-          message: "Logged in successfully",
+          message: bookingInProgress ? "Logged in successfully, completing your booking..." : "Logged in successfully",
           type: "success",
           icon: "fas fa-check-circle",
         });
@@ -109,6 +110,15 @@ const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSucce
             <h3 className="text-normal text-center text-gray-500 tracking-wide mb-4">
               Azurea Hotel Management System
             </h3>
+
+            {bookingInProgress && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md mb-4">
+                <h4 className="font-semibold text-blue-700 mb-1">Login Required to Complete Booking</h4>
+                <p className="text-sm text-blue-600">
+                  Please log in to your account to complete your booking. Don't worry, all your booking information has been saved.
+                </p>
+              </div>
+            )}
 
             <div className="border-b-2 border-gray-300 mb-4"></div>
 
@@ -187,7 +197,7 @@ const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSucce
                     Logging in...
                   </>
                 ) : (
-                  "Login"
+                  bookingInProgress ? "Login & Complete Booking" : "Login"
                 )}
               </motion.button>
             </form>

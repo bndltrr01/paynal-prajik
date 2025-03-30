@@ -29,13 +29,6 @@ urlpatterns = [
     path('edit_amenity/<int:pk>', views.update_amenity, name='update_amenity'),
     path('delete_amenity/<int:pk>', views.delete_amenity, name='delete_amenity'),
     
-    # CRUD Users
-    path('users', views.fetch_all_users, name='fetch_all_users'),
-    path('add_user', views.add_new_user, name='add_new_user'),
-    path('show_user/<int:user_id>', views.show_user_details, name='show_user_details'),
-    path('edit_user/<int:user_id>', views.edit_user, name='edit_user'),
-    path('delete_user/<int:user_id>', views.archive_user, name='delete_user'),
-    
     # Regular Users Management
     path('users', views.fetch_all_users, name='fetch_all_users'),
     path('show_user/<int:user_id>', views.show_user_details, name='show_user_details'),

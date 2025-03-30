@@ -110,16 +110,11 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
     queryKey: ['booking', effectiveBookingId],
     queryFn: () => fetchBookingDetail(effectiveBookingId || ''),
     enabled: !!effectiveBookingId,
-    staleTime: 5 * 60 * 1000, // Cache data for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes after becoming unused
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
   });
 
-  // Memoize the formatted booking data
   const formattedBooking = useMemo(() => {
     if (!effectiveBookingId || !bookingData) return null;
 
-    // Handle cancelled status navigation
     if (bookingData?.status === 'cancelled') {
       navigate('/my-booking?cancelled=true', { replace: true });
     }
@@ -134,40 +129,40 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
       bookingDate: bookingData?.created_at ? formatDate(bookingData.created_at) : undefined,
       cancellationReason: bookingData?.cancellation_reason,
       cancellationDate: bookingData?.cancellation_date ? formatDate(bookingData.cancellation_date) : undefined,
-        isVenueBooking: isVenueBooking,
-        roomType: "",
-        imageUrl: "",
-        guests: 0,
-        price: 0
-      };
+      isVenueBooking: isVenueBooking,
+      roomType: "",
+      imageUrl: "",
+      guests: 0,
+      price: 0
+    };
 
     if (bookingData?.user) {
       result.userDetails = {
-          fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
-          email: bookingData.user.email,
-          phoneNumber: bookingData.user.phone_number
-        };
-      }
+        fullName: `${bookingData.user.first_name} ${bookingData.user.last_name}`,
+        email: bookingData.user.email,
+        phoneNumber: bookingData.user.phone_number
+      };
+    }
 
-      if (isVenueBooking) {
+    if (isVenueBooking) {
       const areaData = bookingData?.area_details || bookingData?.area;
-        if (areaData) {
+      if (areaData) {
         result.roomType = areaData.area_name || "Venue";
         result.imageUrl = areaData.area_image || "";
         result.guests = areaData.capacity || 0;
         result.price = bookingData?.total_price || 0;
         result.totalPrice = bookingData?.total_price;
         result.areaDetails = {
-            area_image: areaData.area_image,
-            area_name: areaData.area_name,
-            price_per_hour: areaData.price_per_hour,
-            capacity: areaData.capacity
-          };
-        }
-      } else {
+          area_image: areaData.area_image,
+          area_name: areaData.area_name,
+          price_per_hour: areaData.price_per_hour,
+          capacity: areaData.capacity
+        };
+      }
+    } else {
       const roomData = bookingData?.room_details || bookingData?.room;
-        if (roomData) {
-          const roomType = roomData.room_name || "Unknown Room";
+      if (roomData) {
+        const roomType = roomData.room_name || "Unknown Room";
         result.roomType = roomType;
         // Use image from database first, only fall back to static images if necessary
         result.imageUrl = roomData.room_image || deluxe_twin;
@@ -187,8 +182,8 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
-          <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+        <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
       </div>
     </motion.div>
   ), []);
@@ -200,7 +195,7 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-        <p>Error loading booking: {error instanceof Error ? error.message : 'An error occurred'}</p>
+      <p>Error loading booking: {error instanceof Error ? error.message : 'An error occurred'}</p>
     </motion.div>
   ), [error]);
 
@@ -211,17 +206,17 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
-        {effectiveBookingId ? (
-          <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Booking Not Found</h2>
-            <p className="text-gray-600">The booking you're looking for could not be found. Please check the booking ID.</p>
-          </>
-        ) : (
-          <>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Bookings Found</h2>
-            <p className="text-gray-600">You don't have any bookings yet. Start exploring our rooms and book your stay!</p>
-          </>
-        )}
+      {effectiveBookingId ? (
+        <>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Booking Not Found</h2>
+          <p className="text-gray-600">The booking you're looking for could not be found. Please check the booking ID.</p>
+        </>
+      ) : (
+        <>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Bookings Found</h2>
+          <p className="text-gray-600">You don't have any bookings yet. Start exploring our rooms and book your stay!</p>
+        </>
+      )}
     </motion.div>
   ), [effectiveBookingId]);
 
@@ -239,7 +234,7 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
       >
         <div className="w-full">
           <BookingCard {...formattedBooking} />
-    </div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

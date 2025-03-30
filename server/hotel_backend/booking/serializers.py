@@ -3,7 +3,6 @@ from .models import Bookings, Reservations, Transactions, Reviews
 from user_roles.models import CustomUsers
 from property.models import Rooms, Amenities, Areas
 import cloudinary # type: ignore
-from datetime import datetime
 from property.serializers import AreaSerializer
 
 class AmenitySerializer(serializers.ModelSerializer):

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertCircle, Calendar, CheckCircle2, Clock, CreditCard, MapPin, User, XCircle } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, Clock, CreditCard, IdCard, User, XCircle } from "lucide-react";
 import { FC, ReactNode, memo, useMemo } from "react";
 
 const formatStatus = (status: string): string => {
@@ -297,7 +297,7 @@ const BookingCard: FC<BookingCardProps> = memo(({
             className="mt-6"
           >
             <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-              <MapPin className="w-5 h-5 mr-2 text-gray-600" />
+              <IdCard className="w-5 h-5 mr-2 text-gray-600" />
               Valid ID
             </h3>
             <div className="border border-gray-200 rounded-lg overflow-hidden">

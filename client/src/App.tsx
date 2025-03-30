@@ -21,7 +21,6 @@ const RegistrationFlow = lazy(() => import("./pages/RegistrationFlow"));
 const RoomDetails = lazy(() => import("./pages/RoomDetails"));
 const Rooms = lazy(() => import("./pages/Rooms"));
 const Venue = lazy(() => import("./pages/Venue"));
-const GuestProfile = lazy(() => import("./layout/guest/GuestProfile"));
 
 const BookingCalendar = lazy(() => import("./pages/BookingCalendar"));
 const VenueBookingCalendar = lazy(() => import("./pages/VenueBookingCalendar"));
@@ -40,6 +39,7 @@ const Reports = lazy(() => import("./pages/admin/Reports"));
 const Reservations = lazy(() => import("./pages/admin/Reservations"));
 
 // Lazy load guest pages
+const GuestProfile = lazy(() => import("./pages/guests/GuestProfile"));
 const GuestDashboard = lazy(() => import("./pages/guests/GuestDashboard"));
 const GuestBookings = lazy(() => import("./pages/guests/GuestBookings"));
 const GuestReservations = lazy(() => import("./pages/guests/GuestReservations"));
@@ -113,11 +113,11 @@ const App = () => {
             <Route element={<ProtectedRoute requiredRole="guest" />}>
               <Route path="/guest" element={<GuestLayout />}>
                 <Route index element={<GuestDashboard />} />
+                <Route path=":id" element={<GuestProfile />} />
                 <Route path="bookings" element={<GuestBookings />} />
                 <Route path="reservations" element={<GuestReservations />} />
                 <Route path="cancellations" element={<GuestCancellations />} />
                 <Route path="payments" element={<PaymentHistory />} />
-                <Route path="reviews" element={<GuestDashboard />} /> {/* Placeholder for future reviews page */}
               </Route>
             </Route>
 

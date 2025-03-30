@@ -19,8 +19,7 @@ const VenueCard: FC<AreaCardProps> = ({
   title,
   priceRange,
   capacity,
-  image,
-  status,
+  image
 }) => {
   const navigate = useNavigate();
 
@@ -32,29 +31,6 @@ const VenueCard: FC<AreaCardProps> = ({
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/venue-booking/${id}`);
-  };
-
-  const getStatusBadgeColor = (status: string): string => {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return 'text-green-700 bg-green-100';
-      case 'occupied':
-        return 'text-red-700 bg-red-100';
-      case 'maintenance':
-        return 'text-gray-700 bg-gray-100';
-      case 'reserved':
-        return 'text-amber-700 bg-amber-100';
-      case 'unavailable':
-        return 'text-red-700 bg-red-100';
-      default:
-        return 'text-blue-700 bg-blue-100';
-    }
-  };
-
-  // Format status display name if needed
-  const getDisplayStatus = (status: string): string => {
-    // If status is in lowercase, capitalize first letter
-    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   };
 
   return (

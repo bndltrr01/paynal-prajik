@@ -1,9 +1,9 @@
+import { CalendarRange } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useNavigate } from "react-router-dom";
 import Alert from "../Alert";
-import { CalendarRange } from "lucide-react";
 
 const RoomAvailabilityCalendar = () => {
   const navigate = useNavigate();
@@ -72,6 +72,7 @@ const RoomAvailabilityCalendar = () => {
           onClose={() => setAlertInfo(null)}
         />
       )}
+
       <div className="bg-gray-200 px-5 mb-8 sm:mb-15 w-full shadow-md drop-shadow-sm rounded-lg inset-shadow-md">
         <div className="py-3 font-montserrat">
           <div className="flex flex-col justify-around gap-3">

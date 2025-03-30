@@ -356,18 +356,14 @@ const VenueBookingCalendar = () => {
                                         const monthEnd = endOfMonth(month);
                                         const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-                                        // Get the weekday index of the first day (0 for Sunday, 1 for Monday, etc.)
                                         const startWeekday = monthStart.getDay();
 
-                                        // Create an array of days including empty spots for proper alignment
                                         const calendarDays = [];
 
-                                        // Add empty slots for days of the week before the first day of the month
                                         for (let i = 0; i < startWeekday; i++) {
                                             calendarDays.push(null);
                                         }
 
-                                        // Add the actual days of the month
                                         calendarDays.push(...days);
 
                                         return (
@@ -456,7 +452,7 @@ const VenueBookingCalendar = () => {
                                 onClick={handleProceed}
                                 disabled={!selectedDate}
                                 className={`px-6 py-2 rounded-md font-semibold ${selectedDate
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                     }`}
                             >
@@ -480,14 +476,6 @@ const VenueBookingCalendar = () => {
                             </div>
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-xl font-bold mb-2">{areaData.area_name}</h3>
-                                <span className={`px-2 py-1 ${areaData.status === 'available'
-                                    ? 'bg-green-100 text-green-800'
-                                    : areaData.status === 'reserved'
-                                        ? 'bg-blue-100 text-blue-800'
-                                        : 'bg-red-100 text-red-800'
-                                    } text-md font-medium rounded-full`}>
-                                    {areaData.status.toUpperCase()}
-                                </span>
                             </div>
                             <p className="text-lg font-semibold text-blue-600 mb-3">₱{price.toLocaleString()} per day</p>
 

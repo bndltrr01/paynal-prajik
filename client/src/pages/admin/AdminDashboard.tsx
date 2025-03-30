@@ -36,7 +36,10 @@ const AdminDashboard = () => {
     upcomingReservations: data?.upcoming_reservations || 0,
     revenue: data?.revenue || 0,
     roomRevenue: data?.room_revenue || 0,
-    venueRevenue: data?.venue_revenue || 0
+    venueRevenue: data?.venue_revenue || 0,
+    formattedRevenue: data?.formatted_revenue || "₱0.00",
+    formattedRoomRevenue: data?.formatted_room_revenue || "₱0.00",
+    formattedVenueRevenue: data?.formatted_venue_revenue || "₱0.00"
   }
 
   const bookingStatusCounts = {
@@ -176,7 +179,7 @@ const AdminDashboard = () => {
         <StatCard title="Active Bookings" value={data.active_bookings} borderColor="border-blue-500" />
         <StatCard title="Available Rooms" value={data.available_rooms} borderColor="border-green-500" />
         <StatCard title="Area Reservations" value={data.upcoming_reservations} borderColor="border-yellow-500" />
-        <StatCard title="Revenue This Month" value={`₱ ${data.revenue}`} borderColor="border-orange-500" />
+        <StatCard title="Revenue This Month" value={stats.formattedRevenue} borderColor="border-orange-500" />
       </div>
 
       {/* Charts */}
@@ -224,7 +227,14 @@ const AdminDashboard = () => {
                           label += ': ';
                         }
                         if (context.parsed.y !== null) {
-                          label += `$${context.parsed.y}`;
+                          // Use formatted values for tooltips
+                          const index = context.dataIndex;
+                          if (index === 0) {
+                            return `${label}${stats.formattedRoomRevenue}`;
+                          } else if (index === 1) {
+                            return `${label}${stats.formattedVenueRevenue}`;
+                          }
+                          return `${label}₱${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                         }
                         return label;
                       }

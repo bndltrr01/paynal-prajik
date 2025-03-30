@@ -172,7 +172,6 @@ const ManageAreas = () => {
       setShowFormModal(false);
       toast.success("Area added successfully!");
 
-      // Set to first page to see the new area
       setCurrentPage(1);
     },
     onError: (error: any) => {

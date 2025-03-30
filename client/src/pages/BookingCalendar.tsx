@@ -319,12 +319,12 @@ const BookingCalendar = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 mt-16">
+        <div className="container mx-auto px-4 py-10 mt-16">
             <h2 className="text-4xl font-semibold mb-6 text-center">Book Your Room</h2>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="bg-white rounded-lg shadow-xl p-6">
                         <h3 className="text-2xl font-bold mb-4">Select Your Stay Dates</h3>
 
                         {/* Selected Dates */}
@@ -342,7 +342,7 @@ const BookingCalendar = () => {
                                 </span>
                             </div>
                             <div className="mt-2 md:mt-0">
-                                <span className="text-gray-600">Nights:</span>
+                                <span className="text-gray-600">Days:</span>
                                 <span className="ml-2 font-semibold">
                                     {checkInDate && checkOutDate ? numberOfNights : 0}
                                 </span>
@@ -496,7 +496,7 @@ const BookingCalendar = () => {
                 {/* Room Info Card - Right Side */}
                 <div className="lg:col-span-1">
                     {roomData && (
-                        <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                        <div className="bg-white rounded-lg shadow-xl p-6 sticky top-24">
                             <div className="mb-4">
                                 <img
                                     loading="lazy"
@@ -519,17 +519,17 @@ const BookingCalendar = () => {
                                 </div>
                                 <div className="flex items-center text-gray-600">
                                     <span className="mr-2">👥</span>
-                                    <span>Capacity: {roomData.capacity} guests</span>
+                                    <span>{roomData.capacity}</span>
                                 </div>
                             </div>
 
                             <div className="border-t border-gray-200 pt-3 mb-3">
-                                <h4 className="font-medium mb-2">Amenities</h4>
+                                <h4 className="font-semibold text-lg mb-2">Amenities:</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {roomData.amenities && roomData.amenities.map((amenity, index) => (
                                         <span
                                             key={index}
-                                            className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                                            className="px-2 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
                                         >
                                             {isAmenityObject(amenity) ? amenity.description : String(amenity)}
                                         </span>
@@ -539,21 +539,21 @@ const BookingCalendar = () => {
 
                             {checkInDate && checkOutDate && (
                                 <div className="border-t border-gray-200 pt-3 mt-3">
-                                    <h4 className="font-medium mb-2">Your Booking</h4>
-                                    <div className="bg-gray-50 p-3 rounded-md space-y-2">
+                                    <h4 className="font-semibold text-lg mb-3">Booking Details:</h4>
+                                    <div className="p-1 rounded-md space-y-2">
                                         <div className="flex justify-between">
                                             <span>Check-in:</span>
-                                            <span className="font-medium">{format(checkInDate, 'EEE, MMM dd, yyyy')}</span>
+                                            <span className="font-medium">{format(checkInDate, 'MMM dd, yyyy')}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span>Check-out:</span>
-                                            <span className="font-medium">{format(checkOutDate, 'EEE, MMM dd, yyyy')}</span>
+                                            <span className="font-medium">{format(checkOutDate, 'MMM dd, yyyy')}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span>Nights:</span>
+                                            <span>Days:</span>
                                             <span className="font-medium">{numberOfNights}</span>
                                         </div>
-                                        <div className="flex justify-between text-lg font-semibold text-blue-600 pt-2 border-t border-gray-200">
+                                        <div className="flex justify-between text-3xl font-semibold text-blue-600 pt-2 border-t border-gray-200">
                                             <span>Total Price:</span>
                                             <span>₱{totalPrice.toLocaleString()}</span>
                                         </div>
