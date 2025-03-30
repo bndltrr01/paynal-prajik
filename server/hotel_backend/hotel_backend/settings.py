@@ -117,11 +117,11 @@ WSGI_APPLICATION = 'hotel_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        'NAME': 'hotel_backend',  # Replace with your actual database name
+        'USER': 'root',  # Change if using a different user
+        'PASSWORD': 'Bn_dltrr103102',  # Replace with your actual password
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
