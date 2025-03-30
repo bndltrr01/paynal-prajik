@@ -1,5 +1,4 @@
 import {
-  faCalendarCheck,
   faChevronDown,
   faCircleUser,
   faRightToBracket,
@@ -43,8 +42,6 @@ const Navbar: FC = () => {
     setProfileImage,
     clearAuthState,
   } = useUserContext();
-
-  const [imageLoading, setImageLoading] = useState<boolean>(false);
 
   const handleLogout = async () => {
     setLoading(true);
@@ -99,14 +96,11 @@ const Navbar: FC = () => {
   useEffect(() => {
     const fetchProfileImage = async () => {
       if (isAuthenticated && userDetails?.id) {
-        setImageLoading(true);
         try {
           const data = await getGuestDetails(userDetails.id);
           setProfileImage(data.data.profile_image);
         } catch (err) {
           console.error(`Failed to fetch user profile for Navbar: ${err}`);
-        } finally {
-          setImageLoading(false);
         }
       }
     };
@@ -176,13 +170,8 @@ const Navbar: FC = () => {
                 options={[
                   {
                     label: "Account",
-                    onClick: () => navigate("/guest/bookings"),
+                    onClick: () => navigate(`/guest/${userDetails?.id}`),
                     icon: <FontAwesomeIcon icon={faCircleUser} />,
-                  },
-                  {
-                    label: "My Bookings",
-                    onClick: () => navigate("/guest/bookings"),
-                    icon: <FontAwesomeIcon icon={faCalendarCheck} />,
                   },
                   {
                     label: "Log Out",
@@ -192,24 +181,19 @@ const Navbar: FC = () => {
                 ]}
                 position="bottom"
               >
-                {imageLoading ? (
-                  <div className="h-10 w-10 flex items-center justify-center">
-                    <i className="fa fa-spinner fa-spin"></i>
-                  </div>
-                ) : (
-                  <div className="flex items-center bg-white rounded-full px-2 py-1 border hover:border-violet-500 transition-all duration-200">
-                    <img
-                      loading="lazy"
-                      src={profileImage || DefaultImg}
-                      alt="Profile"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                    <FontAwesomeIcon
-                      icon={faChevronDown}
-                      className="ml-2 text-gray-700"
-                    />
-                  </div>
-                )}
+                <div className="flex items-center bg-gray-50 rounded-full px-2 py-1">
+                  <img
+                    loading="lazy"
+                    src={profileImage || DefaultImg}
+                    alt="Profile"
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <FontAwesomeIcon
+                    icon={faChevronDown}
+                    className="ml-2 text-gray-700"
+                  />
+                </div>
+
               </Dropdown>
             )}
           </div>

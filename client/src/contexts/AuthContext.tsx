@@ -15,13 +15,12 @@ interface UserContextType {
     userDetails: User | null;
     sessionExpired: boolean;
     role?: string;
-    loading: boolean;
+    isLoading: boolean;
     profileImage?: string;
     setIsAuthenticated: (value: boolean) => void;
     setUserDetails: (value: User | null) => void;
     setSessionExpired: (value: boolean) => void;
     setRole: (value: string) => void;
-    setLoading: (value: boolean) => void;
     setProfileImage?: (value: string) => void;
     clearAuthState: () => void;
 }
@@ -33,7 +32,7 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [userDetails, setUserDetails] = useState<User | null>(null);
     const [sessionExpired, setSessionExpired] = useState<boolean>(false);
     const [role, setRole] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [profileImage, setProfileImage] = useState<string>("");
 
     const clearAuthState = () => {
@@ -46,9 +45,16 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
     useEffect(() => {
         const checkAuth = async () => {
+            setIsLoading(true);
             try {
                 const res = await authenticateUser();
-                if (res && res.data && res.data.isAuthenticated === true && res.data.user && res.data.user.id) {
+                if (
+                    res &&
+                    res.data &&
+                    res.data.isAuthenticated === true &&
+                    res.data.user &&
+                    res.data.user.id
+                ) {
                     setIsAuthenticated(true);
                     setUserDetails(res.data.user);
                     setProfileImage(res.data.user.profile_image || "");
@@ -57,13 +63,22 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
                     clearAuthState();
                 }
             } catch (error) {
+                console.error("Authentication check failed:", error);
                 clearAuthState();
             } finally {
-                setLoading(false);
+                // Short delay to ensure UI has time to process auth state
+                setTimeout(() => {
+                    setIsLoading(false);
+                }, 300);
             }
         };
 
         checkAuth();
+
+        // Set up periodic authentication check to maintain session
+        const intervalId = setInterval(checkAuth, 15 * 60 * 1000); // Check every 15 minutes
+
+        return () => clearInterval(intervalId);
     }, []);
 
     const contextValue: UserContextType = {
@@ -71,13 +86,12 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
         userDetails,
         sessionExpired,
         role,
-        loading,
+        isLoading,
         profileImage,
         setIsAuthenticated,
         setUserDetails,
         setSessionExpired,
         setRole,
-        setLoading,
         setProfileImage,
         clearAuthState
     }

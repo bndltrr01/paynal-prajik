@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import ContentLoader from "../../motions/loaders/ContentLoader";
-import { fetchAreas } from "../../services/Area";
-import VenueCard from "./VenueCard";
+import ContentLoader from "../../../motions/loaders/ContentLoader";
+import { fetchAreas } from "../../../services/Area";
+import VenueCard from "../../../components/bookings/VenueCard";
 
 interface Area {
   id: number;
@@ -63,6 +63,7 @@ const VenueList = () => {
           {areas.map((area: Area) => (
             <div
               key={area.id}
+              data-aos="fade-up"
               onClick={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
               className={area.status.toLowerCase() !== 'available' ? 'opacity-90' : ''}
             >

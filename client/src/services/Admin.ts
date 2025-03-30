@@ -62,72 +62,6 @@ export const areaReservations = async () => {
 };
 
 // CRUD Users
-export const fetchAllStaff = async () => {
-  try {
-    const response = await ADMIN.get("/staff", {
-      withCredentials: true,
-    });
-    return response.data.data;
-  } catch (error) {
-    console.error(`Failed to fetch users: ${error}`);
-    throw error;
-  }
-};
-
-export const addNewStaff = async (payload: FormData): Promise<{ data: any }> => {
-  try {
-    const response = await ADMIN.post("/add_staff", payload, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-      withCredentials: true,
-    });
-    return response;
-  } catch (error) {
-    console.error(`Failed to add staff: ${error}`);
-    throw error;
-  }
-};
-
-export const staffDetail = async (staffId: number) => {
-  try {
-    const response = await ADMIN.get(`/show_staff/${staffId}`, {
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to fetch staff detail: ${error}`);
-    throw error;
-  }
-};
-
-export const manageStaff = async (staffId: number, payload: FormData) => {
-  try {
-    const response = await ADMIN.put(`/edit_staff/${staffId}`, payload, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to manage staff: ${error}`);
-    throw error;
-  }
-};
-
-export const archiveStaff = async (staffId: number) => {
-  try {
-    const response = await ADMIN.delete(`/archive_staff/${staffId}`, {
-      withCredentials: true,
-    });
-    return response.data;
-  } catch (error) {
-    console.error(`Failed to archive staff: ${error}`);
-    throw error;
-  }
-}
-
 export const fetchAllUsers = async () => {
   try {
     const response = await ADMIN.get("/users", {
@@ -139,6 +73,18 @@ export const fetchAllUsers = async () => {
     throw error;
   }
 };
+
+export const fetchUserDetails = async (userId: number) => {
+  try {
+    const response = await ADMIN.get(`/user/${userId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch user details: ${error}`);
+    throw error;
+  }
+}
 
 export const manageUser = async (userId: number, payload: FormData) => {
   try {

@@ -377,7 +377,7 @@ const ManageBookings: FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 9; // Show 9 bookings per page
+  const pageSize = 9; 
 
   const { data: bookingsResponse, error, isLoading } = useQuery<{
     data: BookingResponse[],
@@ -392,7 +392,6 @@ const ManageBookings: FC = () => {
     queryFn: async () => {
       try {
         const response = await getAllBookings({ page: currentPage, pageSize });
-        console.log('Admin bookings response:', response);
         return response;
       } catch (err) {
         console.error('Error fetching admin bookings:', err);
@@ -415,22 +414,18 @@ const ManageBookings: FC = () => {
     }) => {
       const result = await updateBookingStatus(bookingId, status, reason);
 
-      // Create a transaction record when checking in
       if (status === 'checked_in' && paymentAmount) {
         try {
           await recordPayment(bookingId, paymentAmount);
-          console.log('Payment recorded successfully');
         } catch (error) {
           console.error('Failed to record payment:', error);
-          // We don't throw an error here to not block the check-in process
         }
       }
 
       return result;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      // Also invalidate the stats query to update the revenue in dashboard
       queryClient.invalidateQueries({ queryKey: ["stats"] });
 
       const { status } = variables;

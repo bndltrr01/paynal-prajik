@@ -439,11 +439,8 @@ def user_login(request):
 def user_auth(request):
     try:
         user = request.user
-        print(f"User authentication check: {user.username} (ID: {user.id})")
         
-        # Check if user is properly authenticated
         if not user.is_authenticated:
-            print(f"User {user.username} is not authenticated")
             return Response({
                 'isAuthenticated': False,
                 'error': 'User is not authenticated'
@@ -462,7 +459,6 @@ def user_auth(request):
             }
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"Auth check error: {str(e)}")
         return Response({
             'isAuthenticated': False,
             'error': str(e)

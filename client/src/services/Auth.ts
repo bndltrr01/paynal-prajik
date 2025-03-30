@@ -117,7 +117,7 @@ export const changePassword = async (oldPassword: string, newPassword: string, c
         const response = await API.post('/auth/change_password', {
             old_password: oldPassword,
             new_password: newPassword,
-            confirm_password: confirmPassword
+            confirm_new_password: confirmPassword
         }, {
             withCredentials: true
         });

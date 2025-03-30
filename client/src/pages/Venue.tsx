@@ -1,6 +1,6 @@
-import VenueList from "../components/bookings/VenueList";
+import VenueList from "./visitors/areas/VenueList";
+import VenueHero from "./visitors/areas/VenueHero";
 import withSuspense from "../hoc/withSuspense";
-import VenueHero from "../layout/VenueHero";
 
 const Venue = () => {
   return (

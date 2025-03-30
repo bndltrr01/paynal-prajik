@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
@@ -34,12 +35,30 @@ const Hero = () => {
 
               <div className="flex flex-col justify-center items-center h-screen z-10 relative text-center px-6 sm:px-12 md:px-20">
                 <div className="text-white max-w-4xl">
-                  <h1 className="font-playfair mb-4 text-6xl leading-tight">
+                  <motion.h1
+                    className="font-playfair mb-4 text-6xl leading-tight"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.8,
+                      delay: 0.3,
+                      ease: "easeOut"
+                    }}
+                  >
                     {slide.heading}
-                  </h1>
-                  <p className="font-montserrat text-xl leading-relaxed">
+                  </motion.h1>
+                  <motion.p
+                    className="font-montserrat text-xl leading-relaxed"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.8,
+                      delay: 0.6,
+                      ease: "easeOut"
+                    }}
+                  >
                     {slide.description}
-                  </p>
+                  </motion.p>
                 </div>
               </div>
             </div>

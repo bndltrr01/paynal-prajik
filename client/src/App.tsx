@@ -1,12 +1,15 @@
-import { Suspense, lazy } from "react";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { Suspense, lazy, useEffect } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "./App.css";
+import ScrollToTop from "./components/ScrollToTop";
 import { useUserContext } from "./contexts/AuthContext";
 import ProtectedRoute from "./contexts/ProtectedRoutes";
 import AdminLayout from "./layout/admin/AdminLayout";
 import Footer from "./layout/Footer";
 import Navbar from "./layout/Navbar";
-import ScrollToTop from "./components/ScrollToTop";
+import GuestChangePassword from "./components/guests/GuestChangePassword";
 
 // Import the new PageTransitionLoader
 const PageTransitionLoader = lazy(() => import("./motions/loaders/PageTransitionLoader"));
@@ -24,7 +27,7 @@ const Venue = lazy(() => import("./pages/Venue"));
 
 const BookingCalendar = lazy(() => import("./pages/BookingCalendar"));
 const VenueBookingCalendar = lazy(() => import("./pages/VenueBookingCalendar"));
-const AboutUs = lazy(() => import("./pages/AboutUs"));
+const AboutUs = lazy(() => import("./pages/visitors/home/AboutUs"));
 const CancelReservation = lazy(() => import("./pages/CancelReservation"));
 const VenueDetails = lazy(() => import("./pages/VenueDetails"));
 
@@ -48,14 +51,30 @@ const PaymentHistory = lazy(() => import("./pages/guests/PaymentHistory"));
 const GuestLayout = lazy(() => import("./layout/guest/GuestLayout"));
 
 const App = () => {
-  const { isAuthenticated, role } = useUserContext();
+  const { isAuthenticated, role, isLoading } = useUserContext();
   const location = useLocation();
+
+  useEffect(() => {
+    AOS.init({
+      offset: 100,
+      duration: 700,
+      delay: 100,
+    });
+  }, [])
 
   const isAdminRoute =
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/guest") ||
     location.pathname.startsWith("/registration") ||
     location.pathname.startsWith("/forgot-password");
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingHydrate />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -85,8 +104,6 @@ const App = () => {
             <Route path="/registration" element={<RegistrationFlow />} />
 
             {/* Legacy guest profile route for compatibility */}
-            <Route path="/guest/:id" element={<GuestProfile />} />
-
             <Route path="/venues" element={<Venue />} />
             <Route path="/venues/:id" element={<VenueDetails />} />
             <Route path="/venue-booking/:areaId" element={<VenueBookingCalendar />} />
@@ -94,16 +111,6 @@ const App = () => {
             <Route path="/rooms/:id" element={<RoomDetails />} />
             <Route path="/booking/:roomId" element={<BookingCalendar />} />
             <Route path="/availability" element={<AvailabilityResults />} />
-
-            {/* Redirect from MyBooking to the GuestBookings page */}
-            <Route
-              path="/my-booking"
-              element={
-                isAuthenticated ?
-                  <Navigate to="/guest/bookings" replace /> :
-                  <GuestBookings />
-              }
-            />
 
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/about-us" element={<AboutUs />} />
@@ -114,6 +121,7 @@ const App = () => {
               <Route path="/guest" element={<GuestLayout />}>
                 <Route index element={<GuestDashboard />} />
                 <Route path=":id" element={<GuestProfile />} />
+                <Route path="change-password" element={<GuestChangePassword />} />
                 <Route path="bookings" element={<GuestBookings />} />
                 <Route path="reservations" element={<GuestReservations />} />
                 <Route path="cancellations" element={<GuestCancellations />} />
