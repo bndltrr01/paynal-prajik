@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from '@tanstack/react-query';
 import { BookCheck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -5,10 +6,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
 import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
-import withSuspense from "../hoc/withSuspense";
 import { ReservationFormData, createReservation, fetchAreaById } from '../services/Booking';
 
-// Define area data interface
 interface AreaData {
   id: number;
   area_name: string;
@@ -111,40 +110,28 @@ const ConfirmVenueBooking = () => {
       if (!response || !response.id) {
         throw new Error('Invalid response from server');
       }
-
-      // Handle successful booking
       setSuccess(true);
-      // Clear saved form data to prevent duplicate submissions
       setSavedFormData(null);
-
-      // Redirect to booking confirmation page after 2 seconds
-      setTimeout(() => {
-        navigate(`/my-booking?bookingId=${response.id}&success=true`);
-      }, 2000);
+      navigate(`/guest/bookings?bookingId=${response.id}&success=true`);
 
     } catch (err: any) {
       console.error('Error creating venue booking:', err);
       let errorMessage = 'Failed to create venue booking. Please try again.';
 
-      // Extract more detailed error message if available
       if (err.response && err.response.data && err.response.data.error) {
         if (typeof err.response.data.error === 'string') {
           errorMessage = err.response.data.error;
         } else if (typeof err.response.data.error === 'object') {
-          // If error is an object with multiple fields
           errorMessage = Object.values(err.response.data.error).join('. ');
         }
       }
-
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   }, [navigate, savedFormData, isSubmitting]);
 
-  // Effect to check if auth status changed and we have saved form data
   useEffect(() => {
-    // Only proceed if not already submitting and not previously submitted
     if (isAuthenticated && savedFormData && !isSubmitting && !success) {
       handleSuccessfulLogin();
     }
@@ -152,11 +139,8 @@ const ConfirmVenueBooking = () => {
 
   const handleProceedClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
-    // Prevent duplicate submissions
     if (isSubmitting) return;
 
-    // Validate form data first
     if (!formData.firstName || !formData.lastName || !formData.phoneNumber || !formData.emailAddress) {
       setError('Please fill in all required fields');
       return;
@@ -597,4 +581,4 @@ const ConfirmVenueBooking = () => {
   );
 };
 
-export default withSuspense(ConfirmVenueBooking, { height: "400px" });
+export default ConfirmVenueBooking;

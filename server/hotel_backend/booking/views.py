@@ -10,8 +10,9 @@ from .serializers import (
     BookingRequestSerializer,
     RoomSerializer
 )
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
-from datetime import datetime, timezone
+from datetime import datetime
 from django.db.models import Q
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
@@ -267,53 +268,46 @@ def user_bookings(request):
 def cancel_booking(request, booking_id):
     try:
         booking = Bookings.objects.get(id=booking_id)
-        
-        if booking.user.id != request.user.id and request.user.role not in ['admin', 'staff']:
-            return Response({
-                "error": "You do not have permission to cancel this booking"
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        if booking.status in ['cancelled', 'checked_out', 'no_show', 'rejected']:
-            return Response({
-                "error": f"Cannot cancel a booking with status '{booking.status}'"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        reason = request.data.get('reason', '')
-        if not reason:
-            return Response({
-                "error": "A reason for cancellation is required"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        previous_status = booking.status
-        booking.status = 'cancelled'
-        booking.cancellation_reason = reason
-        booking.cancellation_date = timezone.now()
-        booking.save()
-        
-        if previous_status == 'reserved':
-            if booking.is_venue_booking and booking.area:
-                area = booking.area
-                area.status = 'available'
-                area.save()
-            elif booking.room:
-                room = booking.room
-                room.status = 'available'
-                room.save()
-        
-        serializer = BookingSerializer(booking)
-        
-        return Response({
-            "message": "Booking cancelled successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
     except Bookings.DoesNotExist:
-        return Response({
-            "error": "Booking not found"
-        }, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({
-            "error": str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.user.role == 'guest':
+        if booking.user != request.user:
+            return Response({"error": "You do not have permission to cancel this booking"},
+                            status=status.HTTP_403_FORBIDDEN)
+        if booking.status.lower() != 'pending':
+            return Response({"error": "You can only cancel bookings that are pending"},
+                            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        if booking.status.lower() == 'cancelled':
+            return Response({"error": "Booking is already cancelled"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    reason = request.data.get('reason', '').strip()
+    if not reason:
+        return Response({"error": "A cancellation reason is required"},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    # Cancel the booking.
+    booking.status = 'cancelled'
+    booking.cancellation_reason = reason
+    booking.cancellation_date = timezone.now()
+    booking.save()
+
+    # Optionally, if needed: Release the room/area if the booking was reserved.
+    if booking.status.lower() == 'reserved':
+        if booking.is_venue_booking and booking.area:
+            booking.area.status = 'available'
+            booking.area.save()
+        elif booking.room:
+            booking.room.status = 'available'
+            booking.room.save()
+
+    serializer = BookingSerializer(booking)
+    return Response({
+        "message": "Booking cancelled successfully",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def fetch_room_bookings(request, room_id):

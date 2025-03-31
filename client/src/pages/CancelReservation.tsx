@@ -16,9 +16,9 @@ const CancelReservation = () => {
         mutationFn: (cancelData: { bookingId: string, reason: string }) =>
             cancelBooking(cancelData.bookingId, cancelData.reason),
         onSuccess: () => {
-            navigate('/my-booking?cancelled=true');
+            navigate(`/guest/bookings?cancelled=true`);
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             setFormError(error?.message || 'Failed to cancel booking. Please try again.');
         }
     });

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { memo, useCallback, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import deluxe_twin from "../../assets/deluxe_twin.jpg";
 import withSuspense from "../../hoc/withSuspense";
 import { fetchBookingDetail } from "../../services/Booking";
@@ -96,16 +96,15 @@ const formatDate = (dateString: string): string => {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   } catch (e) {
+    console.error(`Error formatting date: ${e}`);
     return dateString;
   }
 };
 
 const BookingData = memo(({ bookingId }: BookingDataProps) => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const effectiveBookingId = bookingId || searchParams.get('bookingId');
 
-  // Setup query with proper caching
   const { data: bookingData, isLoading, error } = useQuery<BookingData>({
     queryKey: ['booking', effectiveBookingId],
     queryFn: () => fetchBookingDetail(effectiveBookingId || ''),
@@ -114,10 +113,6 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
 
   const formattedBooking = useMemo(() => {
     if (!effectiveBookingId || !bookingData) return null;
-
-    if (bookingData?.status === 'cancelled') {
-      navigate('/my-booking?cancelled=true', { replace: true });
-    }
 
     const isVenueBooking = bookingData?.is_venue_booking || false;
     const result: FormattedBooking = {
@@ -164,7 +159,6 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
       if (roomData) {
         const roomType = roomData.room_name || "Unknown Room";
         result.roomType = roomType;
-        // Use image from database first, only fall back to static images if necessary
         result.imageUrl = roomData.room_image || deluxe_twin;
         result.guests = roomData.pax || 2;
         result.price = roomData.room_price || 0;
@@ -173,9 +167,8 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
     }
 
     return result;
-  }, [effectiveBookingId, bookingData, navigate]);
+  }, [effectiveBookingId, bookingData]);
 
-  // Memoize loading component
   const renderLoading = useCallback(() => (
     <motion.div
       className="p-6 space-y-6 flex justify-center items-center min-h-[300px]"

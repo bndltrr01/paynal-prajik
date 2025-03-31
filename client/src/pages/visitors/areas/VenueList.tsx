@@ -63,7 +63,6 @@ const VenueList = () => {
           {areas.map((area: Area) => (
             <div
               key={area.id}
-              data-aos="fade-up"
               onClick={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
               className={area.status.toLowerCase() !== 'available' ? 'opacity-90' : ''}
             >

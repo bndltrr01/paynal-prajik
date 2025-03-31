@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Eye, Search, XCircle } from "lucide-react";
 import { FC, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import BookingData from "../../components/bookings/BookingData";
 import CancellationModal from "../../components/bookings/CancellationModal";
 import { useUserContext } from "../../contexts/AuthContext";
@@ -25,6 +27,7 @@ const formatDate = (dateString: string): string => {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   } catch (e) {
+    console.error(`Error formatting date: ${dateString}`, e);
     return dateString;
   }
 };
@@ -86,14 +89,10 @@ const GuestBookings: FC = () => {
 
   const cancelBookingMutation = useMutation({
     mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) => {
-      console.log('Attempting to cancel booking:', bookingId, 'with reason:', reason);
       return cancelBooking(bookingId, reason);
     },
-    onSuccess: (data) => {
-      console.log('Cancellation successful:', data);
-      searchParams.set('cancelled', 'true');
-      setSearchParams(searchParams);
-
+    onSuccess: () => {
+      toast.success("Booking cancelled successfully!");
       setShowCancelModal(false);
       setCancellationBookingId(null);
 
@@ -105,8 +104,8 @@ const GuestBookings: FC = () => {
       }
     },
     onError: (error: any) => {
-      console.error('Cancellation failed:', error);
-      // Show error directly in UI if needed
+      console.error(`Error cancelling booking: ${error}`);
+      toast.error("Failed to cancel booking. Please try again.");
     }
   });
 
@@ -186,6 +185,8 @@ const GuestBookings: FC = () => {
   }, []);
 
   const viewBookingDetails = useCallback((id: string) => {
+    searchParams.delete('cancelled');
+    searchParams.delete('success');
     searchParams.set('bookingId', id);
     setSearchParams(searchParams);
   }, [searchParams, setSearchParams]);
@@ -354,23 +355,21 @@ const GuestBookings: FC = () => {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemImage = booking.room_image || booking.room_details?.room_image;
 
-                      // For rooms - Calculate based on nights
                       const checkInDate = booking.check_in_date;
                       const checkOutDate = booking.check_out_date;
-                      let nights = 1; // Default to 1 night
+                      let nights = 1;
 
                       if (checkInDate && checkOutDate) {
                         try {
                           const checkIn = new Date(checkInDate);
                           const checkOut = new Date(checkOutDate);
                           const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1; // Days
+                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
                         } catch (e) {
                           console.error("Error calculating room nights:", e);
                         }
                       }
 
-                      // Get nightly rate and calculate total
                       const nightlyRate =
                         parseFloat((booking.room_price || booking.room_details?.room_price || "0")
                           .toString()

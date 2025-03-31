@@ -62,7 +62,6 @@ interface BookingCardProps {
   guests: number;
   price: number;
   status: string;
-  bookingId: string | number;
   isVenueBooking?: boolean;
   roomDetails?: {
     room_image?: string;
@@ -86,7 +85,6 @@ interface BookingCardProps {
   totalPrice?: number;
 }
 
-// Animation variants - defined outside component to avoid recreation on each render
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -128,7 +126,6 @@ const BookingCard: FC<BookingCardProps> = memo(({
   guests,
   price,
   status,
-  bookingId,
   isVenueBooking,
   userDetails,
   specialRequest,
@@ -138,13 +135,11 @@ const BookingCard: FC<BookingCardProps> = memo(({
   cancellationDate,
   totalPrice
 }) => {
-  // Memoize computed values
   const statusInfo = useMemo(() => getStatusInfo(status), [status]);
   const displayPrice = totalPrice || price;
 
-  // Optimize loading of image
   const imgSrc = useMemo(() => {
-    return imageUrl || '/default-room.jpg';
+    return imageUrl;
   }, [imageUrl]);
 
   return (
@@ -173,9 +168,6 @@ const BookingCard: FC<BookingCardProps> = memo(({
         </div>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
           <h2 className="text-xl sm:text-2xl font-bold text-white">{roomType}</h2>
-          <p className="text-white/90 text-sm">
-            Booking ID: <span className="font-medium">{bookingId}</span>
-          </p>
         </div>
       </div>
 

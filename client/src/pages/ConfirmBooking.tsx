@@ -6,7 +6,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import LoginModal from '../components/LoginModal';
 import SignupModal from '../components/SignupModal';
 import { useUserContext } from '../contexts/AuthContext';
-import withSuspense from "../hoc/withSuspense";
 import { BookingFormData, createBooking, fetchRoomById } from '../services/Booking';
 
 interface Amenity {
@@ -32,7 +31,7 @@ const ConfirmBooking = () => {
   const { isAuthenticated } = useUserContext();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const [savedFormData, setSavedFormData] = useState<any>(null);
+  const [savedFormData, setSavedFormData] = useState(null);
 
   const roomId = searchParams.get('roomId');
   const arrival = searchParams.get('arrival');
@@ -87,7 +86,6 @@ const ConfirmBooking = () => {
     } else if (roomData && selectedArrival && selectedDeparture) {
       const nights = calculateNights();
 
-      // Parse the room price from string
       const priceString = roomData.room_price.replace(/[₱,]/g, '');
       const roomPrice = parseFloat(priceString);
 
@@ -733,4 +731,4 @@ const ConfirmBooking = () => {
   );
 };
 
-export default withSuspense(ConfirmBooking, { height: "400px" });
+export default ConfirmBooking;

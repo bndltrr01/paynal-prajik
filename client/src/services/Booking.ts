@@ -221,7 +221,7 @@ export const createReservation = async (reservationData: ReservationFormData) =>
         });
         
         return response.data;
-    } catch (error: any) {
+    } catch (error) {
         console.error(`Failed to create reservation: ${error}`);
         throw error;
     }
@@ -291,8 +291,7 @@ export const fetchUserBookings = async ({
 
 export const cancelBooking = async (bookingId: string, reason: string) => {
     try {
-        const response = await booking.post(`/bookings/${bookingId}/cancel`, 
-            { reason }, 
+        const response = await booking.post(`/bookings/${bookingId}/cancel`, { reason }, 
             {
                 headers: { 'Content-Type': 'application/json' },
                 withCredentials: true
@@ -307,7 +306,7 @@ export const cancelBooking = async (bookingId: string, reason: string) => {
 
 export const fetchRoomBookings = async (roomId: string, startDate?: string, endDate?: string) => {
     try {
-        let url = `/rooms/${roomId}/bookings`;
+        const url = `/rooms/${roomId}/bookings`;
         const params: Record<string, string> = {};
         
         if (startDate) params.start_date = startDate;
@@ -328,7 +327,7 @@ export const fetchRoomBookings = async (roomId: string, startDate?: string, endD
 
 export const fetchAreaBookings = async (areaId: string, startDate?: string, endDate?: string) => {
     try {
-        let url = `/areas/${areaId}/bookings`;
+        const url = `/areas/${areaId}/bookings`;
         const params: Record<string, string> = {};
         
         if (startDate) params.start_date = startDate;

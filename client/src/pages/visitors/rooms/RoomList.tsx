@@ -74,7 +74,6 @@ const RoomList: FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredRooms.map((room, index) => (
             <div
-              data-aos="fade-up"
               key={index}
               className={room.status.toLowerCase() !== 'available' ? 'opacity-90' : ''}
             >
