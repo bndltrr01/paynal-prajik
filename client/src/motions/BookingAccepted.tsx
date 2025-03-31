@@ -93,11 +93,11 @@ const BookingAccepted = () => {
                   <h3 className="font-semibold text-gray-800">
                     {isVenueBooking ? 'Venue Reservation' : 'Room Booking'} Confirmed
                   </h3>
-                  <p className="text-gray-600 text-sm mt-1">
+                  <p className="text-gray-600 text-md mt-1">
                     Booking ID: <span className="font-medium">{bookingId}</span>
                   </p>
-                  <p className="text-gray-500 text-sm mt-1">
-                    You will receive a confirmation email shortly with all the details.
+                  <p className="text-gray-500 text-md mt-1">
+                    You will receive a email if your booking is confirmed by admin.
                   </p>
                 </div>
               </div>

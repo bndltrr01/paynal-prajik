@@ -67,9 +67,6 @@ const GuestBookings: FC = () => {
   const pageSize = 5;
   const queryClient = useQueryClient();
 
-  const isSuccess = searchParams.get('success') === 'true';
-  const isCancelled = searchParams.get('cancelled') === 'true';
-
   const userBookingsQuery = useQuery({
     queryKey: ['userBookings', currentPage, pageSize],
     queryFn: () => fetchUserBookings({ page: currentPage, pageSize }),
@@ -92,7 +89,6 @@ const GuestBookings: FC = () => {
       return cancelBooking(bookingId, reason);
     },
     onSuccess: () => {
-      toast.success("Booking cancelled successfully!");
       setShowCancelModal(false);
       setCancellationBookingId(null);
 
@@ -102,6 +98,7 @@ const GuestBookings: FC = () => {
           queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize]
         });
       }
+      toast.success("Booking cancelled successfully!");
     },
     onError: (error: any) => {
       console.error(`Error cancelling booking: ${error}`);
@@ -236,21 +233,6 @@ const GuestBookings: FC = () => {
         <h1 className="text-2xl font-bold text-gray-800">My Bookings</h1>
         <p className="text-gray-600">Manage all your hotel bookings</p>
       </div>
-
-      {/* Success/Cancellation Messages */}
-      {isSuccess && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Success!</strong>
-          <span className="block sm:inline"> Your booking has been confirmed.</span>
-        </div>
-      )}
-
-      {isCancelled && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Booking Cancelled!</strong>
-          <span className="block sm:inline"> Your booking has been successfully cancelled.</span>
-        </div>
-      )}
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col md:flex-row justify-between gap-4">

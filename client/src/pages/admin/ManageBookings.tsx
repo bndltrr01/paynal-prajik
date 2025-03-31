@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   ChevronLeft,
   ChevronRight,
   Eye,
-  FileEdit,
   Filter,
   Search,
   X
@@ -419,7 +419,6 @@ const ManageBookings: FC = () => {
       paymentAmount?: number;
       setRoomAvailable?: boolean;
     }) => {
-      // Simplify by sending just what the API expects
       const data: Record<string, any> = {
         status,
         set_available: setRoomAvailable
@@ -442,11 +441,11 @@ const ManageBookings: FC = () => {
 
       return { result, status };
     },
-    onSuccess: (variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
 
-      const { status } = variables;
+      const { status } = data;
 
       if (status === 'reserved') {
         toast.success("Booking has been reserved successfully! A confirmation email has been sent to the guest.");
@@ -528,7 +527,7 @@ const ManageBookings: FC = () => {
         updateBookingStatusMutation.mutate({
           bookingId: selectedBooking.id,
           status: "no_show",
-          setRoomAvailable: true // This ensures the room/area will be made available
+          setRoomAvailable: true
         });
 
         toast.info("Processing no-show status...");
@@ -556,6 +555,7 @@ const ManageBookings: FC = () => {
         status: "rejected",
         reason: reason
       });
+      setShowRejectionModal(false);
     }
   };
 
@@ -717,14 +717,6 @@ const ManageBookings: FC = () => {
                         >
                           <Eye size={25} />
                         </button>
-                        {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
-                          <button
-                            className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                            title="Edit Booking"
-                          >
-                            <FileEdit size={25} />
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>
@@ -832,4 +824,4 @@ const ManageBookings: FC = () => {
   );
 };
 
-export default withSuspense(ManageBookings, { height: "500px" });
+export default withSuspense(ManageBookings);
