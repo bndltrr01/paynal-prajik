@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { addMonths, eachDayOfInterval, endOfMonth, format, isBefore, isEqual, isWithinInterval, parseISO, startOfDay, startOfMonth } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import withSuspense from "../hoc/withSuspense";
 import { fetchRoomBookings, fetchRoomById } from '../services/Booking';
@@ -48,6 +48,7 @@ const BookingCalendar = () => {
     const arrivalParam = searchParams.get("arrival");
     const departureParam = searchParams.get("departure");
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [checkInDate, setCheckInDate] = useState<Date | null>(null);
@@ -71,36 +72,40 @@ const BookingCalendar = () => {
         }
     }, [arrivalParam, departureParam]);
 
-    // Fetch room data
+    // Calculate date range for fetching bookings
+    const dateRange = useMemo(() => {
+        const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
+        return { startDate, endDate };
+    }, [currentMonth]);
+
+    // Fetch room data with optimized settings
     const { data: roomData, isLoading: isLoadingRoom } = useQuery<RoomData>({
         queryKey: ['room', roomId],
         queryFn: async () => {
-            console.log(`Fetching room details for ID: ${roomId}`);
             try {
-                const data = await fetchRoomById(roomId || '');
-                console.log('Room data received:', data);
-                return data;
+                return await fetchRoomById(roomId || '');
             } catch (error) {
                 console.error('Error fetching room:', error);
                 throw error;
             }
         },
-        enabled: !!roomId
+        enabled: !!roomId,
+        staleTime: 1000 * 60 * 10, // 10 minutes - room data changes infrequently
+        cacheTime: 1000 * 60 * 30, // 30 minutes
     });
 
     // Fetch room bookings data
     const { data: bookingsData, isLoading: isLoadingBookings } = useQuery<{ data: BookingData[] }>({
-        queryKey: ['roomBookings', roomId, currentMonth],
+        queryKey: ['roomBookings', roomId, dateRange.startDate, dateRange.endDate],
         queryFn: async () => {
-            // Calculate a date range that covers two months
-            const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-            const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
-            return fetchRoomBookings(roomId || '', startDate, endDate);
+            return fetchRoomBookings(roomId || '', dateRange.startDate, dateRange.endDate);
         },
-        enabled: !!roomId
+        enabled: !!roomId,
+        staleTime: 1000 * 60 * 2, // 2 minutes - bookings change more frequently
     });
 
-    // Process bookings data to map by date
+    // Process bookings data to map by date - memoized for performance
     useEffect(() => {
         if (bookingsData?.data) {
             const newBookingsByDate: BookingsByDate = {};
@@ -125,6 +130,21 @@ const BookingCalendar = () => {
         }
     }, [bookingsData]);
 
+    // Prefetch next month's data when currentMonth changes
+    useEffect(() => {
+        if (roomId) {
+            const nextMonth = addMonths(currentMonth, 2);
+            const prefetchStartDate = format(startOfMonth(nextMonth), 'yyyy-MM-dd');
+            const prefetchEndDate = format(endOfMonth(nextMonth), 'yyyy-MM-dd');
+
+            queryClient.prefetchQuery({
+                queryKey: ['roomBookings', roomId, prefetchStartDate, prefetchEndDate],
+                queryFn: () => fetchRoomBookings(roomId, prefetchStartDate, prefetchEndDate),
+            });
+        }
+    }, [currentMonth, roomId, queryClient]);
+
+    // Calculate price when dates or room data changes - memoized for performance
     useEffect(() => {
         if (checkInDate && checkOutDate && roomData) {
             const days = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -148,13 +168,13 @@ const BookingCalendar = () => {
         }
     }, [checkInDate, checkOutDate, roomData]);
 
-    const months = [currentMonth, addMonths(currentMonth, 1)];
+    const months = useMemo(() => [currentMonth, addMonths(currentMonth, 1)], [currentMonth]);
 
-    const prevMonth = () => setCurrentMonth(addMonths(currentMonth, -1));
+    const prevMonth = useCallback(() => setCurrentMonth(prev => addMonths(prev, -1)), []);
 
-    const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+    const nextMonth = useCallback(() => setCurrentMonth(prev => addMonths(prev, 1)), []);
 
-    const isDateBooked = (date: Date): boolean => {
+    const isDateBooked = useCallback((date: Date): boolean => {
         const dateString = format(date, 'yyyy-MM-dd');
         const booking = bookingsByDate[dateString];
 
@@ -165,14 +185,14 @@ const BookingCalendar = () => {
 
         // Dates with checked_out status or no_show are considered available
         return false;
-    };
+    }, [bookingsByDate]);
 
-    const getDateStatus = (date: Date): string | null => {
+    const getDateStatus = useCallback((date: Date): string | null => {
         const dateString = format(date, 'yyyy-MM-dd');
         return bookingsByDate[dateString]?.status || null;
-    };
+    }, [bookingsByDate]);
 
-    const isDateUnavailable = (date: Date) => {
+    const isDateUnavailable = useCallback((date: Date) => {
         // Always consider dates before today as unavailable
         if (isBefore(date, startOfDay(new Date()))) {
             return true;
@@ -180,7 +200,7 @@ const BookingCalendar = () => {
 
         // Dates with specific booking statuses are unavailable
         return isDateBooked(date);
-    };
+    }, [isDateBooked]);
 
     const handleDateClick = (date: Date) => {
         if (isDateUnavailable(date)) {
