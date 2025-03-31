@@ -105,7 +105,7 @@ def area_reservations(request):
 @api_view(['GET'])
 def fetch_rooms(request):
     try:
-        rooms = Rooms.objects.all().order_by('-id')
+        rooms = Rooms.objects.all().order_by('id')
         
         # Get pagination parameters
         page = request.query_params.get('page', 1)
@@ -242,7 +242,7 @@ def delete_room(request, room_id):
 @api_view(['GET'])
 def fetch_areas(request):
     try:
-        areas = Areas.objects.all().order_by('-id')
+        areas = Areas.objects.all().order_by('id')
         
         # Get pagination parameters
         page = request.query_params.get('page', 1)
@@ -567,7 +567,7 @@ def update_booking_status(request, booking_id):
     if not status_value:
             return Response({"error": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-    valid_statuses = ['pending', 'reserved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected', 'missed_reservation']
+    valid_statuses = ['pending', 'reserved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected', 'no_show']
     if status_value not in valid_statuses:
         return Response({"error": f"Invalid status value. Valid values are: {', '.join(valid_statuses)}"}, 
                             status=status.HTTP_400_BAD_REQUEST)
@@ -603,6 +603,29 @@ def update_booking_status(request, booking_id):
             room.save()
     
     if status_value == 'missed_reservation' and booking.status != 'missed_reservation':
+        if booking.is_venue_booking and booking.area:
+            area = booking.area
+            area.status = 'available'
+            area.save()
+        elif booking.room:
+            room = booking.room
+            room.status = 'available'
+            room.save()
+    
+    # Handle no_show status - make the room/area immediately available
+    if status_value == 'no_show' and booking.status != 'no_show':
+        if booking.is_venue_booking and booking.area:
+            area = booking.area
+            area.status = 'available' 
+            area.save()
+        elif booking.room:
+            room = booking.room
+            room.status = 'available'
+            room.save()
+    
+    # Handle explicit set_available parameter regardless of status
+    set_available = request.data.get('set_available', False)
+    if set_available:
         if booking.is_venue_booking and booking.area:
             area = booking.area
             area.status = 'available'

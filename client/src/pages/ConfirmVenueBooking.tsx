@@ -112,7 +112,10 @@ const ConfirmVenueBooking = () => {
       }
       setSuccess(true);
       setSavedFormData(null);
-      navigate(`/guest/bookings?bookingId=${response.id}&success=true`);
+      // Redirect to booking confirmation page after 2 seconds
+      setTimeout(() => {
+        navigate(`/booking-accepted?bookingId=${response.id}&isVenue=true`);
+      }, 2000);
 
     } catch (err: any) {
       console.error('Error creating venue booking:', err);

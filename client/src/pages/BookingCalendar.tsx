@@ -159,11 +159,11 @@ const BookingCalendar = () => {
         const booking = bookingsByDate[dateString];
 
         // Check if this date is already booked with specific statuses
-        if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending', 'no_show'].includes(booking.status.toLowerCase())) {
+        if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending'].includes(booking.status.toLowerCase())) {
             return true;
         }
 
-        // Dates with checked_out status are considered available
+        // Dates with checked_out status or no_show are considered available
         return false;
     };
 
@@ -246,7 +246,8 @@ const BookingCalendar = () => {
                     className += " bg-blue-100 text-blue-800 border border-blue-500";
                     break;
                 case 'checked_out':
-                    // Make checked_out dates appear as normal available dates
+                case 'no_show':
+                    // Make checked_out and no_show dates appear as normal available dates
                     if (isCheckinDate || isCheckoutDate) {
                         className += " bg-blue-600 text-white";
                     } else if (isInRange) {
@@ -256,9 +257,6 @@ const BookingCalendar = () => {
                     } else {
                         className += " bg-white border border-gray-300 hover:bg-gray-100";
                     }
-                    break;
-                case 'no_show':
-                    className += " bg-purple-100 text-purple-800 border border-purple-500";
                     break;
                 case 'rejected':
                     className += " bg-red-100 text-red-800 border border-red-500";

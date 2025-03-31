@@ -170,7 +170,7 @@ const ConfirmBooking = () => {
 
       setSuccess(true);
       setSavedFormData(null);
-      navigate(`/guest/bookings?bookingId=${response.id}&success=true`);
+      navigate(`/booking-accepted?bookingId=${response.id}&isVenue=false`);
 
     } catch (err) {
       setError('Failed to create booking. Please try again.');

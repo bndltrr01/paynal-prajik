@@ -217,7 +217,8 @@ class BookingRequestSerializer(serializers.Serializer):
                 # Verify the URL is accessible
                 if booking.valid_id:
                     try:
-                        url = booking.valid_id.url
+                        # Handle both CloudinaryField objects and string URLs
+                        url = booking.valid_id if isinstance(booking.valid_id, str) else booking.valid_id.url
                         print(f"Valid ID URL is accessible: {url}")
                     except Exception as e:
                         print(f"Error accessing valid_id URL: {str(e)}")

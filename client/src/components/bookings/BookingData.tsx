@@ -82,7 +82,6 @@ interface BookingData {
   cancellation_date?: string;
 }
 
-// Memoize utility functions
 const formatDate = (dateString: string): string => {
   if (!dateString) return 'N/A';
 
@@ -161,7 +160,8 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
         result.roomType = roomType;
         result.imageUrl = roomData.room_image || deluxe_twin;
         result.guests = roomData.pax || 2;
-        result.price = roomData.room_price || 0;
+        result.price = bookingData?.total_price || 0;
+        result.totalPrice = bookingData?.total_price;
         result.roomDetails = roomData;
       }
     }
@@ -181,7 +181,6 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
     </motion.div>
   ), []);
 
-  // Memoize error component
   const renderError = useCallback(() => (
     <motion.div
       className="p-6 text-center text-red-500"
@@ -192,7 +191,6 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
     </motion.div>
   ), [error]);
 
-  // Memoize empty results component
   const renderEmpty = useCallback(() => (
     <motion.div
       className="text-center p-10 bg-white rounded-lg shadow-md"

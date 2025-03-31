@@ -176,7 +176,8 @@ const ManageAreas = () => {
       setCurrentPage(1);
     },
     onError: (error: any) => {
-      toast.error(`Failed to add area: ${error.message || 'Unknown error'}`);
+      console.error(`Error adding area: ${error}`);
+      toast.error(`Failed to add area.`);
     },
     onSettled: () => {
       setLoading(false);
@@ -262,7 +263,6 @@ const ManageAreas = () => {
     setShowFormModal(true);
   };
 
-  // Open delete confirmation modal
   const handleDelete = (areaId: number) => {
     setDeleteAreaId(areaId);
     setShowModal(true);

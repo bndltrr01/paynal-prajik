@@ -24,6 +24,7 @@ const RegistrationFlow = lazy(() => import("./pages/RegistrationFlow"));
 const RoomDetails = lazy(() => import("./pages/RoomDetails"));
 const Rooms = lazy(() => import("./pages/Rooms"));
 const Venue = lazy(() => import("./pages/Venue"));
+const BookingAccepted = lazy(() => import("./motions/BookingAccepted"));
 
 const BookingCalendar = lazy(() => import("./pages/BookingCalendar"));
 const VenueBookingCalendar = lazy(() => import("./pages/VenueBookingCalendar"));
@@ -66,7 +67,8 @@ const App = () => {
     location.pathname.startsWith("/admin") ||
     location.pathname.startsWith("/guest") ||
     location.pathname.startsWith("/registration") ||
-    location.pathname.startsWith("/forgot-password");
+    location.pathname.startsWith("/forgot-password") ||
+    location.pathname.startsWith("/booking-accepted");
 
   if (isLoading) {
     return (
@@ -100,6 +102,7 @@ const App = () => {
           <Route path="/confirm-booking" element={<ConfirmBooking />} />
           <Route path="/confirm-venue-booking" element={<ConfirmVenueBooking />} />
           <Route path="/registration" element={<RegistrationFlow />} />
+          <Route path="/booking-accepted" element={<BookingAccepted />} />
 
           {/* Legacy guest profile route for compatibility */}
           <Route path="/venues" element={<Venue />} />

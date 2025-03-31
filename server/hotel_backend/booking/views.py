@@ -100,6 +100,13 @@ def booking_detail(request, booking_id):
         elif booking.room:
             room_serializer = RoomSerializer(booking.room)
             data['room'] = room_serializer.data
+        
+        # Handle the valid_id field explicitly in the view
+        if booking.valid_id:
+            if hasattr(booking.valid_id, 'url'):
+                data['valid_id'] = booking.valid_id.url
+            else:
+                data['valid_id'] = booking.valid_id
             
         return Response({
             "data": data
@@ -246,7 +253,12 @@ def user_bookings(request):
                 data['room'] = room_serializer.data
             
             if booking.valid_id:
-                data['valid_id'] = booking.valid_id.url
+                # Handle both CloudinaryField objects and string URLs
+                if hasattr(booking.valid_id, 'url'):
+                    data['valid_id'] = booking.valid_id.url
+                else:
+                    # If it's already a string URL, use it directly
+                    data['valid_id'] = booking.valid_id
             
             booking_data.append(data)
         

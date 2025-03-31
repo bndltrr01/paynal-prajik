@@ -56,12 +56,6 @@ const VenueDetails = () => {
             : `${venueDetail.price_per_hour}`
         : `${venueDetail.price_per_hour}`;
 
-    // Check if booking is disabled based on status
-    const isBookingDisabled = (): boolean => {
-        const status = venueDetail.status?.toLowerCase();
-        return status === 'maintenance' || status === 'occupied' || status === 'reserved';
-    };
-
     return (
         <div className="container mx-auto py-10 px-4">
             <section className="container mx-auto min-h-screen mt-[100px] overflow-x-hidden">
@@ -151,38 +145,23 @@ const VenueDetails = () => {
                                 <hr className="border-gray-300 mb-4" />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-gray-700">Capacity</h3>
+                                        <h3 className="font-semibold text-xl text-gray-900">Capacity</h3>
                                         <p className="text-lg">{venueDetail.capacity} people</p>
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-gray-700">Price</h3>
-                                        <p className="text-lg">{formattedPrice} per hour</p>
+                                        <h3 className="font-semibold text-xl text-gray-900">Price</h3>
+                                        <p className="text-lg">{formattedPrice}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Reserve Now Button */}
-                            <div className="mt-4">
-                                {isBookingDisabled() ? (
-                                    <div className="relative group">
-                                        <button
-                                            disabled
-                                            className="w-full py-4 bg-gray-400 text-white font-bold text-lg rounded-lg cursor-not-allowed"
-                                        >
-                                            Not Available
-                                        </button>
-                                        <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black text-white text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                                            This venue is currently {venueDetail.status}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <Link to={`/venue-booking/${venueDetail.id}`}>
-                                        <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
-                                            Reserve Now
-                                        </button>
-                                    </Link>
-                                )}
-                            </div>
+
+                            <Link to={`/venue-booking/${venueDetail.id}`}>
+                                <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
+                                    Reserve Now
+                                </button>
+                            </Link>
                         </div>
                     </div>
                 </div>

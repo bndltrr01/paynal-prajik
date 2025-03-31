@@ -225,24 +225,6 @@ const GuestBookings: FC = () => {
           </button>
         </div>
 
-        {isSuccess && (
-          <div className="mb-6">
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Success!</strong>
-              <span className="block sm:inline"> Your booking has been confirmed.</span>
-            </div>
-          </div>
-        )}
-
-        {isCancelled && (
-          <div className="mb-6">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Booking Cancelled!</strong>
-              <span className="block sm:inline"> Your booking has been successfully cancelled.</span>
-            </div>
-          </div>
-        )}
-
         <BookingData bookingId={bookingId} />
       </div>
     );
@@ -350,7 +332,7 @@ const GuestBookings: FC = () => {
                           .toString()
                           .replace(/[^0-9.]/g, '')) || 0;
 
-                      totalAmount = booking.total_price || booking.total_amount || venuePrice;
+                      totalAmount = booking.total_price || booking.total_amount || (venuePrice * duration);
                     } else {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemImage = booking.room_image || booking.room_details?.room_image;

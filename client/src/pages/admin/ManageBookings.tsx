@@ -12,6 +12,7 @@ import {
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import CancellationModal from "../../components/bookings/CancellationModal";
+import Modal from "../../components/Modal";
 import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
@@ -255,7 +256,8 @@ const BookingDetailsModal: FC<{
                         const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
                         return `${nights} night${nights !== 1 ? 's' : ''}`;
                       }
-                    } catch (e) {
+                    } catch (error) {
+                      console.error('Error calculating duration:', error);
                       return isVenueBooking ? '1 hour' : '1 night';
                     }
                   })()}
@@ -337,9 +339,10 @@ const BookingDetailsModal: FC<{
           <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
             <button
               onClick={onNoShow}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+              className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 flex items-center justify-center gap-2"
             >
-              Marked as No Show
+              <X size={18} />
+              Mark as No Show
             </button>
             <button
               onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
@@ -377,6 +380,7 @@ const ManageBookings: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [showNoShowModal, setShowNoShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const pageSize = 9;
 
@@ -406,14 +410,27 @@ const ManageBookings: FC = () => {
       bookingId,
       status,
       reason,
-      paymentAmount
+      paymentAmount,
+      setRoomAvailable = false
     }: {
       bookingId: number;
       status: string;
       reason?: string;
       paymentAmount?: number;
+      setRoomAvailable?: boolean;
     }) => {
-      const result = await updateBookingStatus(bookingId, status, reason);
+      // Simplify by sending just what the API expects
+      const data: Record<string, any> = {
+        status,
+        set_available: setRoomAvailable
+      };
+
+      // Only add reason if it exists and is required
+      if ((status === 'cancelled' || status === 'rejected') && reason) {
+        data.reason = reason;
+      }
+
+      const result = await updateBookingStatus(bookingId, data);
 
       if (status === 'checked_in' && paymentAmount) {
         try {
@@ -440,7 +457,7 @@ const ManageBookings: FC = () => {
       } else if (status === 'checked_out') {
         toast.success("Guest has been checked out successfully.");
       } else if (status === 'no_show') {
-        toast.success("Booking has been marked as 'No Show'.");
+        toast.success("Booking has been marked as 'No Show' and the room/area has been made available again.");
       } else {
         toast.success(`Booking status updated to ${status.replace('_', ' ')}`);
       }
@@ -466,6 +483,7 @@ const ManageBookings: FC = () => {
     try {
       setSelectedBooking(booking);
     } catch (error) {
+      console.error(`Error fetching booking details: ${error}`);
       toast.error("Failed to fetch booking details");
     }
   };
@@ -500,11 +518,31 @@ const ManageBookings: FC = () => {
 
   const handleNoShow = () => {
     if (selectedBooking) {
-      updateBookingStatusMutation.mutate({
-        bookingId: selectedBooking.id,
-        status: "no_show",
-      });
+      setShowNoShowModal(true);
     }
+  };
+
+  const confirmNoShow = () => {
+    if (selectedBooking) {
+      try {
+        updateBookingStatusMutation.mutate({
+          bookingId: selectedBooking.id,
+          status: "no_show",
+          setRoomAvailable: true // This ensures the room/area will be made available
+        });
+
+        toast.info("Processing no-show status...");
+        setShowNoShowModal(false);
+      } catch (error) {
+        console.error("Error marking booking as no-show:", error);
+        toast.error("Failed to mark booking as no-show. Please try again.");
+        setShowNoShowModal(false);
+      }
+    }
+  };
+
+  const closeNoShowModal = () => {
+    setShowNoShowModal(false);
   };
 
   const handleRejectInitiate = () => {
@@ -776,6 +814,20 @@ const ManageBookings: FC = () => {
           showPolicyNote={false}
         />
       )}
+
+      {/* No Show Confirmation Modal */}
+      <Modal
+        isOpen={showNoShowModal}
+        title="Mark as No Show"
+        description={`Are you sure you want to mark this booking as 'No Show'? 
+        This will immediately make the ${selectedBooking?.is_venue_booking ? 'venue' : 'room'} available for new bookings.
+        This action cannot be undone.`}
+        confirmText="Mark as No Show"
+        cancelText="Cancel"
+        onConfirm={confirmNoShow}
+        cancel={closeNoShowModal}
+        className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md font-bold transition-all duration-300 cursor-pointer"
+      />
     </div>
   );
 };
