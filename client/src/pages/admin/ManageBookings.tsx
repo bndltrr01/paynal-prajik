@@ -592,7 +592,6 @@ const ManageBookings: FC = () => {
         set_available: setRoomAvailable
       };
 
-      // Only add reason if it exists and is required
       if ((status === 'cancelled' || status === 'rejected') && reason) {
         data.reason = reason;
       }
@@ -697,8 +696,6 @@ const ManageBookings: FC = () => {
           status: "no_show",
           setRoomAvailable: true
         });
-
-        toast.info("Processing no-show status...");
         setShowNoShowModal(false);
       } catch (error) {
         console.error("Error marking booking as no-show:", error);
