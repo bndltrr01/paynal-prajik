@@ -37,21 +37,24 @@ const getStatusColor = (status: string): string => {
 
   switch (normalizedStatus) {
     case 'confirmed':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 text-green-800';
     case 'pending':
-      return 'bg-yellow-100 text-yellow-700';
+      return 'bg-yellow-100 text-yellow-800';
     case 'cancelled':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 text-red-800';
+    case 'rejected':
+      return 'bg-red-100 text-red-800';
     case 'reserved':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 text-green-800';
     case 'checked in':
-      return 'bg-indigo-100 text-indigo-700';
+      return 'bg-blue-100 text-blue-800';
     case 'checked out':
-      return 'bg-purple-100 text-purple-700';
+      return 'bg-gray-100 text-gray-800';
     case 'missed reservation':
-      return 'bg-orange-100 text-orange-700';
+    case 'no show':
+      return 'bg-purple-100 text-purple-800';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
@@ -228,10 +231,10 @@ const GuestBookings: FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mx-auto py-4">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">My Bookings</h1>
-        <p className="text-gray-600">Manage all your hotel bookings</p>
+        <p className="text-gray-600 text-lg">Manage all your hotel bookings</p>
       </div>
 
       {/* Search and Filters */}
@@ -276,12 +279,12 @@ const GuestBookings: FC = () => {
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Reservation</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Reservation</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -380,7 +383,7 @@ const GuestBookings: FC = () => {
                           {formatDate(checkOutDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-lg leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
+                          <span className={`px-3 py-1 text-md leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
                             {status}
                           </span>
                         </td>
@@ -393,14 +396,14 @@ const GuestBookings: FC = () => {
                               className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                               onClick={() => viewBookingDetails(id.toString())}
                             >
-                              <Eye size={16} className="mr-1" /> View
+                              <Eye size={30} className="mr-1" /> View
                             </button>
                             {booking.status.toLowerCase() === 'pending' && (
                               <button
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                                 onClick={() => openCancelModal(id.toString())}
                               >
-                                <XCircle size={16} className="mr-1" /> Cancel
+                                <XCircle size={30} className="mr-1" /> Cancel
                               </button>
                             )}
                           </div>

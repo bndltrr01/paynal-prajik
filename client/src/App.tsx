@@ -40,7 +40,6 @@ const ManageBookings = lazy(() => import("./pages/admin/ManageBookings"));
 const ManageRooms = lazy(() => import("./pages/admin/ManageRooms"));
 const ManageUsers = lazy(() => import("./pages/admin/ManageUsers"));
 const Reports = lazy(() => import("./pages/admin/Reports"));
-const Reservations = lazy(() => import("./pages/admin/Reservations"));
 
 // Lazy load guest pages
 const GuestProfile = lazy(() => import("./pages/guests/GuestProfile"));
@@ -135,7 +134,6 @@ const App = () => {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="bookings" element={<ManageBookings />} />
-              <Route path="reservations" element={<Reservations />} />
               <Route path="areas" element={<ManageAreas />} />
               <Route path="rooms" element={<ManageRooms />} />
               <Route path="amenities" element={<ManageAmenities />} />

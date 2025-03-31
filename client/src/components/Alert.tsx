@@ -32,7 +32,7 @@ const Alert = ({
     clearTimer();
     setTimeout(() => {
       onClose();
-    }, 300); // Allow exit animation to play
+    }, 300);
   }, [onClose, clearTimer]);
 
   useEffect(() => {

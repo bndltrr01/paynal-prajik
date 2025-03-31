@@ -303,7 +303,9 @@ const VenueBookingCalendar = () => {
                             </div>
                             <div className="mt-2 md:mt-0">
                                 <span className="text-gray-600">Duration:</span>
-                                <span className="ml-2 font-semibold">Full Day (8AM - 5PM)</span>
+                                <span className="ml-2 font-semibold text-blue-600">
+                                    9 hours (8:00 AM - 5:00 PM)
+                                </span>
                             </div>
                         </div>
 
@@ -407,14 +409,21 @@ const VenueBookingCalendar = () => {
 
                         {/* Full Day Booking Information */}
                         {selectedDate && (
-                            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                                <h4 className="font-semibold text-blue-800 mb-2">Full Day Booking Details</h4>
+                            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <h4 className="font-semibold text-blue-800 mb-2 text-lg">Full Day Booking Details</h4>
                                 <p className="text-blue-700">
-                                    This venue is available for full-day rental only. Your booking will be for the entire day on {selectedDate ? format(selectedDate, 'EEE, MMM dd, yyyy') : ''}.
+                                    This venue is available for fixed hours only. Your booking will be scheduled for:
                                 </p>
-                                <p className="text-blue-700 mt-2">
-                                    Check-in: 8:00 AM | Check-out: 5:00 PM
-                                </p>
+                                <div className="flex justify-between items-center bg-white p-3 rounded-md mt-2 shadow-sm">
+                                    <div>
+                                        <p className="text-gray-700 font-medium">Date:</p>
+                                        <p className="text-indigo-600 font-semibold">{format(selectedDate, 'EEEE, MMMM dd, yyyy')}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-700 font-medium">Time:</p>
+                                        <p className="text-indigo-600 font-semibold">8:00 AM - 5:00 PM (9 hours)</p>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -478,7 +487,7 @@ const VenueBookingCalendar = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-xl font-bold mb-2">{areaData.area_name}</h3>
                             </div>
-                            <p className="text-lg font-semibold text-blue-600 mb-3">₱{price.toLocaleString()} per day</p>
+                            <p className="text-lg font-semibold text-blue-600 mb-3">₱{price.toLocaleString()} per booking (9 hours)</p>
 
                             <div className="flex items-center text-gray-600 text-lg mb-3">
                                 <span className="mr-2">👥</span>
@@ -496,7 +505,7 @@ const VenueBookingCalendar = () => {
                                             </div>
                                             <div className="flex justify-between text-lg">
                                                 <span>Duration:</span>
-                                                <span className="font-medium">Full Day (8AM - 5PM)</span>
+                                                <span className="font-medium">9 hours (8AM - 5PM)</span>
                                             </div>
                                             <div className="flex justify-between text-2xl font-semibold text-blue-600 pt-2 border-t border-gray-200">
                                                 <span>Total Price:</span>

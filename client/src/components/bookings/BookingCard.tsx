@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertCircle, Calendar, CheckCircle2, Clock, CreditCard, IdCard, User, XCircle } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle2, Clock, IdCard, User, XCircle } from "lucide-react";
 import { FC, ReactNode, memo, useMemo } from "react";
 
 const formatStatus = (status: string): string => {
@@ -62,7 +62,6 @@ interface BookingCardProps {
   guests: number;
   price: number;
   status: string;
-  isVenueBooking?: boolean;
   roomDetails?: {
     room_image?: string;
   };
@@ -126,7 +125,6 @@ const BookingCard: FC<BookingCardProps> = memo(({
   guests,
   price,
   status,
-  isVenueBooking,
   userDetails,
   specialRequest,
   validId,
@@ -148,7 +146,7 @@ const BookingCard: FC<BookingCardProps> = memo(({
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      layout
+      layout="position"
     >
       {/* Header Section */}
       <div className="relative">
@@ -167,7 +165,7 @@ const BookingCard: FC<BookingCardProps> = memo(({
           </span>
         </div>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-          <h2 className="text-xl sm:text-2xl font-bold text-white">{roomType}</h2>
+          <h2 className="text-5xl font-bold font-playfair text-white">{roomType}</h2>
         </div>
       </div>
 
@@ -208,16 +206,6 @@ const BookingCard: FC<BookingCardProps> = memo(({
                 <span className="block text-lg text-gray-500">Booked On</span>
                 <span className="block font-semibold">{bookingDate || 'N/A'}</span>
               </div>
-        </div>
-
-            <div className="flex items-center">
-              <CreditCard className="w-5 h-5 text-indigo-600 mr-2 flex-shrink-0" />
-              <div>
-                <span className="block text-lg text-gray-500">
-                  {isVenueBooking ? 'Venue Type' : 'Room Type'}
-                  </span>
-                <span className="block font-semibold">{isVenueBooking ? 'Venue' : 'Room'}</span>
-              </div>
             </div>
           </div>
         </motion.div>
@@ -234,12 +222,12 @@ const BookingCard: FC<BookingCardProps> = memo(({
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex flex-col">
-                <span className="text-sm text-gray-500">Name</span>
-                <span className="font-medium">{userDetails.fullName}</span>
-                </div>
+                <span className="text-lg font-semibold text-gray-700">Name</span>
+                <span className="font-medium text-lg">{userDetails.fullName}</span>
+              </div>
               <div className="flex flex-col">
-                <span className="text-sm text-gray-500">Email</span>
-                <span className="font-medium">{userDetails.email}</span>
+                <span className="text-lg font-semibold text-gray-700">Email</span>
+                <span className="font-medium text-lg">{userDetails.email}</span>
               </div>
               {userDetails.phoneNumber && (
                 <div className="flex flex-col sm:col-span-2">

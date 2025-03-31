@@ -5,7 +5,6 @@ const ScrollToTop = (): null => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Use requestAnimationFrame for smooth scrolling
     let frameId: number;
     const scrollToTop = () => {
       window.scrollTo({
@@ -14,7 +13,6 @@ const ScrollToTop = (): null => {
       });
     };
 
-    // Use setTimeout to ensure DOM is ready before scrolling
     const timeoutId = setTimeout(() => {
       frameId = requestAnimationFrame(scrollToTop);
     }, 0);
