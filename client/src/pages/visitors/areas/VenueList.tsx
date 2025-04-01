@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import ContentLoader from "../../../motions/loaders/ContentLoader";
 import { fetchAreas } from "../../../services/Area";
-import VenueCard from "../../../components/bookings/VenueCard";
+import VenueCard from "../../../components/areas/VenueCard";
 
 interface Area {
   id: number;

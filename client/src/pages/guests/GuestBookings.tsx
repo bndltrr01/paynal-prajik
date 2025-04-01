@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Eye, Search, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, MessageSquare, Search, XCircle } from "lucide-react";
 import { FC, useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import BookingData from "../../components/bookings/BookingData";
 import CancellationModal from "../../components/bookings/CancellationModal";
+import GuestBookingComment from "../../components/guests/GuestBookingComment";
 import { useUserContext } from "../../contexts/AuthContext";
 import withSuspense from "../../hoc/withSuspense";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
@@ -50,7 +51,6 @@ const getStatusColor = (status: string): string => {
       return 'bg-blue-100 text-blue-800';
     case 'checked out':
       return 'bg-gray-100 text-gray-800';
-    case 'missed reservation':
     case 'no show':
       return 'bg-purple-100 text-purple-800';
     default:
@@ -67,6 +67,9 @@ const GuestBookings: FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [reviewBookingDetails, setReviewBookingDetails] = useState<any>(null);
   const pageSize = 5;
   const queryClient = useQueryClient();
 
@@ -159,14 +162,8 @@ const GuestBookings: FC = () => {
 
   const handleCancelBooking = useCallback((reason: string) => {
     if (!cancellationBookingId || !reason.trim()) {
-      console.log('Cannot cancel: missing bookingId or reason', {
-        cancellationBookingId,
-        reasonLength: reason?.length || 0
-      });
       return;
     }
-
-    console.log('Handling booking cancellation for ID:', cancellationBookingId, 'with reason:', reason);
 
     cancelBookingMutation.mutate({
       bookingId: cancellationBookingId,
@@ -203,10 +200,35 @@ const GuestBookings: FC = () => {
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterStatus(e.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  const openReviewModal = useCallback((booking: any) => {
+    setReviewBookingId(booking.id.toString());
+
+    const propertyName = booking.is_venue_booking
+      ? (booking.area_name || booking.area_details?.area_name || "Venue")
+      : (booking.room_name || booking.room_details?.room_name || "Room");
+
+    setReviewBookingDetails({
+      propertyName,
+      propertyType: booking.is_venue_booking ? "venue" : "room",
+      checkInDate: booking.check_in_date,
+      checkOutDate: booking.check_out_date
+    });
+
+    setShowReviewModal(true);
+  }, []);
+
+  const closeReviewModal = useCallback(() => {
+    setShowReviewModal(false);
+    setReviewBookingId(null);
+    setReviewBookingDetails(null);
   }, []);
 
   if (isLoading) return <LoadingHydrate />;
@@ -260,13 +282,13 @@ const GuestBookings: FC = () => {
             className="py-2 px-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Statuses</option>
-            <option value="confirmed">Confirmed</option>
             <option value="pending">Pending</option>
             <option value="reserved">Reserved</option>
             <option value="cancelled">Cancelled</option>
             <option value="checked_in">Checked In</option>
             <option value="checked_out">Checked Out</option>
-            <option value="missed_reservation">Missed Reservation</option>
+            <option value="no_show">No Show</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>
@@ -406,6 +428,14 @@ const GuestBookings: FC = () => {
                                 <XCircle size={30} className="mr-1" /> Cancel
                               </button>
                             )}
+                            {booking.status.toLowerCase() === 'checked_in' && (
+                              <button
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
+                                onClick={() => openReviewModal(booking)}
+                              >
+                                <MessageSquare size={30} className="mr-1" /> Review
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -464,6 +494,14 @@ const GuestBookings: FC = () => {
           )}
         </div>
       </div>
+
+      {/* Review Modal */}
+      <GuestBookingComment
+        bookingId={reviewBookingId || ""}
+        isOpen={showReviewModal}
+        onClose={closeReviewModal}
+        bookingDetails={reviewBookingDetails}
+      />
 
       {/* Use the CancellationModal component */}
       <CancellationModal

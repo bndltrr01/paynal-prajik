@@ -2,8 +2,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { lazy } from "react";
 import { Link, useParams } from "react-router-dom";
+import ReviewList from "../components/reviews/ReviewList";
 import withSuspense from '../hoc/withSuspense';
 import { fetchAmenities } from "../services/Admin";
+import { fetchRoomReviews } from "../services/Booking";
 import { fetchRoomDetail } from "../services/Room";
 
 const LoadingDashboard = lazy(
@@ -16,8 +18,8 @@ const RoomDetails = () => {
 
   const {
     data: roomData,
-    isLoading,
-    error,
+    isLoading: isLoadingRoom,
+    error: roomError,
   } = useQuery({
     queryKey: ["room", id],
     queryFn: () => fetchRoomDetail(id as string),
@@ -33,8 +35,18 @@ const RoomDetails = () => {
     queryFn: fetchAmenities,
   });
 
-  if (isLoading) return <LoadingDashboard />;
-  if (error) return <Error />;
+  const {
+    data: reviewsData,
+    isLoading: isLoadingReviews,
+    error: reviewsError
+  } = useQuery({
+    queryKey: ["roomReviews", id],
+    queryFn: () => fetchRoomReviews(id as string),
+    enabled: !!id,
+  });
+
+  if (isLoadingRoom) return <LoadingDashboard />;
+  if (roomError) return <Error />;
 
   const roomDetail = roomData?.data;
   if (!roomDetail) {
@@ -51,6 +63,8 @@ const RoomDetails = () => {
     const status = roomDetail.status?.toLowerCase();
     return status === 'maintenance' || status === 'occupied' || status === 'reserved';
   };
+
+  const reviews = reviewsData?.data || [];
 
   return (
     <div className="container mx-auto py-10 px-4">
@@ -81,8 +95,8 @@ const RoomDetails = () => {
         {/* Room Details Section */}
         <div className="py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left Column - Room Image */}
-            <div className="w-full">
+            {/* Left Column - Room Image and Reviews */}
+            <div className="w-full space-y-8">
               <div className="bg-white rounded-lg overflow-hidden shadow-lg">
                 <img
                   loading="lazy"
@@ -90,6 +104,20 @@ const RoomDetails = () => {
                   src={roomDetail.room_image}
                   alt={roomDetail.room_name}
                   className="w-full h-auto object-cover"
+                />
+              </div>
+
+              {/* Reviews Section */}
+              <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
+                <h2 className="text-3xl font-playfair font-semibold mb-4">
+                  Guest Reviews
+                </h2>
+                <hr className="border-gray-300 mb-6" />
+
+                <ReviewList
+                  reviews={reviews}
+                  isLoading={isLoadingReviews}
+                  error={reviewsError as Error | null}
                 />
               </div>
             </div>

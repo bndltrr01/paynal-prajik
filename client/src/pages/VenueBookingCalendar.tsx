@@ -417,11 +417,11 @@ const VenueBookingCalendar = () => {
                                 <div className="flex justify-between items-center bg-white p-3 rounded-md mt-2 shadow-sm">
                                     <div>
                                         <p className="text-gray-700 font-medium">Date:</p>
-                                        <p className="text-indigo-600 font-semibold">{format(selectedDate, 'EEEE, MMMM dd, yyyy')}</p>
+                                        <p className="text-blue-600 font-semibold">{format(selectedDate, 'EEEE, MMMM dd, yyyy')}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-700 font-medium">Time:</p>
-                                        <p className="text-indigo-600 font-semibold">8:00 AM - 5:00 PM (9 hours)</p>
+                                        <p className="text-blue-600 font-semibold">8:00 AM - 5:00 PM (9 hours)</p>
                                     </div>
                                 </div>
                             </div>
@@ -487,7 +487,7 @@ const VenueBookingCalendar = () => {
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-xl font-bold mb-2">{areaData.area_name}</h3>
                             </div>
-                            <p className="text-lg font-semibold text-blue-600 mb-3">₱{price.toLocaleString()} per booking (9 hours)</p>
+                            <p className="text-xl font-semibold text-blue-600 mb-3">₱{price.toLocaleString()}</p>
 
                             <div className="flex items-center text-gray-600 text-lg mb-3">
                                 <span className="mr-2">👥</span>

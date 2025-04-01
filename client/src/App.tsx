@@ -103,7 +103,6 @@ const App = () => {
           <Route path="/registration" element={<RegistrationFlow />} />
           <Route path="/booking-accepted" element={<BookingAccepted />} />
 
-          {/* Legacy guest profile route for compatibility */}
           <Route path="/venues" element={<Venue />} />
           <Route path="/venues/:id" element={<VenueDetails />} />
           <Route path="/venue-booking/:areaId" element={<VenueBookingCalendar />} />
@@ -116,7 +115,7 @@ const App = () => {
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/cancel-reservation" element={<CancelReservation />} />
 
-          {/* Protected guest routes with GuestLayout */}
+          {/* Protected guest routes */}
           <Route element={<ProtectedRoute requiredRole="guest" />}>
             <Route path="/guest" element={<GuestLayout />}>
               <Route index element={<GuestDashboard />} />

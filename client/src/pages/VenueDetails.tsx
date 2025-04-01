@@ -2,8 +2,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { lazy } from "react";
 import { Link, useParams } from "react-router-dom";
+import ReviewList from "../components/reviews/ReviewList";
 import withSuspense from '../hoc/withSuspense';
 import { fetchAreaDetail, fetchAreas } from "../services/Area";
+import { fetchAreaReviews } from "../services/Booking";
 
 const LoadingDashboard = lazy(() => import("../motions/skeletons/AdminDashboardSkeleton"));
 const Error = lazy(() => import("./_ErrorBoundary"));
@@ -23,8 +25,8 @@ const VenueDetails = () => {
 
     const {
         data: venueData,
-        isLoading,
-        error,
+        isLoading: isLoadingVenue,
+        error: venueError,
     } = useQuery<{ data: Area }>({
         queryKey: ["venue", id],
         queryFn: () => fetchAreaDetail(Number(id)),
@@ -36,8 +38,18 @@ const VenueDetails = () => {
         queryFn: fetchAreas,
     });
 
-    if (isLoading) return <LoadingDashboard />;
-    if (error) return <Error />;
+    const {
+        data: reviewsData,
+        isLoading: isLoadingReviews,
+        error: reviewsError
+    } = useQuery({
+        queryKey: ["areaReviews", id],
+        queryFn: () => fetchAreaReviews(id as string),
+        enabled: !!id,
+    });
+
+    if (isLoadingVenue) return <LoadingDashboard />;
+    if (venueError) return <Error />;
 
     const venueDetail = venueData?.data;
     if (!venueDetail) {
@@ -48,6 +60,8 @@ const VenueDetails = () => {
     const currentIndex = allVenues.findIndex((venue: any) => venue.id === Number(id));
     const prevVenue = currentIndex > 0 ? allVenues[currentIndex - 1] : null;
     const nextVenue = currentIndex < allVenues.length - 1 ? allVenues[currentIndex + 1] : null;
+
+    const reviews = reviewsData?.data || [];
 
     // Format price if needed - remove ₱ if it already exists in the string
     const formattedPrice = typeof venueDetail.price_per_hour === 'string'
@@ -86,7 +100,7 @@ const VenueDetails = () => {
                 <div className="py-16">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Left Column - Venue Image */}
-                        <div className="w-full">
+                        <div className="w-full space-y-8">
                             <div className="bg-white rounded-lg overflow-hidden shadow-lg">
                                 <img
                                     loading="lazy"
@@ -121,6 +135,20 @@ const VenueDetails = () => {
                                 ) : (
                                     <div></div>
                                 )}
+                            </div>
+
+                            {/* Reviews Section */}
+                            <div className="bg-gray-100 p-6 md:p-8 rounded-lg shadow-sm">
+                                <h2 className="text-3xl font-playfair font-semibold mb-4">
+                                    Guest Reviews
+                                </h2>
+                                <hr className="border-gray-300 mb-6" />
+
+                                <ReviewList
+                                    reviews={reviews}
+                                    isLoading={isLoadingReviews}
+                                    error={reviewsError as Error | null}
+                                />
                             </div>
                         </div>
 

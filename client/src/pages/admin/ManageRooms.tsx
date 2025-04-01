@@ -89,17 +89,17 @@ const ViewRoomModal: FC<{
               </svg>
             </motion.button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2">
               {/* Left Column: Image with gradient overlay */}
               <div className="relative h-64 md:h-auto">
-                {roomData.room_image ? (
+            {roomData.room_image ? (
                   <div className="relative h-full">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent z-10"></div>
                     <motion.img
-                      loading="lazy"
-                      src={roomData.room_image}
-                      alt={roomData.room_name}
-                      className="w-full h-full object-cover"
+                loading="lazy"
+                src={roomData.room_image}
+                alt={roomData.room_name}
+                className="w-full h-full object-cover"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
@@ -125,8 +125,8 @@ const ViewRoomModal: FC<{
                       </motion.div>
                     </div>
                   </div>
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+            ) : (
+              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
                     <motion.svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-20 w-20 opacity-50"
@@ -139,12 +139,12 @@ const ViewRoomModal: FC<{
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </motion.svg>
-                  </div>
-                )}
               </div>
+            )}
+          </div>
 
               {/* Right Column: Room Information */}
-              <div className="p-6 flex flex-col">
+          <div className="p-6 flex flex-col">
                 <motion.div
                   className="hidden md:block mb-4"
                   initial={{ y: 10, opacity: 0 }}
@@ -157,9 +157,9 @@ const ViewRoomModal: FC<{
                       roomData.status === 'occupied' ? 'bg-blue-100 text-blue-800' :
                         'bg-amber-100 text-amber-800'
                       }`}>
-                      {roomData.status.toUpperCase()}
-                    </span>
-                  </div>
+                  {roomData.status.toUpperCase()}
+                </span>
+              </div>
                 </motion.div>
 
                 {/* Description with a nice background */}
@@ -200,7 +200,7 @@ const ViewRoomModal: FC<{
                       </svg>
                       <span className="text-lg font-bold text-gray-800">{roomData.capacity}</span>
                     </div>
-                  </div>
+              </div>
                 </motion.div>
 
                 {/* Amenities Section */}
@@ -211,7 +211,7 @@ const ViewRoomModal: FC<{
                   transition={{ delay: 0.5 }}
                 >
                   <h3 className="text-sm uppercase tracking-wider text-indigo-500 font-medium mb-2">Amenities</h3>
-                  {roomData.amenities.length === 0 ? (
+                {roomData.amenities.length === 0 ? (
                     <p className="text-gray-500 italic">No amenities available for this room</p>
                   ) : (
                     <div className="grid grid-cols-1 gap-1">
@@ -610,13 +610,13 @@ const ManageRooms: FC = () => {
         {/* Edit/Add Room Modal */}
         {showFormModal && (
           <AnimatePresence mode="wait">
-            <EditRoomModal
-              isOpen={showFormModal}
-              cancel={() => setShowFormModal(false)}
-              onSave={handleSave}
-              roomData={editRoomData}
-              loading={addRoomMutation.isPending || editRoomMutation.isPending}
-            />
+          <EditRoomModal
+            isOpen={showFormModal}
+            cancel={() => setShowFormModal(false)}
+            onSave={handleSave}
+            roomData={editRoomData}
+            loading={addRoomMutation.isPending || editRoomMutation.isPending}
+          />
           </AnimatePresence>
         )}
 

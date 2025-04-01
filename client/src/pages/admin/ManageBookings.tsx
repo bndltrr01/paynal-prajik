@@ -203,10 +203,10 @@ const BookingDetailsModal: FC<{
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
-            onClick={onClose}
+          onClick={onClose}
             className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors z-10"
-          >
-            <X size={24} />
+        >
+          <X size={24} />
           </motion.button>
 
           <motion.h2
@@ -214,7 +214,7 @@ const BookingDetailsModal: FC<{
             animate={{ y: 0 }}
             className="text-xl sm:text-2xl font-bold mb-4 text-center pb-2 border-b bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
           >
-            User Booking Details
+          User Booking Details
           </motion.h2>
 
           <motion.div
@@ -225,7 +225,6 @@ const BookingDetailsModal: FC<{
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-4 rounded-lg shadow-inner">
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Full Name:</span>
@@ -233,7 +232,6 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Email:</span>
@@ -242,7 +240,6 @@ const BookingDetailsModal: FC<{
 
               {booking.user?.address && (
                 <motion.div
-                  whileHover={{ backgroundColor: "#f3f4f6" }}
                   className="flex flex-col sm:flex-row justify-between sm:col-span-2 p-2 rounded-md"
                 >
                   <span className="font-semibold text-gray-700">Address:</span>
@@ -251,7 +248,6 @@ const BookingDetailsModal: FC<{
               )}
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Property Type:</span>
@@ -265,7 +261,6 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">{isVenueBooking ? "Venue:" : "Room:"}</span>
@@ -277,7 +272,6 @@ const BookingDetailsModal: FC<{
 
               {isVenueBooking && booking.area_details?.capacity && (
                 <motion.div
-                  whileHover={{ backgroundColor: "#f3f4f6" }}
                   className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
                 >
                   <span className="font-semibold text-gray-700">Capacity:</span>
@@ -286,7 +280,6 @@ const BookingDetailsModal: FC<{
               )}
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Date of Reservation:</span>
@@ -294,11 +287,10 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Check-in:</span>
-                <span className="text-blue-600">
+                <span>
                   {isVenueBooking
                     ? `${formatDate(booking.check_in_date)} 8:00 AM`
                     : formatDate(booking.check_in_date)}
@@ -306,11 +298,10 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Check-out:</span>
-                <span className="text-blue-600">
+                <span>
                   {isVenueBooking
                     ? `${formatDate(booking.check_out_date)} 5:00 PM`
                     : formatDate(booking.check_out_date)}
@@ -318,7 +309,6 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Price:</span>
@@ -331,7 +321,6 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Duration:</span>
@@ -361,7 +350,6 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Total Amount:</span>
@@ -371,7 +359,6 @@ const BookingDetailsModal: FC<{
               </motion.div>
 
               <motion.div
-                whileHover={{ backgroundColor: "#f3f4f6" }}
                 className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
               >
                 <span className="font-semibold text-gray-700">Status:</span>
@@ -468,20 +455,19 @@ const BookingDetailsModal: FC<{
               <motion.button
                 whileHover={{ scale: 1.02, backgroundColor: "#dc2626" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onReject}
+              onClick={onReject}
                 className="px-4 py-2 bg-red-600 text-white rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
-              >
-                <X size={18} />
-                Reject Booking
+            >
+              <X size={18} />
+              Reject Booking
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.02, backgroundColor: "#2563eb" }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onConfirm}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Check size={18} />
-                Reserve Booking
+            >
+              <Check size={18} />
+              Reserve Booking
               </motion.button>
             </motion.div>
           )}
@@ -494,26 +480,24 @@ const BookingDetailsModal: FC<{
               className="flex flex-col sm:flex-row justify-between gap-2 mt-6"
             >
               <motion.button
-                whileHover={{ scale: 1.02, backgroundColor: "#d97706" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={onNoShow}
+              onClick={onNoShow}
                 className="px-4 py-2 bg-amber-600 text-white rounded-md flex items-center justify-center gap-2 shadow-sm"
               >
                 <X size={18} />
                 Mark as No Show
               </motion.button>
               <motion.button
-                whileHover={isPaymentComplete ? { scale: 1.02, backgroundColor: "#2563eb" } : {}}
                 whileTap={isPaymentComplete ? { scale: 0.98 } : {}}
-                onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
+              onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
                 className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 shadow-sm ${isPaymentComplete
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                disabled={!isPaymentComplete}
-              >
-                <Check size={18} />
-                Check In Guest
+                ? 'bg-blue-600 hover:bg-blue-700'
+                : 'bg-gray-400 cursor-not-allowed'
+                }`}
+              disabled={!isPaymentComplete}
+            >
+              <Check size={18} />
+              Check In Guest
               </motion.button>
             </motion.div>
           )}
@@ -526,13 +510,12 @@ const BookingDetailsModal: FC<{
               className="flex justify-center mt-6"
             >
               <motion.button
-                whileHover={{ scale: 1.05, backgroundColor: "#4f46e5" }}
                 whileTap={{ scale: 0.95 }}
-                onClick={onCheckOut}
+              onClick={onCheckOut}
                 className="px-6 py-3 bg-indigo-600 text-white rounded-md transition-colors flex items-center justify-center gap-2 shadow-md"
-              >
-                <Check size={18} />
-                Check Out Guest
+            >
+              <Check size={18} />
+              Check Out Guest
               </motion.button>
             </motion.div>
           )}
@@ -691,9 +674,9 @@ const ManageBookings: FC = () => {
   const confirmNoShow = () => {
     if (selectedBooking) {
       try {
-        updateBookingStatusMutation.mutate({
-          bookingId: selectedBooking.id,
-          status: "no_show",
+      updateBookingStatusMutation.mutate({
+        bookingId: selectedBooking.id,
+        status: "no_show",
           setRoomAvailable: true
         });
         setShowNoShowModal(false);
@@ -758,12 +741,12 @@ const ManageBookings: FC = () => {
   });
 
   return (
-    <div className="h-[calc(100vh-25px)] p-3 overflow-y-auto container mx-auto">
-      <h1 className="text-3xl font-semibold mb-6">Manage Bookings</h1>
+    <div className="min-h-[calc(100vh-25px)] p-3 md:p-3 overflow-y-auto container mx-auto">
+      <h1 className="text-2xl md:text-3xl font-semibold mb-4 md:mb-6">Manage Bookings</h1>
 
-      {error && <div className="mb-4 text-red-600">{error.message}</div>}
+      {error && <div className="mb-4 text-red-600 p-3 bg-red-50 rounded-lg">{error.message}</div>}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
         <div className="relative w-full md:w-1/3">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search size={18} className="text-gray-500" />
@@ -800,142 +783,155 @@ const ManageBookings: FC = () => {
       </div>
 
       <div className="overflow-x-auto shadow-md rounded-lg">
-        <table className="min-w-full bg-white border border-gray-200">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date of Reservation
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Guest Name
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Property
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-in
-              </th>
-              <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-out
-              </th>
-              <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Amount
-              </th>
-              <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {filteredBookings.length > 0 ? (
-              filteredBookings.map((booking) => {
-                const isVenueBooking = booking.is_venue_booking;
-                const propertyName = isVenueBooking
-                  ? booking.area_details?.area_name || "Unknown Venue"
-                  : booking.room_details?.room_name || "Unknown Room";
-
-                return (
-                  <tr key={booking.id} className="hover:bg-gray-50">
-                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                      {formatDate(booking.created_at)}
-                    </td>
-                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                      {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
-                    </td>
-                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                      {booking.user?.email || ''}
-                    </td>
-                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span>{propertyName}</span>
-                        {isVenueBooking ? (
-                          <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
-                        ) : (
-                          <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                      {formatDate(booking.check_in_date)}
-                    </td>
-                    <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                      {formatDate(booking.check_out_date)}
-                    </td>
-                    <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                      <BookingStatusBadge status={booking.status} />
-                    </td>
-                    <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                      ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => handleViewBooking(booking)}
-                          className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                          title="View Details"
-                        >
-                          <Eye size={30} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={9} className="py-6 text-center text-gray-500">
-                  No bookings found.
-                </td>
+        <div className="inline-block min-w-full align-middle">
+          <table className="min-w-full bg-white border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-2 md:py-3 px-2 md:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Guest
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Property
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Check-in
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Check-out
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredBookings.length > 0 ? (
+                filteredBookings.map((booking) => {
+                  const isVenueBooking = booking.is_venue_booking;
+                  const propertyName = isVenueBooking
+                    ? booking.area_details?.area_name || "Unknown Venue"
+                    : booking.room_details?.room_name || "Unknown Room";
+
+                  return (
+                    <tr key={booking.id} className="hover:bg-gray-50">
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.created_at)}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-base text-gray-700 whitespace-nowrap">
+                        {booking.user?.email || ''}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="truncate max-w-[120px] md:max-w-full">{propertyName}</span>
+                          {isVenueBooking ? (
+                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-base text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.check_in_date)}
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-base text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.check_out_date)}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-center text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        <BookingStatusBadge status={booking.status} />
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-center text-base text-gray-700 whitespace-nowrap">
+                        ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center">
+                          <button
+                            onClick={() => handleViewBooking(booking)}
+                            className="p-1 md:p-1.5 bg-blue-100 cursor-pointer text-blue-600 rounded-md hover:bg-blue-200"
+                            title="View Details"
+                          >
+                            <Eye size={20} className="md:w-6 md:h-6" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={9} className="py-6 text-center text-gray-500">
+                    No bookings found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <nav className="flex items-center">
+        <div className="flex justify-center mt-4 md:mt-6">
+          <nav className="flex items-center flex-wrap justify-center gap-1">
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-l-md border ${currentPage === 1
+              className={`px-2 md:px-3 py-1 rounded-l-md border ${currentPage === 1
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-blue-600 hover:bg-blue-50'
                 }`}
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={18} />
             </button>
 
-            {/* Page number buttons */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`px-3 py-1 border-t border-b ${currentPage === page
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-blue-600 hover:bg-blue-50'
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => {
+                if (window.innerWidth < 768) {
+                  return Math.abs(page - currentPage) < 2 || page === 1 || page === totalPages;
+                }
+                return true;
+              })
+              .map((page, index, array) => (
+                <>
+                  {index > 0 && array[index - 1] !== page - 1 && (
+                    <span className="px-2 py-1 border-t border-b">...</span>
+                  )}
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-2 md:px-3 py-1 border-t border-b ${currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-blue-600 hover:bg-blue-50'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                </>
+              ))}
 
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
+              className={`px-2 md:px-3 py-1 rounded-r-md border ${currentPage === totalPages
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-blue-600 hover:bg-blue-50'
                 }`}
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={18} />
             </button>
           </nav>
         </div>
