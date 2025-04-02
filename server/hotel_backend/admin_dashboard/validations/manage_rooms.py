@@ -12,8 +12,8 @@ def validate_room_data(data: dict) -> dict:
         errors['admission'] = "Admission must be either Regular or VIP."
         
     status = data.get('status')
-    if status not in ["available", "occupied", "maintenance"]:
-        errors['status'] = "Status must be either Available, Occupied, or Maintenance."
+    if status not in ["available", "maintenance"]:
+        errors['status'] = "Status must be either Available or Maintenance."
         
     room_price = data.get('room_price')
     try:

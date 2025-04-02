@@ -1,4 +1,3 @@
-import withSuspense from "../hoc/withSuspense";
 import RoomAbout from "./visitors/rooms/RoomAbout";
 import RoomFeatures from "./visitors/rooms/RoomFeatures";
 import RoomHero from "./visitors/rooms/RoomHero";
@@ -17,4 +16,4 @@ const Rooms = () => {
   );
 };
 
-export default withSuspense(Rooms, { height: "300px" });
+export default Rooms;

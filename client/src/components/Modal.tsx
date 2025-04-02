@@ -57,45 +57,69 @@ const Modal: FC<ModalProps> = ({
         >
           <motion.div
             className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: -20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             <div className="p-6">
               <div className="flex flex-col items-center">
                 {icon && (
-                  <div className="w-16 h-16 flex items-center justify-center text-3xl bg-gray-100 rounded-full mb-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="w-16 h-16 flex items-center justify-center text-3xl bg-gray-100 rounded-full mb-4"
+                  >
                     <i className={icon}></i>
-                  </div>
+                  </motion.div>
                 )}
-                <h3 className="text-xl font-semibold text-gray-800 text-center">
+                <motion.h3
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-xl font-semibold text-gray-800 text-center"
+                >
                   {title}
-                </h3>
+                </motion.h3>
                 {description && (
-                  <p className="mt-2 text-gray-600 text-center">
+                  <motion.p
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-2 text-gray-600 text-center"
+                  >
                     {description}
-                  </p>
+                  </motion.p>
                 )}
               </div>
             </div>
-            <div className="flex justify-evenly p-4 space-x-2 border-t border-gray-200">
-              <button
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="flex justify-evenly p-4 space-x-2 border-t border-gray-200"
+            >
+              <motion.button
                 type="button"
                 onClick={cancel}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md uppercase font-bold hover:bg-gray-300 transition-all duration-300 cursor-pointer"
               >
                 {cancelText}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 type="button"
                 onClick={handleConfirm}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 className={className}
                 disabled={loading}
               >
                 {confirmText}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           </motion.div>
         </motion.div>
       )}

@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { addMonths, eachDayOfInterval, endOfMonth, format, isBefore, isSameDay, parseISO, startOfDay, startOfMonth } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import withSuspense from "../hoc/withSuspense";
 import { fetchAreaBookings, fetchAreaById } from '../services/Booking';
 
 interface AreaData {
@@ -523,4 +522,4 @@ const VenueBookingCalendar = () => {
     );
 };
 
-export default withSuspense(VenueBookingCalendar, { height: "400px" }); 
+export default VenueBookingCalendar;

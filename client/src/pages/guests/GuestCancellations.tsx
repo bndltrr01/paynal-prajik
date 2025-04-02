@@ -1,243 +1,392 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
-import { FC, useState } from "react";
-import { useUserContext } from "../../contexts/AuthContext";
+import { ChevronLeft, ChevronRight, Eye, Loader, Search } from "lucide-react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import BookingData from "../../components/bookings/BookingData";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
-import Error from "../../pages/_ErrorBoundary";
-import { getGuestBookings } from "../../services/Guest";
-import { getGuestReservations } from "../../services/Reservation";
+import { fetchBookingDetail, fetchUserBookings } from "../../services/Booking";
+
+const formatDate = (dateString: string): string => {
+  if (!dateString) return 'N/A';
+
+  try {
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  } catch (e) {
+    console.error(`Error formatting date: ${dateString}`, e);
+    return dateString;
+  }
+};
+
+const getStatusColor = (status: string): string => {
+  const normalizedStatus = status.toLowerCase().replace(/_/g, ' ');
+
+  switch (normalizedStatus) {
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const formatStatus = (status: string): string => {
+  return status.toUpperCase().replace(/_/g, ' ');
+};
 
 const GuestCancellations: FC = () => {
-  const { userDetails } = useUserContext();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const bookingId = searchParams.get('bookingId');
   const [searchTerm, setSearchTerm] = useState("");
-  const [showType, setShowType] = useState<"all" | "bookings" | "reservations">("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [changingPage, setChangingPage] = useState(false);
+  const pageSize = 5;
 
-  const { data: bookings, isLoading: bookingsLoading } = useQuery({
-    queryKey: ["guestBookings", userDetails?.id],
-    queryFn: () => getGuestBookings(userDetails?.id as string),
-    enabled: !!userDetails?.id,
+  const userBookingsQuery = useQuery({
+    queryKey: ['userBookings', 'cancelled', currentPage, pageSize],
+    queryFn: () => fetchUserBookings({ page: currentPage, pageSize }),
   });
 
-  const { data: reservations, isLoading: reservationsLoading } = useQuery({
-    queryKey: ["guestReservations", userDetails?.id],
-    queryFn: () => getGuestReservations(userDetails?.id as string),
-    enabled: !!userDetails?.id,
+  const bookingDetailsQuery = useQuery({
+    queryKey: ['bookingDetails', bookingId],
+    queryFn: () => fetchBookingDetail(bookingId || ''),
+    enabled: !!bookingId,
   });
 
-  if (bookingsLoading || reservationsLoading) return <LoadingHydrate />;
-  if (!bookings || !reservations) return <Error />;
+  // Effect to turn off page loading state when data is fetched
+  useEffect(() => {
+    if (changingPage && !userBookingsQuery.isPending) {
+      setChangingPage(false);
+    }
+  }, [changingPage, userBookingsQuery.isPending]);
 
-  // Filter cancelled bookings and reservations
-  const cancelledBookings = (bookings?.data || []).filter(
+  const { bookings, totalPages, isLoading, errorMessage } = useMemo(() => {
+    const allBookings = userBookingsQuery.data?.data || [];
+
+    // Filter to show only cancelled bookings
+    const cancelledBookings = allBookings.filter(
     (booking: any) => booking.status.toLowerCase() === "cancelled"
   );
 
-  const cancelledReservations = (reservations?.data || []).filter(
-    (reservation: any) => reservation.status.toLowerCase() === "cancelled"
-  );
+    // Calculate correct number of pages based only on cancelled bookings
+    // Since the API doesn't filter on the server side, we calculate pagination manually
+    const totalCancelledItems = cancelledBookings.length;
+    const calculatedTotalPages = Math.max(1, Math.ceil(totalCancelledItems / pageSize));
 
-  // Apply search filter
-  const filteredBookings = cancelledBookings.filter((booking: any) =>
-    booking.room_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.booking_reference.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    return {
+      bookings: cancelledBookings,
+      totalPages: calculatedTotalPages,
+      isLoading: userBookingsQuery.isPending ||
+        (bookingDetailsQuery.isPending && !!bookingId) ||
+        changingPage,
+      errorMessage: userBookingsQuery.isError
+        ? "Failed to load bookings. Please try again later."
+        : (bookingDetailsQuery.isError && !!bookingId)
+          ? "Failed to load booking details. Please try again later."
+          : null
+    };
+  }, [userBookingsQuery.data, userBookingsQuery.isPending, userBookingsQuery.isError,
+  bookingDetailsQuery.isPending, bookingDetailsQuery.isError, bookingId, changingPage, pageSize]);
 
-  const filteredReservations = cancelledReservations.filter((reservation: any) =>
-    reservation.venue_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    reservation.reservation_reference?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBookings = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
 
-  // Determine what to show based on filter
-  const showBookings = showType === "all" || showType === "bookings";
-  const showReservations = showType === "all" || showType === "reservations";
+    // Apply search filter to all cancelled bookings
+    const searchFilteredBookings = bookings.filter((booking: any) => {
+      const matchesSearch =
+        (booking.is_venue_booking
+          ? (booking.area_name || booking.area_details?.area_name || '')
+          : (booking.room_name || booking.room_details?.room_name || ''))
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (booking.room_type || booking.room_details?.room_type || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (booking.booking_reference || booking.id || '')
+          .toString()
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-  const formatDate = (dateString: string): string => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+      return matchesSearch;
+    });
+
+    // Only return bookings for the current page
+    return searchFilteredBookings.slice(startIndex, endIndex);
+  }, [bookings, searchTerm, currentPage, pageSize]);
+
+  const viewBookingDetails = useCallback((id: string) => {
+    searchParams.delete('cancelled');
+    searchParams.delete('success');
+    searchParams.set('bookingId', id);
+    setSearchParams(searchParams);
+  }, [searchParams, setSearchParams]);
+
+  const backToBookingsList = useCallback(() => {
+    searchParams.delete('bookingId');
+    setSearchParams(searchParams);
+  }, [searchParams, setSearchParams]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setChangingPage(true);
+    setCurrentPage(newPage);
+    window.scrollTo(0, 0);
+  }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  }, []);
+
+  if (isLoading && !bookingId) return <LoadingHydrate />;
+  if (errorMessage) return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">{errorMessage}</div>;
+
+  if (bookingId) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6 overflow-y-auto h-[calc(100vh-3rem)] pr-2">
+        <div className="flex justify-between items-center mb-6 sticky top-0 bg-gray-50 py-3 z-10">
+          <h1 className="text-2xl font-bold text-gray-800">Booking Details</h1>
+          <button
+            onClick={backToBookingsList}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
+          >
+            <span className="mr-2">&larr;</span> Back to Cancellations
+          </button>
+        </div>
+
+        {bookingDetailsQuery.isPending ? <LoadingHydrate /> : <BookingData bookingId={bookingId} />}
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mx-auto py-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">Cancellations</h1>
-        <p className="text-gray-600">View your cancelled bookings and reservations</p>
+        <h1 className="text-2xl font-bold text-gray-800">Cancelled Bookings</h1>
+        <p className="text-gray-600 text-lg">View your cancelled hotel bookings</p>
       </div>
 
-      {/* Search and Filters */}
+      {/* Search Bar */}
       <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col md:flex-row justify-between gap-4">
         <div className="relative flex-grow max-w-md">
           <input
             type="text"
-            placeholder="Search by name or reference number..."
+            placeholder="Search by room name or booking reference..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleSearchChange}
+            className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
-        <div className="flex items-center">
-          <label htmlFor="typeFilter" className="text-sm font-medium text-gray-700 mr-2">
-            Show:
-          </label>
-          <select
-            id="typeFilter"
-            value={showType}
-            onChange={(e) => setShowType(e.target.value as "all" | "bookings" | "reservations")}
-            className="py-2 px-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Cancellations</option>
-            <option value="bookings">Room Bookings Only</option>
-            <option value="reservations">Venue Reservations Only</option>
-          </select>
-        </div>
       </div>
 
-      {/* Cancelled Bookings */}
-      {showBookings && (
+      {/* Bookings Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold">Cancelled Room Bookings</h2>
+        <div className="p-6">
+          {changingPage && (
+            <div className="flex justify-center items-center py-10">
+              <Loader size={40} className="animate-spin text-blue-500" />
+              <span className="ml-3 text-lg text-gray-600">Loading cancelled bookings...</span>
           </div>
-          <div className="p-6">
-            {filteredBookings.length > 0 ? (
+          )}
+
+          {!changingPage && filteredBookings.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking Ref</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cancelled On</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refund Status</th>
+              <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Cancellation</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredBookings.map((booking: any) => (
-                      <tr key={booking.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                          {booking.booking_reference}
-                        </td>
+                  {filteredBookings.map((booking: any) => {
+                    const isVenueBooking = booking.is_venue_booking;
+                    let itemName, itemImage, totalAmount;
+
+                    if (isVenueBooking) {
+                      itemName = booking.area_name || booking.area_details?.area_name || "Venue";
+                      itemImage = booking.area_image || booking.area_details?.area_image;
+
+                      const startTime = booking.start_time || booking.check_in_date;
+                      const endTime = booking.end_time || booking.check_out_date;
+                      let duration = 1;
+
+                      if (startTime && endTime) {
+                        try {
+                          const start = new Date(startTime);
+                          const end = new Date(endTime);
+                          const diffTime = Math.abs(end.getTime() - start.getTime());
+                          duration = Math.ceil(diffTime / (1000 * 60 * 60)) || 1; // Hours
+                        } catch (e) {
+                          console.error("Error calculating venue duration:", e);
+                        }
+                      }
+
+                      const venuePrice =
+                        parseFloat((booking.price_per_hour || booking.area_details?.price_per_hour || "0")
+                          .toString()
+                          .replace(/[^0-9.]/g, '')) || 0;
+
+                      totalAmount = booking.total_price || booking.total_amount || (venuePrice * duration);
+                    } else {
+                      itemName = booking.room_name || booking.room_details?.room_name || "Room";
+                      itemImage = booking.room_image || booking.room_details?.room_image;
+
+                      const checkInDate = booking.check_in_date;
+                      const checkOutDate = booking.check_out_date;
+                      let nights = 1;
+
+                      if (checkInDate && checkOutDate) {
+                        try {
+                          const checkIn = new Date(checkInDate);
+                          const checkOut = new Date(checkOutDate);
+                          const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+                        } catch (e) {
+                          console.error("Error calculating room nights:", e);
+                        }
+                      }
+
+                      const nightlyRate =
+                        parseFloat((booking.room_price || booking.room_details?.room_price || "0")
+                          .toString()
+                          .replace(/[^0-9.]/g, '')) || 0;
+
+                      totalAmount = booking.total_price || booking.total_amount || (nightlyRate * nights);
+                    }
+
+                    const checkInDate = booking.check_in_date;
+                    const checkOutDate = booking.check_out_date;
+                    const status = formatStatus(booking.status);
+                    const id = booking.id;
+                    const cancellationDate = booking.updated_at;
+
+                    return (
+                      <tr key={id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
                               <img
                                 loading="lazy"
-                                src={booking.room_image || "https://placehold.co/100"}
-                                alt={booking.room_name}
+                                src={itemImage || '/default-room.jpg'}
+                                alt={itemName}
                                 className="h-10 w-10 rounded-md object-cover"
                               />
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{booking.room_name}</div>
-                              <div className="text-sm text-gray-500">{booking.room_type}</div>
+                              <div className="text-md font-medium text-gray-900">{itemName}</div>
+                              {isVenueBooking ? (
+                                <div className="text-md bg-blue-100 text-blue-800 px-2 py-0.5 rounded inline-block mt-1">Venue</div>
+                              ) : (
+                                <div className="text-md bg-green-100 text-green-800 px-2 py-0.5 rounded inline-block mt-1">Room</div>
+                              )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(booking.check_in_date)} - {formatDate(booking.check_out_date)}
+                        <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
+                          {formatDate(cancellationDate)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${booking.total_amount}
+                        <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
+                          {formatDate(checkInDate)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(booking.cancelled_date || booking.updated_at)}
+                        <td className="px-6 py-4 whitespace-nowrap text-lg text-gray-500">
+                          {formatDate(checkOutDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${booking.refund_status === 'processed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                            {booking.refund_status || "Pending"}
+                          <span className={`px-3 py-1 text-md leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
+                            {status}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-lg font-semibold text-gray-900">
+                          {typeof totalAmount === 'number' ? totalAmount.toLocaleString() : totalAmount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-lg font-medium">
+                          <div className="flex justify-center space-x-2">
+                            <button
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
+                              onClick={() => viewBookingDetails(id.toString())}
+                            >
+                              <Eye size={30} className="mr-1" /> View
+                            </button>
+                          </div>
+                        </td>
                       </tr>
-                    ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>
-            ) : (
+          ) : !changingPage ? (
               <div className="text-center py-8 text-gray-500">
-                No cancelled room bookings found.
+              No cancelled bookings found.
+            </div>
+          ) : null}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && !changingPage && (
+            <div className="flex justify-center mt-6">
+              <nav className="flex items-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded-l-md border ${currentPage === 1
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
+                {/* Page number buttons - limited to max 5 shown */}
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  // Show pages around current page
+                  let pageToShow = i + 1;
+                  if (totalPages > 5 && currentPage > 3) {
+                    pageToShow = currentPage - 2 + i;
+                    if (pageToShow > totalPages) {
+                      pageToShow = totalPages - (4 - i);
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={pageToShow}
+                      onClick={() => handlePageChange(pageToShow)}
+                      className={`px-3 py-1 border-t border-b ${currentPage === pageToShow
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-blue-600 hover:bg-blue-50'
+                        }`}
+                    >
+                      {pageToShow}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-blue-600 hover:bg-blue-50'
+                    }`}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </nav>
               </div>
             )}
           </div>
         </div>
-      )}
-
-      {/* Cancelled Reservations */}
-      {showReservations && (
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold">Cancelled Venue Reservations</h2>
-          </div>
-          <div className="p-6">
-            {filteredReservations.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation Ref</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Venue</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cancelled On</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refund Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredReservations.map((reservation: any) => (
-                      <tr key={reservation.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                          {reservation.reservation_reference}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0">
-                              <img
-                                loading="lazy"
-                                src={reservation.venue_image || "https://placehold.co/100"}
-                                alt={reservation.venue_name}
-                                className="h-10 w-10 rounded-md object-cover"
-                              />
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{reservation.venue_name}</div>
-                              <div className="text-sm text-gray-500">{reservation.venue_type}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(reservation.reservation_date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${reservation.total_amount}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(reservation.cancelled_date || reservation.updated_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${reservation.refund_status === 'processed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                            {reservation.refund_status || "Pending"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No cancelled venue reservations found.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {filteredBookings.length === 0 && filteredReservations.length === 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-          <div className="text-xl font-medium text-gray-700 mb-2">No Cancellations Found</div>
-          <p className="text-gray-500">You don't have any cancelled bookings or reservations.</p>
-        </div>
-      )}
     </div>
   );
 };

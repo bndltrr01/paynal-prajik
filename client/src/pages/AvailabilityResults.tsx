@@ -2,7 +2,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Book, Eye } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import withSuspense from "../hoc/withSuspense";
 import { fetchAvailability } from "../services/Booking";
 
 const AvailabilityResults = () => {
@@ -169,4 +168,4 @@ const AvailabilityResults = () => {
   );
 };
 
-export default withSuspense(AvailabilityResults, { height: "400px" });
+export default AvailabilityResults;

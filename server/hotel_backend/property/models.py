@@ -11,8 +11,6 @@ class Amenities(models.Model):
 class Rooms(models.Model):
     ROOM_STATUS_CHOICES = [
         ('available', 'Available'),
-        ('occupied', 'Occupied'),
-        ('reserved', 'Reserved'),
         ('maintenance', 'Maintenance'),
     ]
     room_name = models.CharField(max_length=100, null=False, default="Room")
@@ -34,8 +32,6 @@ class Rooms(models.Model):
 class Areas(models.Model):
     AREA_STATUS_CHOICES = [
         ('available', 'Available'),
-        ('occupied', 'Occupied'),
-        ('reserved', 'Reserved'),
         ('maintenance', 'Maintenance'),
     ]
     

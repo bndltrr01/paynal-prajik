@@ -8,7 +8,6 @@ import BookingData from "../../components/bookings/BookingData";
 import CancellationModal from "../../components/bookings/CancellationModal";
 import GuestBookingComment from "../../components/guests/GuestBookingComment";
 import { useUserContext } from "../../contexts/AuthContext";
-import withSuspense from "../../hoc/withSuspense";
 import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
 import { cancelBooking, fetchBookingDetail, fetchUserBookings } from "../../services/Booking";
 import { getGuestBookings } from "../../services/Guest";
@@ -156,7 +155,10 @@ const GuestBookings: FC = () => {
         ? (booking.status || '').toLowerCase() === filterStatus.toLowerCase()
         : true;
 
-      return matchesSearch && matchesStatus;
+      // Filter out cancelled bookings
+      const isNotCancelled = (booking.status || '').toLowerCase() !== 'cancelled';
+
+      return matchesSearch && matchesStatus && isNotCancelled;
     });
   }, [bookings, searchTerm, filterStatus]);
 
@@ -231,6 +233,15 @@ const GuestBookings: FC = () => {
     setReviewBookingDetails(null);
   }, []);
 
+  // Check if a booking should show the review button
+  const shouldShowReviewButton = useCallback((booking: any) => {
+    return (
+      booking.status.toLowerCase() === 'checked_out' &&
+      // Check if the booking has no reviews yet
+      !(booking.has_user_review || booking.has_review)
+    );
+  }, []);
+
   if (isLoading) return <LoadingHydrate />;
   if (errorMessage) return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">{errorMessage}</div>;
 
@@ -284,7 +295,6 @@ const GuestBookings: FC = () => {
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="reserved">Reserved</option>
-            <option value="cancelled">Cancelled</option>
             <option value="checked_in">Checked In</option>
             <option value="checked_out">Checked Out</option>
             <option value="no_show">No Show</option>
@@ -428,7 +438,7 @@ const GuestBookings: FC = () => {
                                 <XCircle size={30} className="mr-1" /> Cancel
                               </button>
                             )}
-                            {booking.status.toLowerCase() === 'checked_in' && (
+                            {shouldShowReviewButton(booking) && (
                               <button
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                                 onClick={() => openReviewModal(booking)}
@@ -520,4 +530,4 @@ const GuestBookings: FC = () => {
   );
 };
 
-export default withSuspense(GuestBookings);
+export default GuestBookings;

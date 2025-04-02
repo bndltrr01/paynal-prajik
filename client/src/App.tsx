@@ -33,21 +33,17 @@ const CancelReservation = lazy(() => import("./pages/CancelReservation"));
 const VenueDetails = lazy(() => import("./pages/VenueDetails"));
 
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
-const Comments = lazy(() => import("./pages/admin/Comments"));
 const ManageAmenities = lazy(() => import("./pages/admin/ManageAmenities"));
 const ManageAreas = lazy(() => import("./pages/admin/ManageAreas"));
 const ManageBookings = lazy(() => import("./pages/admin/ManageBookings"));
 const ManageRooms = lazy(() => import("./pages/admin/ManageRooms"));
 const ManageUsers = lazy(() => import("./pages/admin/ManageUsers"));
-const Reports = lazy(() => import("./pages/admin/Reports"));
 
 // Lazy load guest pages
 const GuestProfile = lazy(() => import("./pages/guests/GuestProfile"));
 const GuestDashboard = lazy(() => import("./pages/guests/GuestDashboard"));
 const GuestBookings = lazy(() => import("./pages/guests/GuestBookings"));
-const GuestReservations = lazy(() => import("./pages/guests/GuestReservations"));
 const GuestCancellations = lazy(() => import("./pages/guests/GuestCancellations"));
-const PaymentHistory = lazy(() => import("./pages/guests/PaymentHistory"));
 const GuestLayout = lazy(() => import("./layout/guest/GuestLayout"));
 
 const App = () => {
@@ -122,9 +118,7 @@ const App = () => {
               <Route path=":id" element={<GuestProfile />} />
               <Route path="change-password" element={<GuestChangePassword />} />
               <Route path="bookings" element={<GuestBookings />} />
-              <Route path="reservations" element={<GuestReservations />} />
               <Route path="cancellations" element={<GuestCancellations />} />
-              <Route path="payments" element={<PaymentHistory />} />
             </Route>
           </Route>
 
@@ -137,8 +131,6 @@ const App = () => {
               <Route path="rooms" element={<ManageRooms />} />
               <Route path="amenities" element={<ManageAmenities />} />
               <Route path="users" element={<ManageUsers />} />
-              <Route path="comments" element={<Comments />} />
-              <Route path="reports" element={<Reports />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFound />} />

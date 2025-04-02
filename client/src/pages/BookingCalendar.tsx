@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { addMonths, eachDayOfInterval, endOfMonth, format, isBefore, isEqual, isWithinInterval, parseISO, startOfDay, startOfMonth } from 'date-fns';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import withSuspense from "../hoc/withSuspense";
 import { fetchRoomBookings, fetchRoomById } from '../services/Booking';
 
 interface AmenityObject {
@@ -37,7 +37,6 @@ interface BookingsByDate {
     };
 }
 
-// Add a type guard function
 function isAmenityObject(amenity: any): amenity is AmenityObject {
     return amenity && typeof amenity === 'object' && 'description' in amenity;
 }
@@ -72,14 +71,12 @@ const BookingCalendar = () => {
         }
     }, [arrivalParam, departureParam]);
 
-    // Calculate date range for fetching bookings
     const dateRange = useMemo(() => {
         const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
         return { startDate, endDate };
     }, [currentMonth]);
 
-    // Fetch room data with optimized settings
     const { data: roomData, isLoading: isLoadingRoom } = useQuery<RoomData>({
         queryKey: ['room', roomId],
         queryFn: async () => {
@@ -91,8 +88,6 @@ const BookingCalendar = () => {
             }
         },
         enabled: !!roomId,
-        staleTime: 1000 * 60 * 10, // 10 minutes - room data changes infrequently
-        cacheTime: 1000 * 60 * 30, // 30 minutes
     });
 
     // Fetch room bookings data
@@ -234,7 +229,6 @@ const BookingCalendar = () => {
             return isWithinInterval(date, { start: checkInDate, end: checkOutDate });
         }
         if (checkInDate && hoveredDate && !checkOutDate) {
-            // Handle the case when user is selecting the end date
             if (isBefore(hoveredDate, checkInDate)) {
                 return isWithinInterval(date, { start: hoveredDate, end: checkInDate });
             } else {
@@ -515,7 +509,7 @@ const BookingCalendar = () => {
                 {/* Room Info Card - Right Side */}
                 <div className="lg:col-span-1">
                     {roomData && (
-                        <div className="bg-white rounded-lg shadow-xl p-6 sticky top-24">
+                        <div className="bg-white rounded-lg ring-blue-400 ring-2 shadow-xl p-6 sticky top-24">
                             <div className="mb-4">
                                 <img
                                     loading="lazy"
@@ -587,4 +581,4 @@ const BookingCalendar = () => {
     );
 };
 
-export default withSuspense(BookingCalendar, { height: "400px" }); 
+export default BookingCalendar;

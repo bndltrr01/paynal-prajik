@@ -18,7 +18,6 @@ import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import CancellationModal from "../../components/bookings/CancellationModal";
 import Modal from "../../components/Modal";
-import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
 import { BookingResponse } from "../../services/Booking";
@@ -253,9 +252,9 @@ const BookingDetailsModal: FC<{
                 <span className="font-semibold text-gray-700">Property Type:</span>
                 <span>
                   {isVenueBooking ? (
-                    <span className="bg-blue-100 text-blue-800 px-2 uppercase py-1 rounded-full text-md font-medium">Venue</span>
+                    <span className="bg-blue-100 text-blue-800 px-2 uppercase py-1 rounded-full text-md font-semibold">Venue</span>
                   ) : (
-                    <span className="bg-green-100 text-green-800 px-2 uppercase py-1 rounded-full text-md font-medium">Room</span>
+                    <span className="bg-green-100 text-green-800 px-2 uppercase py-1 rounded-full text-md font-semibold">Room</span>
                   )}
                 </span>
               </motion.div>
@@ -666,9 +665,7 @@ const ManageBookings: FC = () => {
   };
 
   const handleNoShow = () => {
-    if (selectedBooking) {
-      setShowNoShowModal(true);
-    }
+    if (selectedBooking) setShowNoShowModal(true);
   };
 
   const confirmNoShow = () => {
@@ -688,13 +685,9 @@ const ManageBookings: FC = () => {
     }
   };
 
-  const closeNoShowModal = () => {
-    setShowNoShowModal(false);
-  };
+  const closeNoShowModal = () => setShowNoShowModal(false);
 
-  const handleRejectInitiate = () => {
-    setShowRejectionModal(true);
-  };
+  const handleRejectInitiate = () => setShowRejectionModal(true);
 
   const handleRejectConfirm = (reason: string) => {
     if (selectedBooking) {
@@ -707,17 +700,11 @@ const ManageBookings: FC = () => {
     }
   };
 
-  const closeModal = () => {
-    setSelectedBooking(null);
-  };
+  const closeModal = () => setSelectedBooking(null);
 
-  const closeRejectionModal = () => {
-    setShowRejectionModal(false);
-  };
+  const closeRejectionModal = () => setShowRejectionModal(false);
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
+  const handlePageChange = (newPage: number) => setCurrentPage(newPage);
 
   const totalPages = bookingsResponse?.pagination?.total_pages || 1;
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
@@ -985,4 +972,4 @@ const ManageBookings: FC = () => {
   );
 };
 
-export default withSuspense(ManageBookings);
+export default ManageBookings;

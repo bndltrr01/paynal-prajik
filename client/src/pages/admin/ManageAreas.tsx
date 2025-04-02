@@ -6,7 +6,6 @@ import EditAreaModal, {
   IArea as IEditArea,
 } from "../../components/admin/EditAreaModal";
 import Modal from "../../components/Modal";
-import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import {
@@ -27,7 +26,7 @@ interface Area {
   description?: string;
   capacity: number;
   price_per_hour: number;
-  status: "available" | "occupied" | "maintenance";
+  status: "available" | "maintenance";
 }
 
 interface AddAreaResponse {
@@ -78,17 +77,17 @@ const ViewAreaModal: FC<{
               </svg>
             </motion.button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2">
               {/* Left Column: Image with gradient overlay */}
               <div className="relative h-64 md:h-auto">
-            {areaData.area_image ? (
+                {areaData.area_image ? (
                   <div className="relative h-full">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent z-10"></div>
                     <motion.img
-                loading="lazy"
-                src={areaData.area_image}
-                alt={areaData.area_name}
-                className="w-full h-full object-cover"
+                      loading="lazy"
+                      src={areaData.area_image}
+                      alt={areaData.area_name}
+                      className="w-full h-full object-cover"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
@@ -108,14 +107,15 @@ const ViewAreaModal: FC<{
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.4 }}
                       >
-                        <span className="bg-blue-500/80 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-                          {areaData.status.toUpperCase()}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${areaData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                          {areaData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
                         </span>
                       </motion.div>
                     </div>
                   </div>
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
                     <motion.svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-20 w-20 opacity-50"
@@ -128,12 +128,12 @@ const ViewAreaModal: FC<{
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </motion.svg>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
               {/* Right Column: Area Information */}
-          <div className="p-6 flex flex-col">
+              <div className="p-6 flex flex-col">
                 <motion.div
                   className="hidden md:block mb-4"
                   initial={{ y: 10, opacity: 0 }}
@@ -142,13 +142,11 @@ const ViewAreaModal: FC<{
                 >
                   <h1 className="text-3xl font-bold text-gray-900">{areaData.area_name}</h1>
                   <div className="flex items-center mt-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${areaData.status === 'available' ? 'bg-green-100 text-green-800' :
-                      areaData.status === 'occupied' ? 'bg-blue-100 text-blue-800' :
-                        'bg-amber-100 text-amber-800'
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${areaData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
                       }`}>
-                  {areaData.status.toUpperCase()}
-                </span>
-              </div>
+                      {areaData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
+                    </span>
+                  </div>
                 </motion.div>
 
                 {/* Description with a nice background */}
@@ -178,8 +176,8 @@ const ViewAreaModal: FC<{
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       <span className="text-xl font-bold text-gray-800">{areaData.capacity} <span className="text-sm font-normal text-gray-600">people</span></span>
-            </div>
-          </div>
+                    </div>
+                  </div>
 
                   <div className="bg-green-50 p-3 rounded-lg">
                     <span className="block text-gray-500 text-sm">Price</span>
@@ -188,7 +186,7 @@ const ViewAreaModal: FC<{
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-xl font-bold text-gray-800">{areaData.price_per_hour.toLocaleString()}</span>
-        </div>
+                    </div>
                   </div>
                 </motion.div>
 
@@ -205,8 +203,8 @@ const ViewAreaModal: FC<{
                     <span className="font-medium"> {areaData.price_per_hour.toLocaleString()}</span> per booking.
                   </p>
                 </motion.div>
-      </div>
-    </div>
+              </div>
+            </div>
           </motion.div>
         </motion.div>
       )}
@@ -456,8 +454,9 @@ const ManageAreas = () => {
                     <h2 className="text-xl font-bold text-gray-900">
                       {area.area_name}
                     </h2>
-                    <span className="text-sm font-semibold text-blue-600 uppercase">
-                      {area.status.toUpperCase()}
+                    <span className={`text-sm font-semibold ${area.status === 'available' ? 'text-green-600' : 'text-amber-600'
+                      } uppercase`}>
+                      {area.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-1">
@@ -570,13 +569,13 @@ const ManageAreas = () => {
         {/* Edit/Add Area Modal */}
         {showFormModal && (
           <AnimatePresence mode="wait">
-          <EditAreaModal
-            isOpen={showFormModal}
-            cancel={() => setShowFormModal(false)}
-            onSave={handleSave}
-            areaData={editAreaData}
-            loading={addAreaMutation.isPending || editAreaMutation.isPending}
-          />
+            <EditAreaModal
+              isOpen={showFormModal}
+              cancel={() => setShowFormModal(false)}
+              onSave={handleSave}
+              areaData={editAreaData}
+              loading={addAreaMutation.isPending || editAreaMutation.isPending}
+            />
           </AnimatePresence>
         )}
 
@@ -604,4 +603,4 @@ const ManageAreas = () => {
   );
 };
 
-export default withSuspense(ManageAreas, { height: "500px" });
+export default ManageAreas;

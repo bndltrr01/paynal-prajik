@@ -45,32 +45,29 @@ const RoomAvailable: FC<RoomAvailableProps> = ({
 
         {/* Availability */}
         <div
-          className={`flex items-center gap-2 ${
-            soldOut ? "text-red-500" : "text-green-600"
-          } font-semibold text-sm font-montserrat`}
+          className={`flex items-center gap-2 ${soldOut ? "text-red-500" : "text-green-600"
+            } font-semibold text-sm font-montserrat`}
         >
           <i
             className={`fas ${soldOut ? "fa-times-circle" : "fa-check-circle"}`}
           ></i>
           {soldOut
             ? "Sold Out"
-            : `${availableRooms} room${
-                availableRooms > 1 ? "s" : ""
-              } available`}
+            : `${availableRooms} room${availableRooms > 1 ? "s" : ""
+            } available`}
         </div>
 
         {/* Price and Button */}
         <div className="flex justify-between items-center mt-2">
           <div className="text-lg font-bold text-gray-900 font-montserrat">
-            {price.toLocaleString()}
+            ₱{price.toLocaleString()}
           </div>
           <button
             onClick={onBookNow}
-            className={`px-4 py-2 rounded-lg text-white font-semibold font-montserrat ${
-              soldOut
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className={`px-4 py-2 rounded-lg text-white font-semibold font-montserrat ${soldOut
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+              }`}
             disabled={soldOut}
           >
             {soldOut ? "Not Available" : "Book Now"}

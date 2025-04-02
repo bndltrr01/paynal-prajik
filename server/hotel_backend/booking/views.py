@@ -41,11 +41,11 @@ def fetch_availability(request):
             'error': "Departure date should be greater than arrival date"
         }, status=status.HTTP_400_BAD_REQUEST)
         
-    available_rooms = Rooms.objects.filter(status='available')
-    available_areas = Areas.objects.filter(status='available')
+    rooms = Rooms.objects.filter(status='available')
+    areas = Areas.objects.filter(status='available')
     
-    room_serializer = RoomSerializer(available_rooms, many=True, context={'request': request})
-    area_serializer = AreaSerializer(available_areas, many=True)
+    room_serializer = RoomSerializer(rooms, many=True, context={'request': request})
+    area_serializer = AreaSerializer(areas, many=True)
     
     return Response({
         "rooms": room_serializer.data,

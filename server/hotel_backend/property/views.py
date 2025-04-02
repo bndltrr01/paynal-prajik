@@ -9,7 +9,7 @@ from .serializers import RoomSerializer, AreaSerializer, AmenitySerializer
 @api_view(['GET'])
 def fetch_rooms(request):
     try:
-        rooms = Rooms.objects.all()
+        rooms = Rooms.objects.filter(status='available')
         serializer = RoomSerializer(rooms, many=True)
         return Response({
             "data": serializer.data
@@ -42,7 +42,7 @@ def fetch_amenities(request):
 @api_view(['GET'])
 def fetch_areas(request):
     try:
-        areas = Areas.objects.all()
+        areas = Areas.objects.filter(status='available')
         serializer = AreaSerializer(areas, many=True)
         return Response({
             "data": serializer.data

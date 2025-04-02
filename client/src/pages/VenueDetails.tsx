@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { lazy } from "react";
 import { Link, useParams } from "react-router-dom";
 import ReviewList from "../components/reviews/ReviewList";
-import withSuspense from '../hoc/withSuspense';
 import { fetchAreaDetail, fetchAreas } from "../services/Area";
 import { fetchAreaReviews } from "../services/Booking";
 
@@ -198,4 +197,4 @@ const VenueDetails = () => {
     );
 };
 
-export default withSuspense(VenueDetails, { height: "400px" }); 
+export default VenueDetails;

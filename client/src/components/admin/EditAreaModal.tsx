@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AnimatePresence, motion } from "framer-motion";
 import { ChangeEvent, FC, useEffect, useState } from "react";
+import { parsePriceValue } from "../../utils/formatters";
 
 export interface IArea {
   id: number;
@@ -8,7 +9,7 @@ export interface IArea {
   description: string;
   capacity: number;
   price_per_hour: number;
-  status: "available" | "occupied" | "maintenance";
+  status: "available" | "maintenance";
   area_image: File | string;
 }
 
@@ -32,7 +33,7 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
     area_name: areaData?.area_name || "",
     description: areaData?.description || "",
     capacity: areaData?.capacity || 0,
-    price_per_hour: areaData?.price_per_hour || 0,
+    price_per_hour: areaData?.price_per_hour ? parsePriceValue(areaData.price_per_hour) : 0,
     status: areaData?.status || "available",
     area_image: areaData?.area_image || "",
   });
@@ -50,15 +51,17 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
   };
 
   useEffect(() => {
-    setFormState({
-      id: areaData?.id || 0,
-      area_name: areaData?.area_name || "",
-      description: areaData?.description || "",
-      capacity: areaData?.capacity || 0,
-      price_per_hour: areaData?.price_per_hour || 0,
-      status: areaData?.status || "available",
-      area_image: areaData?.area_image || "",
-    });
+    if (areaData) {
+      setFormState({
+        id: areaData.id || 0,
+        area_name: areaData.area_name || "",
+        description: areaData.description || "",
+        capacity: areaData.capacity || 0,
+        price_per_hour: areaData.price_per_hour ? parsePriceValue(areaData.price_per_hour) : 0,
+        status: areaData.status || "available",
+        area_image: areaData.area_image || "",
+      });
+    }
   }, [areaData]);
 
   useEffect(() => {
@@ -273,7 +276,6 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                         className="border border-gray-300 rounded-md w-full p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       >
                         <option value="available">Available</option>
-                        <option value="occupied">Occupied</option>
                         <option value="maintenance">Maintenance</option>
                       </select>
                       {errors[fieldMapping.status] && (
