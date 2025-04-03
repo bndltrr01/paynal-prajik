@@ -36,6 +36,7 @@ const GuestBookingComment = ({
         onSuccess: () => {
             toast.success("Thank you for your feedback!");
             queryClient.invalidateQueries({ queryKey: ['userBookings'] });
+            queryClient.invalidateQueries({ queryKey: ['guestBookings'] });
             queryClient.invalidateQueries({ queryKey: ['bookingDetails', bookingId] });
             setRating(0);
             setComment("");

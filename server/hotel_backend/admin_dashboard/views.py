@@ -343,7 +343,7 @@ def edit_area(request, area_id):
     
     if has_active_reservations:
         allowed_fields = ['description', 'status']
-        filtered_data = {k: v for k, v in request.data.items() if k in allowed_fields}
+        filtered_data = {k: v for k, v in request.data.items() if k in allowed_fields}    
         
         if 'status' in filtered_data and filtered_data['status'] == 'maintenance':
             return Response({
@@ -579,7 +579,7 @@ def update_booking_status(request, booking_id):
     
     status_value = request.data.get('status')
     if not status_value:
-        return Response({"error": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
         
     valid_statuses = ['pending', 'reserved', 'confirmed', 'checked_in', 'checked_out', 'cancelled', 'rejected', 'no_show']
     if status_value not in valid_statuses:
@@ -630,7 +630,7 @@ def update_booking_status(request, booking_id):
         try:
             from .email.booking import send_booking_confirmation_email
             user_email = booking.user.email
-            email_sent = send_booking_confirmation_email(user_email, serializer.data)            
+            email_sent = send_booking_confirmation_email(user_email, serializer.data)
             if email_sent:
                 print(f"Confirmation email sent to {user_email} for booking {booking_id}")
             else:

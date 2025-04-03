@@ -1,6 +1,7 @@
 import { Book, Eye } from "lucide-react";
 import { FC } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUserContext } from "../../contexts/AuthContext";
 
 interface RoomCardProps {
   id: string | number;
@@ -21,9 +22,14 @@ const RoomCard: FC<RoomCardProps> = ({
   price,
 }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useUserContext();
 
   const handleReserveClick = () => {
-    navigate(`/booking/${id}`);
+    if (isAuthenticated) {
+      navigate(`/booking/${id}`);
+    } else {
+      navigate(`/rooms/${id}?showLogin=true`);
+    }
   };
 
   return (
@@ -53,9 +59,9 @@ const RoomCard: FC<RoomCardProps> = ({
               <Eye size={16} /> <span>View</span>
             </button>
             <button
-              className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-2 rounded-md transition-colors cursor-pointer flex items-center gap-1"
+              className={`${isAuthenticated ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'} text-white text-sm px-3 py-2 rounded-md transition-colors flex items-center gap-1`}
               onClick={handleReserveClick}
-              title="Book this room"
+              title={isAuthenticated ? "Book this room" : "Login required to book"}
             >
               <Book size={16} /> <span>Book</span>
             </button>

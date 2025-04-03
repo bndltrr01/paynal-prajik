@@ -416,10 +416,10 @@ def booking_reviews(request, booking_id):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
     
     elif request.method == 'POST':
-        # Check if booking is in checked-in status
-        if booking.status != 'checked_in':
+        # Check if booking is in checked-out status
+        if booking.status != 'checked_out':
             return Response({
-                "error": "Reviews can only be submitted for checked-in bookings"
+                "error": "Reviews can only be submitted for checked-out bookings"
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Check if user already submitted a review for this booking

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Book, Eye } from "lucide-react";
 import { FC } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUserContext } from "../../contexts/AuthContext";
 
 interface AreaCardProps {
   id: number;
@@ -22,6 +23,7 @@ const VenueCard: FC<AreaCardProps> = ({
   image
 }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useUserContext();
 
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,7 +32,12 @@ const VenueCard: FC<AreaCardProps> = ({
 
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/venue-booking/${id}`);
+    if (isAuthenticated) {
+      navigate(`/venue-booking/${id}`);
+    } else {
+      // If user is not authenticated, navigate to login page or show login modal
+      navigate(`/venues/${id}?showLogin=true`);
+    }
   };
 
   return (
@@ -75,9 +82,9 @@ const VenueCard: FC<AreaCardProps> = ({
             </button>
 
             <button
-              className="bg-green-600 hover:bg-green-700 text-sm text-white px-3 py-2 rounded-lg font-montserrat transition cursor-pointer flex items-center gap-1"
+              className={`${isAuthenticated ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'} text-sm text-white px-3 py-2 rounded-lg font-montserrat transition flex items-center gap-1`}
               onClick={handleBookNow}
-              title="Book this venue"
+              title={isAuthenticated ? "Book this venue" : "Login required to book"}
             >
               <Book size={16} /> <span>Book</span>
             </button>

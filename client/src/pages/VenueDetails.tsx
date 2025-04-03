@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import ReviewList from "../components/reviews/ReviewList";
 import { fetchAreaDetail, fetchAreas } from "../services/Area";
 import { fetchAreaReviews } from "../services/Booking";
+import { useUserContext } from "../contexts/AuthContext";
 
 const LoadingDashboard = lazy(() => import("../motions/skeletons/AdminDashboardSkeleton"));
 const Error = lazy(() => import("./_ErrorBoundary"));
@@ -21,6 +22,7 @@ interface Area {
 
 const VenueDetails = () => {
     const { id } = useParams<{ id: string }>();
+    const { isAuthenticated } = useUserContext();
 
     const {
         data: venueData,
@@ -185,8 +187,15 @@ const VenueDetails = () => {
                             {/* Reserve Now Button */}
 
                             <Link to={`/venue-booking/${venueDetail.id}`}>
-                                <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
-                                    Reserve Now
+                                <button 
+                                    className={`w-full py-4 ${
+                                        isAuthenticated 
+                                            ? "bg-blue-600 hover:bg-blue-700" 
+                                            : "bg-gray-400 cursor-not-allowed"
+                                    } text-white font-bold text-lg rounded-lg transition-colors`}
+                                    disabled={!isAuthenticated}
+                                >
+                                    {isAuthenticated ? "Reserve Now" : "Login to Reserve"}
                                 </button>
                             </Link>
                         </div>

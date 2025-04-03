@@ -6,6 +6,7 @@ import ReviewList from "../components/reviews/ReviewList";
 import { fetchAmenities } from "../services/Admin";
 import { fetchRoomReviews } from "../services/Booking";
 import { fetchRoomDetail } from "../services/Room";
+import { useUserContext } from "../contexts/AuthContext";
 
 const LoadingDashboard = lazy(
   () => import("../motions/skeletons/AdminDashboardSkeleton")
@@ -13,6 +14,7 @@ const LoadingDashboard = lazy(
 const Error = lazy(() => import("./_ErrorBoundary"));
 
 const RoomDetails = () => {
+  const { isAuthenticated } = useUserContext();
   const { id } = useParams<{ id: string }>();
 
   const {
@@ -173,8 +175,15 @@ const RoomDetails = () => {
                   </div>
                 ) : (
                   <Link to={`/booking/${roomDetail.id}`}>
-                    <button className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg hover:bg-blue-700 transition-colors cursor-pointer">
-                      Book Now
+                    <button 
+                      className={`w-full py-4 ${
+                        isAuthenticated 
+                          ? "bg-blue-600 hover:bg-blue-700" 
+                          : "bg-gray-400 cursor-not-allowed"
+                      } text-white font-bold text-lg rounded-lg transition-colors`}
+                      disabled={!isAuthenticated}
+                    >
+                      {isAuthenticated ? "Book Now" : "Login to Book"}
                     </button>
                   </Link>
                 )}

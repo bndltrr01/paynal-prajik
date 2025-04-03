@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Book, Eye } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { fetchAvailability } from "../services/Booking";
+import { useUserContext } from "../contexts/AuthContext";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useUserContext();
 
   const arrival = searchParams.get("arrival") || "";
   const departure = searchParams.get("departure") || "";
@@ -40,8 +42,8 @@ const AvailabilityResults = () => {
       <div className="mb-8 text-center">
         <h1 className="text-2xl md:text-3xl font-bold">Availability Results</h1>
         <p className="text-gray-600 mt-2">
-          Showing availability from <span className="font-semibold"> {arrivalLabel} </span> to
-          <span className="font-semibold"> {departureLabel} </span>
+          Showing availability from <span className="font-semibold">{arrivalLabel}</span> to{" "}
+          <span className="font-semibold">{departureLabel}</span>
         </p>
       </div>
 
@@ -61,16 +63,11 @@ const AvailabilityResults = () => {
         <div className="space-y-10">
           {/* Rooms Section */}
           <div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-4">
-              Available Rooms
-            </h2>
+            <h2 className="text-xl md:text-2xl font-semibold mb-4">Available Rooms</h2>
             {data.rooms && data.rooms.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {data.rooms.map((room: any) => (
-                  <div
-                    key={room.id}
-                    className="bg-white rounded-lg shadow-md p-5 flex flex-col"
-                  >
+                  <div key={room.id} className="bg-white rounded-lg shadow-md p-5 flex flex-col">
                     {/* Room Image (if available) */}
                     {room.room_image && (
                       <img
@@ -83,9 +80,7 @@ const AvailabilityResults = () => {
                     {/* Room Name & Basic Info */}
                     <h3 className="text-xl font-semibold mb-1">{room.room_name}</h3>
                     {/* Price & Action */}
-                    <p className="text-gray-900 font-semibold text-lg mb-3">
-                      {room.room_price}
-                    </p>
+                    <p className="text-gray-900 font-semibold text-lg mb-3">{room.room_price}</p>
                     <div className="mt-auto flex flex-wrap justify-start gap-2 font-montserrat">
                       <Link
                         to={`/rooms/${room.id}`}
@@ -93,35 +88,38 @@ const AvailabilityResults = () => {
                       >
                         <Eye size={16} /> <span>View</span>
                       </Link>
-                      <Link
-                        to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
-                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
-                      >
-                        <Book size={16} /> <span>Book</span>
-                      </Link>
+                      {isAuthenticated ? (
+                        <Link
+                          to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
+                          className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                        >
+                          <Book size={16} /> <span>Book</span>
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="bg-gray-400 text-sm text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed"
+                          title="Please login to book"
+                        >
+                          <Book size={16} /> <span>Book</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600">
-                No rooms available for these dates.
-              </p>
+              <p className="text-gray-600">No rooms available for these dates.</p>
             )}
           </div>
 
           {/* Areas Section */}
           <div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-4">
-              Available Areas
-            </h2>
+            <h2 className="text-xl md:text-2xl font-semibold mb-4">Available Areas</h2>
             {data.areas && data.areas.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {data.areas.map((area: any) => (
-                  <div
-                    key={area.id}
-                    className="bg-white rounded-lg shadow-md p-5 flex flex-col"
-                  >
+                  <div key={area.id} className="bg-white rounded-lg shadow-md p-5 flex flex-col">
                     {/* Area Image (if available) */}
                     {area.area_image && (
                       <img
@@ -131,35 +129,39 @@ const AvailabilityResults = () => {
                         className="w-full h-40 object-cover mb-3 rounded"
                       />
                     )}
-
                     {/* Area Name & Basic Info */}
                     <h3 className="text-xl font-semibold mb-1">{area.area_name}</h3>
-
                     {/* Price & Action */}
-                    <p className="text-gray-900 font-semibold text-lg mb-3">
-                      {area.price_per_hour}
-                    </p>
+                    <p className="text-gray-900 font-semibold text-lg mb-3">{area.price_per_hour}</p>
                     <div className="mt-auto flex flex-wrap justify-start gap-2 font-montserrat">
                       <button
-                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer flex items-center gap-1"
+                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
                         onClick={(e) => handleViewVenueDetails(e, area.id)}
                       >
                         <Eye size={16} /> <span>View</span>
                       </button>
-                      <button
-                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition cursor-pointer flex items-center gap-1"
-                        onClick={(e) => handleBookVenue(e, area.id)}
-                      >
-                        <Book size={16} /> <span>Book</span>
-                      </button>
+                      {isAuthenticated ? (
+                        <button
+                          className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
+                          onClick={(e) => handleBookVenue(e, area.id)}
+                        >
+                          <Book size={16} /> <span>Book</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="bg-gray-400 text-sm text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed"
+                          title="Please login to book"
+                        >
+                          <Book size={16} /> <span>Book</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600">
-                No areas available for these dates.
-              </p>
+              <p className="text-gray-600">No areas available for these dates.</p>
             )}
           </div>
         </div>

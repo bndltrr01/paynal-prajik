@@ -155,9 +155,7 @@ const GuestBookings: FC = () => {
         ? (booking.status || '').toLowerCase() === filterStatus.toLowerCase()
         : true;
 
-      // Filter out cancelled bookings
       const isNotCancelled = (booking.status || '').toLowerCase() !== 'cancelled';
-
       return matchesSearch && matchesStatus && isNotCancelled;
     });
   }, [bookings, searchTerm, filterStatus]);
@@ -233,11 +231,10 @@ const GuestBookings: FC = () => {
     setReviewBookingDetails(null);
   }, []);
 
-  // Check if a booking should show the review button
+
   const shouldShowReviewButton = useCallback((booking: any) => {
     return (
       booking.status.toLowerCase() === 'checked_out' &&
-      // Check if the booking has no reviews yet
       !(booking.has_user_review || booking.has_review)
     );
   }, []);
