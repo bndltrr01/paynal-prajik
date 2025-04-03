@@ -38,14 +38,12 @@ const VenueAvailable: FC<VenueAvailableProps> = ({
 
         {/* Availability */}
         <div
-          className={`flex items-center gap-2 ${
-            available ? "text-green-600" : "text-red-500"
-          } font-semibold text-sm font-montserrat`}
+          className={`flex items-center gap-2 ${available ? "text-green-600" : "text-red-500"
+            } font-semibold text-sm font-montserrat`}
         >
           <i
-            className={`fas ${
-              available ? "fa-check-circle" : "fa-times-circle"
-            }`}
+            className={`fas ${available ? "fa-check-circle" : "fa-times-circle"
+              }`}
           ></i>
           {available ? "Available" : "Not Available"}
         </div>
@@ -53,15 +51,14 @@ const VenueAvailable: FC<VenueAvailableProps> = ({
         {/* Price and Button */}
         <div className="flex justify-between items-center mt-2">
           <div className="text-lg font-bold text-gray-900 font-montserrat">
-            {price.toLocaleString()}
+            ₱{price.toLocaleString()}
           </div>
           <button
             onClick={onBookNow}
-            className={`px-4 py-2 rounded-lg text-white font-semibold font-montserrat ${
-              available
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
+            className={`px-4 py-2 rounded-lg text-white font-semibold font-montserrat ${available
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-gray-400 cursor-not-allowed"
+              }`}
             disabled={!available}
           >
             {available ? "Book Now" : "Unavailable"}

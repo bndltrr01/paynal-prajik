@@ -3,16 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChangeEvent, FC, useEffect, useState } from "react";
 import { fetchAmenities } from "../../services/Admin";
+import { parsePriceValue } from "../../utils/formatters";
 
 export interface IRoom {
     id: number;
     roomName: string;
-    roomType: string;  
-    capacity: string;  
-    amenities: number[]; 
+    roomType: string;
+    capacity: string;
+    amenities: number[];
     roomPrice: number;
     roomImage: File | string;
-    status: "Available" | "Occupied" | "Maintenance";
+    status: "Available" | "Maintenance";
     description: string;
 }
 
@@ -37,11 +38,28 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
         roomType: roomData?.roomType || "",
         capacity: roomData?.capacity || "",
         amenities: roomData?.amenities || [],
-        roomPrice: roomData?.roomPrice || 0,
+        roomPrice: roomData?.roomPrice ? parsePriceValue(roomData.roomPrice) : 0,
         status: roomData?.status || "Available",
         description: roomData?.description || "",
         roomImage: roomData?.roomImage || "",
     });
+
+    // Update form when roomData changes
+    useEffect(() => {
+        if (roomData) {
+            setFormState({
+                id: roomData.id || 0,
+                roomName: roomData.roomName || "",
+                roomType: roomData.roomType || "",
+                capacity: roomData.capacity || "",
+                amenities: roomData.amenities || [],
+                roomPrice: roomData.roomPrice ? parsePriceValue(roomData.roomPrice) : 0,
+                status: roomData.status || "Available",
+                description: roomData.description || "",
+                roomImage: roomData.roomImage || "",
+            });
+        }
+    }, [roomData]);
 
     const {
         data: amenitiesData,
@@ -302,7 +320,6 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                                 className="border border-gray-300 rounded-md w-full p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                                             >
                                                 <option value="Available">Available</option>
-                                                <option value="Occupied">Occupied</option>
                                                 <option value="Maintenance">Maintenance</option>
                                             </select>
                                             {errors[fieldMapping.status] && (
@@ -376,10 +393,10 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                             Room Image
                                         </label>
                                         <div className="border border-dashed border-gray-300 rounded-md p-4 text-center hover:border-blue-500 transition-colors duration-200">
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleImageChange}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageChange}
                                                 className="hidden"
                                                 id="room-image-upload"
                                             />
@@ -403,10 +420,10 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ type: "spring", damping: 20 }}
                                             >
-                                            <img
-                                                loading="lazy"
-                                                src={previewUrl}
-                                                alt="Preview"
+                                                <img
+                                                    loading="lazy"
+                                                    src={previewUrl}
+                                                    alt="Preview"
                                                     className="w-full h-48 object-cover border border-gray-200 rounded-md shadow-sm"
                                                 />
                                                 <motion.button
@@ -463,26 +480,26 @@ const EditRoomModal: FC<IRoomFormModalProps> = ({
                                                             <motion.div
                                                                 className="flex items-center space-x-2"
                                                                 whileHover={{ scale: 1.02 }}
-                                                        >
-                                                            <input
-                                                                type="checkbox"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
                                                                     id={`amenity-${amenity.id}`}
-                                                                checked={formState.amenities.includes(amenity.id)}
-                                                                onChange={() => handleAmenityChange(amenity.id)}
+                                                                    checked={formState.amenities.includes(amenity.id)}
+                                                                    onChange={() => handleAmenityChange(amenity.id)}
                                                                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
-                                                            />
+                                                                />
                                                                 <label
                                                                     htmlFor={`amenity-${amenity.id}`}
                                                                     className="text-sm text-gray-700 cursor-pointer"
                                                                 >
-                                                                {amenity.description}
-                                                        </label>
+                                                                    {amenity.description}
+                                                                </label>
                                                             </motion.div>
                                                         </motion.div>
                                                     ))}
                                                 </div>
-                                                )}
-                                            </div>
+                                            )}
+                                        </div>
                                         {errors[fieldMapping.amenities] && (
                                             <motion.p
                                                 className="text-red-500 text-xs mt-1"

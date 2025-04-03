@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
 import {
   ArcElement,
@@ -10,7 +11,6 @@ import {
 } from "chart.js";
 import { Bar, Doughnut, Pie } from "react-chartjs-2";
 import StatCard from "../../components/admin/StatCard";
-import withSuspense from "../../hoc/withSuspense";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import { fetchBookingStatusCounts, fetchStats } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
@@ -100,27 +100,27 @@ const AdminDashboard = () => {
     ]
   };
 
-  const revenueBarChartData = {
-    labels: ['Revenue This Month'],
-    datasets: [
-      {
-        label: 'Revenue (in ₱)',
-        data: [stats.revenue],
-        backgroundColor: ["#FF5722"],
-      }
-    ]
-  };
+  // const revenueBarChartData = {
+  //   labels: ['Revenue This Month'],
+  //   datasets: [
+  //     {
+  //       label: 'Revenue (in ₱)',
+  //       data: [stats.revenue],
+  //       backgroundColor: ["#FF5722"],
+  //     }
+  //   ]
+  // };
 
-  const revenueBreakdownData = {
-    labels: ['Room Bookings', 'Venue Rentals'],
-    datasets: [
-      {
-        label: 'Revenue by Type (₱)',
-        data: [stats.roomRevenue, stats.venueRevenue],
-        backgroundColor: ["#3F51B5", "#E91E63"],
-      }
-    ]
-  };
+  // const revenueBreakdownData = {
+  //   labels: ['Room Bookings', 'Venue Rentals'],
+  //   datasets: [
+  //     {
+  //       label: 'Revenue by Type (₱)',
+  //       data: [stats.roomRevenue, stats.venueRevenue],
+  //       backgroundColor: ["#3F51B5", "#E91E63"],
+  //     }
+  //   ]
+  // };
 
   const doughnutChartData = {
     labels: ['Available', 'Occupied', 'Maintenance'],
@@ -159,17 +159,17 @@ const AdminDashboard = () => {
     ]
   };
 
-  const getRevenueBreakdownDescription = () => {
-    if (stats.roomRevenue > 0 && stats.venueRevenue > 0) {
-      return `Revenue from both room bookings and venue rentals`;
-    } else if (stats.roomRevenue > 0 && stats.venueRevenue === 0) {
-      return `Currently all revenue is from room bookings`;
-    } else if (stats.venueRevenue > 0 && stats.roomRevenue === 0) {
-      return `Currently all revenue is from venue bookings`;
-    } else {
-      return `No revenue recorded yet`;
-    }
-  };
+  // const getRevenueBreakdownDescription = () => {
+  //   if (stats.roomRevenue > 0 && stats.venueRevenue > 0) {
+  //     return `Revenue from both room bookings and venue rentals`;
+  //   } else if (stats.roomRevenue > 0 && stats.venueRevenue === 0) {
+  //     return `Currently all revenue is from room bookings`;
+  //   } else if (stats.venueRevenue > 0 && stats.roomRevenue === 0) {
+  //     return `Currently all revenue is from venue bookings`;
+  //   } else {
+  //     return `No revenue recorded yet`;
+  //   }
+  // };
 
   return (
     <div className="h-[calc(100vh-25px)] p-3 overflow-y-auto container mx-auto">
@@ -177,9 +177,8 @@ const AdminDashboard = () => {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard title="Active Bookings" value={data.active_bookings} borderColor="border-blue-500" />
+        {/* <StatCard title="Active Bookings" value={data.active_bookings} borderColor="border-blue-500" /> */}
         <StatCard title="Available Rooms" value={data.available_rooms} borderColor="border-green-500" />
-        <StatCard title="Area Reservations" value={data.upcoming_reservations} borderColor="border-yellow-500" />
         <StatCard title="Revenue This Month" value={stats.formattedRevenue} borderColor="border-orange-500" />
       </div>
 
@@ -201,16 +200,8 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Revenue Trend (Bar Chart) */}
-        <div className="bg-white shadow-lg rounded-lg p-4 flex flex-col justify-center items-center h-full">
-          <h2 className="text-xl font-semibold mb-2 text-center">Revenue Trend</h2>
-          <div className="w-full h-60 flex justify-center items-center">
-            <Bar data={revenueBarChartData} />
-          </div>
-        </div>
-
         {/* Revenue Breakdown (Bar Chart) */}
-        <div className="bg-white shadow-lg rounded-lg p-4 flex flex-col justify-center items-center h-full">
+        {/* <div className="bg-white shadow-lg rounded-lg p-4 flex flex-col justify-center items-center h-full">
           <h2 className="text-xl font-semibold mb-2 text-center">Revenue Breakdown</h2>
           <div className="w-full h-60 flex flex-col justify-center items-center">
             <Bar
@@ -248,7 +239,7 @@ const AdminDashboard = () => {
               {getRevenueBreakdownDescription()}
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Booking Status Distribution (Pie Chart) */}
@@ -264,4 +255,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default withSuspense(AdminDashboard, { height: "500px" });
+export default AdminDashboard;

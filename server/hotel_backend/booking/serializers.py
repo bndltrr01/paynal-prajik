@@ -318,18 +318,16 @@ class ReviewSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
-        # Ensure the user from the request is saved
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user.is_authenticated:
             validated_data['user'] = request.user
         
-        # Verify booking exists and is checked in
         booking_id = validated_data.get('booking').id
         try:
             booking = Bookings.objects.get(id=booking_id)
-            if booking.status != 'checked_in':
+            if booking.status != 'checked_out':
                 raise serializers.ValidationError(
-                    "Reviews can only be submitted for checked-in bookings"
+                    "Reviews can only be submitted for checked-out bookings"
                 )
         except Bookings.DoesNotExist:
             raise serializers.ValidationError("Booking not found")

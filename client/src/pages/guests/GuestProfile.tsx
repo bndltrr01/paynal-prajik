@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, CheckCircle, Edit, Eye, EyeOff, ImageUp, Mail, Save, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertCircle, Calendar, CheckCircle, Edit, Eye, EyeOff, ImageUp, Key, Mail, Save, User, X } from "lucide-react";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useUserContext } from "../../contexts/AuthContext";
@@ -10,8 +12,6 @@ interface FormFields {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
-  address: string;
 }
 
 interface PasswordFields {
@@ -31,9 +31,7 @@ const GuestProfile = () => {
   const [formData, setFormData] = useState<FormFields>({
     first_name: '',
     last_name: '',
-    email: '',
-    phone: '',
-    address: ''
+    email: ''
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -50,6 +48,8 @@ const GuestProfile = () => {
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ["guest", id],
@@ -62,18 +62,20 @@ const GuestProfile = () => {
       const updateData = [
         data.first_name,
         data.last_name,
-        data.email,
-        data.phone || '',
-        data.address || ''
+        data.email
       ];
       return updateGuestDetails(id as string, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["guest", id] });
       setEditMode(false);
+      setUpdateSuccess("Profile updated successfully!");
+      setUpdateSuccess(null);
     },
     onError: (error) => {
       console.error("Failed to update profile:", error);
+      setUpdateError("Failed to update profile. Please try again.");
+      setUpdateError(null);
     }
   });
 
@@ -111,7 +113,8 @@ const GuestProfile = () => {
       setPasswordSuccess(null);
     },
     onError: (error: any) => {
-      setPasswordError(error.response?.data?.message || "Failed to change password. Please try again.")}
+      setPasswordError(error.response?.data?.message || "Failed to change password. Please try again.")
+    }
   });
 
   useEffect(() => {
@@ -125,14 +128,12 @@ const GuestProfile = () => {
       setFormData({
         first_name: profile.data.first_name || '',
         last_name: profile.data.last_name || '',
-        email: profile.data.email || '',
-        phone: profile.data.phone || '',
-        address: profile.data.address || ''
+        email: profile.data.email || ''
       });
     }
   }, [profile]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -151,6 +152,22 @@ const GuestProfile = () => {
 
   const handleSaveProfile = (e: FormEvent) => {
     e.preventDefault();
+
+    // Simple validation
+    if (!formData.first_name.trim() || !formData.last_name.trim() || !formData.email.trim()) {
+      setUpdateError("All fields are required. Please fill them out.");
+      setUpdateError(null);
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setUpdateError("Please enter a valid email address.");
+      setUpdateError(null);
+      return;
+    }
+
     updateProfileMutation.mutate(formData);
   };
 
@@ -190,351 +207,604 @@ const GuestProfile = () => {
   const guestData = profile?.data;
   const displayImage = guestData?.profile_image || profileImage || "/default-avatar.png";
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
+  };
+
+  const fadeInVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { duration: 0.4 }
+    },
+    exit: {
+      opacity: 0,
+      transition: { duration: 0.3 }
+    }
+  };
+
   if (profileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          className="h-16 w-16 border-4 border-purple-200 border-t-purple-600 rounded-full mb-4"
+        />
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="text-gray-600 font-medium"
+        >
+          Loading your profile...
+        </motion.p>
       </div>
     );
   }
 
   if (profileError) {
     return (
-      <div className="bg-red-50 p-4 rounded-md text-red-800">
-        <h3 className="font-bold mb-2">Error loading profile</h3>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md mx-auto bg-red-50 p-6 rounded-xl shadow-md text-red-800 mt-10"
+      >
+        <h3 className="font-bold text-xl mb-3 flex items-center">
+          <AlertCircle className="mr-2" /> Error loading profile
+        </h3>
         <p>We couldn't load your profile information. Please try again later.</p>
-      </div>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Retry
+        </motion.button>
+      </motion.div>
     );
   }
 
   return (
-    <div className="max-w-6xl container mx-auto">
-      {/* Profile header */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          <div className="relative group w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-            <img
-              src={displayImage}
-              alt={guestData?.first_name}
-              className="w-full h-full object-cover"
-            />
-            <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-              {imageUploadMutation.isPending ? (
-                <span className="text-white text-xs">Uploading...</span>
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="max-w-4xl mx-auto px-4 py-10"
+    >
+      {/* Success notification */}
+      <AnimatePresence>
+        {updateSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-5 right-5 bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-md z-50 flex items-center"
+          >
+            <CheckCircle className="h-5 w-5 mr-2" />
+            <p>{updateSuccess}</p>
+          </motion.div>
+        )}
+        {updateError && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-5 right-5 bg-red-100 border border-red-200 text-red-800 px-4 py-3 rounded-lg shadow-md z-50 flex items-center"
+          >
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <p>{updateError}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Profile header/card */}
+      <motion.div
+        variants={itemVariants}
+        className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl overflow-hidden mb-8"
+      >
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-36 sm:h-56" />
+        <div className="px-6 sm:px-8 pb-8 pt-0 -mt-16 relative">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end">
+              {/* Profile Image with animation */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="relative rounded-full border-4 border-white bg-white shadow-lg overflow-hidden h-32 w-32 mb-4 sm:mb-0 sm:mr-6"
+              >
+                <img
+                  src={displayImage}
+                  alt={guestData?.first_name}
+                  className="h-full w-full object-cover"
+                />
+                <motion.label
+                  whileHover={{ opacity: 1 }}
+                  initial={{ opacity: 0 }}
+                  className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer"
+                >
+                  {imageUploadMutation.isPending ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                      className="h-8 w-8 border-2 border-white/20 border-t-white rounded-full"
+                    />
+                  ) : (
+                    <>
+                      <ImageUp size={28} className="text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </>
+                  )}
+                </motion.label>
+              </motion.div>
+
+              {/* Name and email */}
+              <div className="text-center sm:text-left mb-4 sm:mb-0">
+                <motion.h1
+                  variants={itemVariants}
+                  className="text-2xl sm:text-3xl font-bold text-gray-900"
+                >
+                  {guestData?.first_name} {guestData?.last_name}
+                </motion.h1>
+                <motion.div
+                  variants={itemVariants}
+                  className="flex items-center justify-center sm:justify-start mt-2 text-gray-600"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  <span>{guestData?.email}</span>
+                </motion.div>
+                {uploadError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-red-500 bg-red-50 p-2 rounded-md"
+                  >
+                    {uploadError}
+                  </motion.div>
+                )}
+              </div>
+            </div>
+
+            {/* Edit button */}
+            <motion.button
+              variants={itemVariants}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setEditMode(!editMode)}
+              className={`
+                flex items-center justify-center px-4 py-2 rounded-full 
+                ${editMode
+                  ? "bg-purple-100 text-purple-600 hover:bg-purple-200"
+                  : "bg-purple-600 text-white hover:bg-purple-700"
+                } 
+                shadow-md transition-all duration-200 mt-4 sm:mt-0
+              `}
+            >
+              {editMode ? (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Profile
+                </>
               ) : (
                 <>
-                  <ImageUp size={35} className="text-white" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Profile
                 </>
               )}
-            </label>
-          </div>
-          <div className="flex-1">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-              <div className="space-y-2">
-                <h2 className="text-4xl font-semibold">
-                  {guestData?.first_name} {guestData?.last_name}
-                </h2>
-                <div className="flex items-center text-gray-600 mt-1">
-                  <Mail size={40} className="mr-2" />
-                  <span className="text-xl">{guestData?.email}</span>
-                </div>
-                {uploadError && (
-                  <div className="mt-2 text-sm text-red-500">{uploadError}</div>
-                )}
-              </div>
-              <button
-                onClick={() => setEditMode(!editMode)}
-                className="mt-4 md:mt-0 flex items-center bg-blue-50 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-100 transition-colors"
-              >
-                {editMode ? (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
-                  </>
-                ) : (
-                  <>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </>
-                )}
-              </button>
-            </div>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-6">
-        <button
+      {/* Tabs Navigation */}
+      <motion.div
+        variants={itemVariants}
+        className="mb-6 bg-white rounded-xl shadow-md p-1 flex"
+      >
+        <motion.button
+          whileHover={{ backgroundColor: activeTab === "personal" ? "" : "#f9fafb" }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setActiveTab("personal")}
-          className={`px-4 py-2 font-medium ${activeTab === "personal"
-            ? "text-blue-600 border-b-2 border-blue-600"
-            : "text-gray-500 hover:text-gray-700"
+          className={`flex-1 py-3 rounded-lg flex items-center justify-center transition-colors ${activeTab === "personal" ? "bg-purple-100 text-purple-700" : "text-gray-600"
             }`}
         >
-          Personal Information
-        </button>
-        <button
+          <User className="h-4 w-4 mr-2" />
+          <span className="font-medium">Personal Info</span>
+        </motion.button>
+        <motion.button
+          whileHover={{ backgroundColor: activeTab === "account" ? "" : "#f9fafb" }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setActiveTab("account")}
-          className={`px-4 py-2 font-medium ${activeTab === "account"
-            ? "text-blue-600 border-b-2 border-blue-600"
-            : "text-gray-500 hover:text-gray-700"
+          className={`flex-1 py-3 rounded-lg flex items-center justify-center transition-colors ${activeTab === "account" ? "bg-purple-100 text-purple-700" : "text-gray-600"
             }`}
         >
-          Account Details
-        </button>
-      </div>
+          <Key className="h-4 w-4 mr-2" />
+          <span className="font-medium">Account & Security</span>
+        </motion.button>
+      </motion.div>
 
       {/* Tab content */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        {activeTab === "personal" && (
-          <form onSubmit={handleSaveProfile} className="space-y-6">
-            <h3 className="text-lg font-semibold border-b pb-2">Personal Information</h3>
+      <motion.div
+        variants={itemVariants}
+        className="bg-white rounded-xl shadow-md overflow-hidden"
+      >
+        <AnimatePresence mode="wait">
+          {activeTab === "personal" && (
+            <motion.div
+              key="personal"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={fadeInVariants}
+            >
+              <form onSubmit={handleSaveProfile} className="p-6">
+                <h3 className="text-lg font-semibold flex items-center border-b border-gray-200 pb-3 mb-6">
+                  <User className="h-5 w-5 mr-2 text-purple-500" />
+                  Personal Information
+                </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">First Name</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  disabled={!editMode}
-                  className={`w-full p-2 border rounded-md ${editMode ? "bg-white" : "bg-gray-50"
-                    }`}
-                  value={formData.first_name}
-                  onChange={handleInputChange}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <motion.input
+                      whileFocus={{ boxShadow: "0 0 0 2px rgba(147, 51, 234, 0.3)" }}
+                      type="text"
+                      name="first_name"
+                      disabled={!editMode}
+                      className={`w-full px-3 py-2 border rounded-lg transition-all ${editMode
+                        ? "bg-white border-purple-300 focus:border-purple-500 focus:outline-none"
+                        : "bg-gray-50 border-gray-200"
+                        }`}
+                      value={formData.first_name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <motion.input
+                      whileFocus={{ boxShadow: "0 0 0 2px rgba(147, 51, 234, 0.3)" }}
+                      type="text"
+                      name="last_name"
+                      disabled={!editMode}
+                      className={`w-full px-3 py-2 border rounded-lg transition-all ${editMode
+                        ? "bg-white border-purple-300 focus:border-purple-500 focus:outline-none"
+                        : "bg-gray-50 border-gray-200"
+                        }`}
+                      value={formData.last_name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                    <motion.input
+                      whileFocus={{ boxShadow: "0 0 0 2px rgba(147, 51, 234, 0.3)" }}
+                      type="email"
+                      name="email"
+                      disabled={!editMode}
+                      className={`w-full px-3 py-2 border rounded-lg transition-all ${editMode
+                        ? "bg-white border-purple-300 focus:border-purple-500 focus:outline-none"
+                        : "bg-gray-50 border-gray-200"
+                        }`}
+                      value={formData.email}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                {editMode && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex justify-end mt-6"
+                  >
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => setEditMode(false)}
+                      className="mr-3 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      disabled={updateProfileMutation.isPending}
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02, boxShadow: "0 4px 6px -1px rgba(147, 51, 234, 0.2)" }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm disabled:opacity-70"
+                      disabled={updateProfileMutation.isPending}
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <span className="flex items-center">
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            className="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full mr-2"
+                          />
+                          Saving...
+                        </span>
+                      ) : 'Save Changes'}
+                    </motion.button>
+                  </motion.div>
+                )}
+              </form>
+            </motion.div>
+          )}
+
+          {activeTab === "account" && (
+            <motion.div
+              key="account"
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              variants={fadeInVariants}
+              className="p-6"
+            >
+              <h3 className="text-lg font-semibold flex items-center border-b border-gray-200 pb-3 mb-6">
+                <Key className="h-5 w-5 mr-2 text-purple-500" />
+                Account & Security
+              </h3>
+
+              <div className="space-y-5">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <User className="h-5 w-5 text-gray-500 mr-3" />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700">Username</span>
+                      <span className="text-gray-600">{guestData?.username}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <Calendar className="h-5 w-5 text-gray-500 mr-3" />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700">Member Since</span>
+                      <span className="text-gray-600">
+                        {new Date(guestData?.date_joined || Date.now()).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <Key className="h-5 w-5 text-gray-500 mr-3" />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700">Password</span>
+                      <span className="text-gray-600">••••••••</span>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowPasswordModal(true)}
+                    className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition shadow-sm"
+                  >
+                    Change
+                  </motion.button>
+                </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Last Name</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  disabled={!editMode}
-                  className={`w-full p-2 border rounded-md ${editMode ? "bg-white" : "bg-gray-50"
-                    }`}
-                  value={formData.last_name}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  disabled={!editMode}
-                  className={`w-full p-2 border rounded-md ${editMode ? "bg-white" : "bg-gray-50"
-                    }`}
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  disabled={!editMode}
-                  className={`w-full p-2 border rounded-md ${editMode ? "bg-white" : "bg-gray-50"
-                    }`}
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Address</label>
-                <textarea
-                  name="address"
-                  disabled={!editMode}
-                  rows={6}
-                  className={`w-full p-2 border rounded-md resize-none ${editMode ? "bg-white" : "bg-gray-50"
-                    }`}
-                  value={formData.address}
-                  onChange={handleInputChange}
-                ></textarea>
-              </div>
-            </div>
-
-            {editMode && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setEditMode(false)}
-                  className="mr-3 px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+      {/* Password Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+            >
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white flex items-center">
+                  <Key className="h-5 w-5 mr-2" /> Change Password
+                </h3>
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordError(null);
+                    setPasswordSuccess(null);
+                  }}
+                  className="text-white bg-white/20 hover:bg-white/30 p-1.5 rounded-full"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </button>
+                  <X size={18} />
+                </motion.button>
               </div>
-            )}
-          </form>
+
+              <div className="p-6">
+                <AnimatePresence>
+                  {passwordError && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      className="bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-lg flex items-start overflow-hidden"
+                    >
+                      <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm">{passwordError}</p>
+                    </motion.div>
+                  )}
+
+                  {passwordSuccess && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      className="bg-green-50 border border-green-100 text-green-700 px-4 py-3 rounded-lg flex items-start overflow-hidden"
+                    >
+                      <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm">{passwordSuccess}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <form onSubmit={handleChangePassword}>
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        Current Password
+                      </label>
+                      <div className="relative">
+                        <motion.input
+                          whileFocus={{ boxShadow: "0 0 0 2px rgba(147, 51, 234, 0.3)" }}
+                          type={showPassword.old ? "text" : "password"}
+                          id="oldPassword"
+                          name="oldPassword"
+                          value={passwordData.oldPassword}
+                          onChange={handlePasswordChange}
+                          required
+                          className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all"
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          type="button"
+                          className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
+                          onClick={() => togglePasswordVisibility('old')}
+                        >
+                          {showPassword.old ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <motion.input
+                          whileFocus={{ boxShadow: "0 0 0 2px rgba(147, 51, 234, 0.3)" }}
+                          type={showPassword.new ? "text" : "password"}
+                          id="newPassword"
+                          name="newPassword"
+                          value={passwordData.newPassword}
+                          onChange={handlePasswordChange}
+                          required
+                          className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all"
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          type="button"
+                          className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
+                          onClick={() => togglePasswordVisibility('new')}
+                        >
+                          {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </motion.button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                        Confirm New Password
+                      </label>
+                      <div className="relative">
+                        <motion.input
+                          whileFocus={{ boxShadow: "0 0 0 2px rgba(147, 51, 234, 0.3)" }}
+                          type={showPassword.confirm ? "text" : "password"}
+                          id="confirmPassword"
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
+                          required
+                          className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-purple-500 focus:border-purple-500 transition-all"
+                        />
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          type="button"
+                          className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
+                          onClick={() => togglePasswordVisibility('confirm')}
+                        >
+                          {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      type="button"
+                      onClick={() => setShowPasswordModal(false)}
+                      className="mr-3 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                      disabled={changePasswordMutation.isPending}
+                    >
+                      Cancel
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02, boxShadow: "0 4px 6px -1px rgba(147, 51, 234, 0.2)" }}
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm disabled:bg-purple-400"
+                      disabled={changePasswordMutation.isPending}
+                    >
+                      {changePasswordMutation.isPending ? (
+                        <span className="flex items-center">
+                          <motion.span
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            className="inline-block h-4 w-4 border-2 border-white/30 border-t-white rounded-full mr-2"
+                          />
+                          Updating...
+                        </span>
+                      ) : 'Change Password'}
+                    </motion.button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
-
-        {activeTab === "account" && (
-          <div className="space-y-6">
-            <h3 className="text-lg font-semibold border-b pb-2">Account Details</h3>
-
-            <div className="space-y-4">
-              <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Username</span>
-                <span className="font-medium">{guestData?.username}</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <button
-                onClick={() => navigate('/guest/change-password')}
-                className="text-blue-600 hover:text-blue-800 transition-colors flex items-center"
-              >
-                <span>Change Password</span>
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Change Password Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Change Password</h3>
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setPasswordError(null);
-                  setPasswordSuccess(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {passwordError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md flex items-start">
-                <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm">{passwordError}</p>
-              </div>
-            )}
-
-            {passwordSuccess && (
-              <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md flex items-start">
-                <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm">{passwordSuccess}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="oldPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.old ? "text" : "password"}
-                      id="oldPassword"
-                      name="oldPassword"
-                      value={passwordData.oldPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      onClick={() => togglePasswordVisibility('old')}
-                    >
-                      {showPassword.old ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.new ? "text" : "password"}
-                      id="newPassword"
-                      name="newPassword"
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      onClick={() => togglePasswordVisibility('new')}
-                    >
-                      {showPassword.new ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm New Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword.confirm ? "text" : "password"}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      onClick={() => togglePasswordVisibility('confirm')}
-                    >
-                      {showPassword.confirm ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="mr-3 px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
-                  disabled={changePasswordMutation.isPending}
-                >
-                  {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

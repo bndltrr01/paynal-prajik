@@ -2,7 +2,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, BookCheck, Calendar, Check, Home, Landmark } from 'lucide-react';
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import withSuspense from '../hoc/withSuspense';
 
 const BookingAccepted = () => {
   const navigate = useNavigate();
@@ -194,4 +193,4 @@ const BookingAccepted = () => {
   );
 };
 
-export default withSuspense(BookingAccepted);
+export default BookingAccepted;

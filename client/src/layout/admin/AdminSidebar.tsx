@@ -1,12 +1,12 @@
-import React, { Suspense, useState, useEffect, FC } from "react";
-import { fetchAdminProfile } from "../../services/Admin";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { FC, Suspense, useEffect, useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
+import Modal from "../../components/Modal";
 import { menuItems } from "../../constants/AdminMenuSidebar";
 import { useUserContext } from "../../contexts/AuthContext";
-import Modal from "../../components/Modal";
+import { fetchAdminProfile } from "../../services/Admin";
 import { logout } from "../../services/Auth";
-import { useNavigate, NavLink } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import AdminProfile from "./AdminProfile";
 
 const AdminDetailSkeleton = React.lazy(() => import("../../motions/skeletons/AdminDetailSkeleton"));

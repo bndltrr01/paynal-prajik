@@ -182,7 +182,7 @@ const ManageAmenities = () => {
           <input
             type="text"
             placeholder="Search by description"
-            className="p-2 border rounded w-full md:w-1/2"
+            className="p-3 px-6 ring-1 rounded-full w-full md:w-1/2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

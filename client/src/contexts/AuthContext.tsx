@@ -70,7 +70,7 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
         };
 
         checkAuth();
-    }, []);
+    }, [clearAuthState]);
 
     const contextValue = useMemo(() => ({
         isAuthenticated,

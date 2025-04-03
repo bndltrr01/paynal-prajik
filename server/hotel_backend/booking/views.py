@@ -41,11 +41,11 @@ def fetch_availability(request):
             'error': "Departure date should be greater than arrival date"
         }, status=status.HTTP_400_BAD_REQUEST)
         
-    available_rooms = Rooms.objects.filter(status='available')
-    available_areas = Areas.objects.filter(status='available')
+    rooms = Rooms.objects.filter(status='available')
+    areas = Areas.objects.filter(status='available')
     
-    room_serializer = RoomSerializer(available_rooms, many=True, context={'request': request})
-    area_serializer = AreaSerializer(available_areas, many=True)
+    room_serializer = RoomSerializer(rooms, many=True, context={'request': request})
+    area_serializer = AreaSerializer(areas, many=True)
     
     return Response({
         "rooms": room_serializer.data,
@@ -58,7 +58,6 @@ def bookings_list(request):
     try:
         if request.method == 'GET':
             bookings = Bookings.objects.all().order_by('-created_at').select_related('user', 'room', 'area')
-            
             serializer = BookingSerializer(bookings, many=True)
             
             return Response({
@@ -102,7 +101,6 @@ def booking_detail(request, booking_id):
             room_serializer = RoomSerializer(booking.room)
             data['room'] = room_serializer.data
         
-        # Handle the valid_id field explicitly in the view
         if booking.valid_id:
             if hasattr(booking.valid_id, 'url'):
                 data['valid_id'] = booking.valid_id.url
@@ -254,11 +252,9 @@ def user_bookings(request):
                 data['room'] = room_serializer.data
             
             if booking.valid_id:
-                # Handle both CloudinaryField objects and string URLs
                 if hasattr(booking.valid_id, 'url'):
                     data['valid_id'] = booking.valid_id.url
                 else:
-                    # If it's already a string URL, use it directly
                     data['valid_id'] = booking.valid_id
             
             booking_data.append(data)
@@ -273,7 +269,6 @@ def user_bookings(request):
             }
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"Error in user_bookings: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -301,13 +296,11 @@ def cancel_booking(request, booking_id):
         return Response({"error": "A cancellation reason is required"},
                         status=status.HTTP_400_BAD_REQUEST)
 
-    # Cancel the booking.
     booking.status = 'cancelled'
     booking.cancellation_reason = reason
     booking.cancellation_date = timezone.now()
     booking.save()
 
-    # Optionally, if needed: Release the room/area if the booking was reserved.
     if booking.status.lower() == 'reserved':
         if booking.is_venue_booking and booking.area:
             booking.area.status = 'available'
@@ -399,13 +392,11 @@ def fetch_area_bookings(request, area_id):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def booking_reviews(request, booking_id):
-    """Handle getting and creating reviews for a specific booking"""
     try:
         booking = Bookings.objects.get(id=booking_id)
     except Bookings.DoesNotExist:
         return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    # Check if the user is authorized to access this booking's reviews or add a review
     if booking.user.id != request.user.id and not request.user.is_staff:
         return Response({"error": "You don't have permission to access these reviews"}, 
                        status=status.HTTP_403_FORBIDDEN)
@@ -416,19 +407,16 @@ def booking_reviews(request, booking_id):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
     
     elif request.method == 'POST':
-        # Check if booking is in checked-in status
-        if booking.status != 'checked_in':
+        if booking.status != 'checked_out':
             return Response({
-                "error": "Reviews can only be submitted for checked-in bookings"
+                "error": "Reviews can only be submitted for checked-out bookings"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check if user already submitted a review for this booking
         if Reviews.objects.filter(booking=booking, user=request.user).exists():
             return Response({
                 "error": "You have already submitted a review for this booking"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Add the booking to the data
         data = request.data.copy()
         data['booking'] = booking_id
         
@@ -445,7 +433,6 @@ def booking_reviews(request, booking_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_reviews(request):
-    """Get all reviews submitted by the logged-in user"""
     reviews = Reviews.objects.filter(user=request.user).order_by('-created_at')
     serializer = ReviewSerializer(reviews, many=True)
     return Response({"data": serializer.data}, status=status.HTTP_200_OK)
@@ -453,13 +440,11 @@ def user_reviews(request):
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def review_detail(request, review_id):
-    """Handle specific review operations (view, update, delete)"""
     try:
         review = Reviews.objects.get(id=review_id)
     except Reviews.DoesNotExist:
         return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    # Ensure only the review owner or admin can access/modify it
     if review.user.id != request.user.id and not request.user.is_staff:
         return Response({"error": "You don't have permission to access this review"}, 
                        status=status.HTTP_403_FORBIDDEN)
@@ -483,15 +468,12 @@ def review_detail(request, review_id):
 
 @api_view(['GET'])
 def room_reviews(request, room_id):
-    """Fetch all reviews for a specific room"""
     try:
         room = Rooms.objects.get(id=room_id)
         
-        # Get bookings for this room that have reviews
         bookings = Bookings.objects.filter(room=room, is_venue_booking=False)
         booking_ids = [booking.id for booking in bookings]
         
-        # Get reviews for these bookings
         reviews = Reviews.objects.filter(booking_id__in=booking_ids).order_by('-created_at')
         
         serializer = ReviewSerializer(reviews, many=True)
@@ -504,15 +486,12 @@ def room_reviews(request, room_id):
 
 @api_view(['GET'])
 def area_reviews(request, area_id):
-    """Fetch all reviews for a specific area/venue"""
     try:
         area = Areas.objects.get(id=area_id)
         
-        # Get bookings for this area that have reviews
         bookings = Bookings.objects.filter(area=area, is_venue_booking=True)
         booking_ids = [booking.id for booking in bookings]
         
-        # Get reviews for these bookings
         reviews = Reviews.objects.filter(booking_id__in=booking_ids).order_by('-created_at')
         
         serializer = ReviewSerializer(reviews, many=True)

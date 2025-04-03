@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { memo, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import deluxe_twin from "../../assets/deluxe_twin.jpg";
-import withSuspense from "../../hoc/withSuspense";
 import { fetchBookingDetail } from "../../services/Booking";
 import BookingCard from "./BookingCard";
 
@@ -233,4 +232,4 @@ const BookingData = memo(({ bookingId }: BookingDataProps) => {
 
 BookingData.displayName = "BookingData";
 
-export default withSuspense(BookingData);
+export default BookingData;

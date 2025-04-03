@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.db.models import Count, Sum
-from .models import AdminDetails
+from .email.booking import send_booking_confirmation_email, send_booking_rejection_email
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -141,7 +141,15 @@ def fetch_rooms(request):
 @permission_classes([IsAuthenticated])
 def add_new_room(request):
     try:
-        serializer = RoomSerializer(data=request.data)
+        data = request.data.copy()
+        if 'room_price' in data and isinstance(data['room_price'], str):
+            try:
+                price_str = data['room_price'].replace('₱', '').replace(',', '')
+                data['room_price'] = float(price_str)
+            except (ValueError, TypeError):
+                pass 
+        
+        serializer = RoomSerializer(data=data)
         if serializer.is_valid():
             instance = serializer.save()
             data = RoomSerializer(instance).data
@@ -194,19 +202,21 @@ def edit_room(request, room_id):
         
         serializer = RoomSerializer(room, data=filtered_data, partial=True)
     else:
-        serializer = RoomSerializer(room, data=request.data, partial=True)
+        data = request.data.copy()
+        if 'room_price' in data and isinstance(data['room_price'], str):
+            try:
+                price_str = data['room_price'].replace('₱', '').replace(',', '')
+                data['room_price'] = float(price_str)
+            except (ValueError, TypeError):
+                pass 
+        
+        serializer = RoomSerializer(room, data=data, partial=True)
     
     if serializer.is_valid():
         instance = serializer.save()
-        data = RoomSerializer(instance).data
-        
-        message = "Room updated successfully"
-        if has_active_bookings:
-            message += " (Note: Some fields cannot be edited due to active bookings)"
-        
         return Response({
-            "message": message,
-            "data": data
+            "message": "Room updated successfully",
+            "data": RoomSerializer(instance).data
         }, status=status.HTTP_200_OK)
     else:
         return Response({
@@ -278,22 +288,27 @@ def fetch_areas(request):
 @permission_classes([IsAuthenticated])
 def add_new_area(request):
     try:
-        serializer = AreaSerializer(data=request.data)
+        data = request.data.copy()
+        if 'price_per_hour' in data and isinstance(data['price_per_hour'], str):
+            try:
+                price_str = data['price_per_hour'].replace('₱', '').replace(',', '')
+                data['price_per_hour'] = float(price_str)
+            except (ValueError, TypeError):
+                pass 
+        
+        serializer = AreaSerializer(data=data)
         if serializer.is_valid():
             instance = serializer.save()
-            data = AreaSerializer(instance).data
             return Response({
                 "message": "Area added successfully",
-                "data": data
+                "data": AreaSerializer(instance).data
             }, status=status.HTTP_201_CREATED)
         else:
             return Response({
                 "error": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        return Response({
-            "error": str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -319,38 +334,39 @@ def edit_area(request, area_id):
     try:
         area = Areas.objects.get(id=area_id)
     except Areas.DoesNotExist:
-        return Response({
-            "error": "Area not found"
-        }, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "Area not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    has_active_bookings = Bookings.objects.filter(
+    has_active_reservations = Reservations.objects.filter(
         area=area,
-        status__in=['reserved', 'confirmed', 'checked_in']
+        start_time__gte=timezone.now()
     ).exists()
     
-    if has_active_bookings:
-        allowed_fields = ['description', 'amenities', 'status']
+    if has_active_reservations:
+        allowed_fields = ['description', 'status']
         filtered_data = {k: v for k, v in request.data.items() if k in allowed_fields}    
-        if 'status' in filtered_data and filtered_data['status'] == 'unavailable':
+        
+        if 'status' in filtered_data and filtered_data['status'] == 'maintenance':
             return Response({
-                "error": "Cannot change status to unavailable when there are active or reserved bookings",
+                "error": "Cannot change status to maintenance when there are upcoming reservations",
             }, status=status.HTTP_400_BAD_REQUEST)
         
         serializer = AreaSerializer(area, data=filtered_data, partial=True)
     else:
-        serializer = AreaSerializer(area, data=request.data, partial=True)
+        data = request.data.copy()
+        if 'price_per_hour' in data and isinstance(data['price_per_hour'], str):
+            try:
+                price_str = data['price_per_hour'].replace('₱', '').replace(',', '')
+                data['price_per_hour'] = float(price_str)
+            except (ValueError, TypeError):
+                pass 
+                
+        serializer = AreaSerializer(area, data=data, partial=True)
     
     if serializer.is_valid():
         instance = serializer.save()
-        data = AreaSerializer(instance).data
-        
-        message = "Area updated successfully"
-        if has_active_bookings:
-            message += " (Note: Some fields cannot be edited due to active bookings)"
-        
         return Response({
-            "message": message,
-            "data": data
+            "message": "Area updated successfully",
+            "data": AreaSerializer(instance).data
         }, status=status.HTTP_200_OK)
     else:
         return Response({
@@ -508,11 +524,9 @@ def admin_bookings(request):
     try:
         bookings = Bookings.objects.all().order_by('-created_at')
         
-        # Get pagination parameters
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 9)
         
-        # Create paginator
         paginator = Paginator(bookings, page_size)
         
         try:
@@ -572,27 +586,16 @@ def update_booking_status(request, booking_id):
         return Response({"error": f"Invalid status value. Valid values are: {', '.join(valid_statuses)}"}, 
                             status=status.HTTP_400_BAD_REQUEST)
         
-    if status_value == 'reserved' and booking.status != 'reserved':
+    if status_value in ['reserved', 'confirmed', 'checked_in']:
         if booking.is_venue_booking and booking.area:
             area = booking.area
-            area.status = 'reserved'
+            area.status = 'maintenance'
             area.save()
         elif booking.room:
             room = booking.room
-            room.status = 'reserved'
+            room.status = 'maintenance'
             room.save()
-    
-    if status_value == 'checked_in' and booking.status != 'checked_in':
-        if booking.is_venue_booking and booking.area:
-            area = booking.area
-            area.status = 'occupied'
-            area.save()
-        elif booking.room:
-            room = booking.room
-            room.status = 'occupied'
-            room.save()
-
-    if status_value == 'checked_out' and booking.status != 'checked_out':
+    else:
         if booking.is_venue_booking and booking.area:
             area = booking.area
             area.status = 'available'
@@ -602,28 +605,6 @@ def update_booking_status(request, booking_id):
             room.status = 'available'
             room.save()
     
-    if status_value == 'missed_reservation' and booking.status != 'missed_reservation':
-        if booking.is_venue_booking and booking.area:
-            area = booking.area
-            area.status = 'available'
-            area.save()
-        elif booking.room:
-            room = booking.room
-            room.status = 'available'
-            room.save()
-    
-    # Handle no_show status - make the room/area immediately available
-    if status_value == 'no_show' and booking.status != 'no_show':
-        if booking.is_venue_booking and booking.area:
-            area = booking.area
-            area.status = 'available' 
-            area.save()
-        elif booking.room:
-            room = booking.room
-            room.status = 'available'
-            room.save()
-    
-    # Handle explicit set_available parameter regardless of status
     set_available = request.data.get('set_available', False)
     if set_available:
         if booking.is_venue_booking and booking.area:
@@ -647,37 +628,24 @@ def update_booking_status(request, booking_id):
     
     if status_value == 'reserved' and previous_status != 'reserved':
         try:
-            from .email.booking import send_booking_confirmation_email
-            
             user_email = booking.user.email
-            
-            email_sent = send_booking_confirmation_email(user_email, serializer.data)
-            
-            if email_sent:
-                print(f"Confirmation email sent to {user_email} for booking {booking_id}")
-            else:
-                print(f"Failed to send confirmation email to {user_email} for booking {booking_id}")
-                
+            send_booking_confirmation_email(user_email, serializer.data)
         except Exception as e:
             print(f"Error while sending booking confirmation email: {str(e)}")
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    # Send rejection email if the booking is rejected
     elif status_value == 'rejected' and previous_status != 'rejected':
         try:
-            from .email.booking import send_booking_rejection_email
-            
             user_email = booking.user.email
-            
-            email_sent = send_booking_rejection_email(user_email, serializer.data)
-            
-            if email_sent:
-                print(f"Rejection email sent to {user_email} for booking {booking_id}")
-            else:
-                print(f"Failed to send rejection email to {user_email} for booking {booking_id}")
-                
+            send_booking_rejection_email(user_email, serializer.data)
         except Exception as e:
             print(f"Error while sending booking rejection email: {str(e)}")
-
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     if booking.status not in ['reserved', 'checked_in'] and (status_value == 'cancelled' or status_value == 'rejected'):
         if booking.is_venue_booking and booking.area:
             area = booking.area
@@ -763,7 +731,7 @@ def booking_status_counts(request):
 @permission_classes([IsAuthenticated])
 def fetch_all_users(request):
     try:
-        users = CustomUsers.objects.filter(role="guest")
+        users = CustomUsers.objects.filter(role="admin")
         serializer = CustomUserSerializer(users, many=True)
         return Response({
             "data": serializer.data
@@ -787,36 +755,105 @@ def show_user_details(request, user_id):
 
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
-def edit_user(request, user_id):
-    try:
-        user = CustomUsers.objects.get(id=user_id, is_staff=False, is_superuser=False)
-    except CustomUsers.DoesNotExist:
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-    try:
-        serializer = CustomUserSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "message": "User updated successfully"
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "error": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+def manage_user(request, user_id):
+    if request.method == 'PUT':
+        try:
+            if user_id == 0:
+                data = request.POST
+                files = request.FILES
+                
+                # Create new user logic
+                email = data.get('email')
+                password = data.get('password')
+                first_name = data.get('first_name')
+                last_name = data.get('last_name')
+                role = data.get('role', 'guest')
+                
+                if not email or not password:
+                    return Response({
+                        'error': 'Email and password are required'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                if CustomUsers.objects.filter(email=email).exists():
+                    return Response({
+                        'error': 'Email already exists'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                user = CustomUsers.objects.create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name,
+                    role=role
+                )
+                
+                return Response({
+                    'message': 'User created successfully',
+                    'user': {
+                        'id': user.id,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'role': user.role
+                    }
+                })
+            else:
+                try:
+                    user = CustomUsers.objects.get(id=user_id)
+                except CustomUsers.DoesNotExist:
+                    return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                
+                data = request.POST
+                files = request.FILES
+                
+                new_email = data.get('email')
+                if new_email and new_email != user.email:
+                    if CustomUsers.objects.filter(email=new_email).exists():
+                        return Response({
+                            'error': 'Email already exists'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    user.email = new_email
+                
+                if data.get('first_name'):
+                    user.first_name = data.get('first_name')
+                
+                if data.get('last_name'):
+                    user.last_name = data.get('last_name')
+                    
+                if data.get('role'):
+                    user.role = data.get('role')
+                
+                password = data.get('password')
+                if password:
+                    user.set_password(password)
+                
+                try:
+                    user.save()
+                    return Response({
+                        'message': 'User updated successfully',
+                        'user': {
+                            'id': user.id,
+                            'email': user.email,
+                            'first_name': user.first_name,
+                            'last_name': user.last_name,
+                            'role': user.role
+                        }
+                    })
+                except ValidationError as e:
+                    return Response({'error': e.message_dict}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    return Response({'error': 'Invalid request method'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def archive_user(request, user_id):
     try:
-        user = CustomUsers.objects.get(id=user_id, is_staff=False, is_superuser=False)
-        user.is_active = False  # Instead of deleting, we deactivate the account
-        user.save()
-        return Response({
-            "message": "User archived successfully"
-        }, status=status.HTTP_200_OK)
+        users = CustomUsers.objects.get(id=user_id)
+        users.delete()
+        return Response({'message': 'User archived successfully'}, status=status.HTTP_200_OK)
     except CustomUsers.DoesNotExist:
-        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -5,7 +5,6 @@ import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
 import Modal from "../../components/Modal";
-import withSuspense from "../../hoc/withSuspense";
 import EventLoader from "../../motions/loaders/EventLoader";
 import DashboardSkeleton from "../../motions/skeletons/AdminDashboardSkeleton";
 import {
@@ -89,17 +88,17 @@ const ViewRoomModal: FC<{
               </svg>
             </motion.button>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
+            <div className="grid grid-cols-1 md:grid-cols-2">
               {/* Left Column: Image with gradient overlay */}
               <div className="relative h-64 md:h-auto">
-            {roomData.room_image ? (
+                {roomData.room_image ? (
                   <div className="relative h-full">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent z-10"></div>
                     <motion.img
-                loading="lazy"
-                src={roomData.room_image}
-                alt={roomData.room_name}
-                className="w-full h-full object-cover"
+                      loading="lazy"
+                      src={roomData.room_image}
+                      alt={roomData.room_name}
+                      className="w-full h-full object-cover"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
@@ -119,14 +118,15 @@ const ViewRoomModal: FC<{
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.4 }}
                       >
-                        <span className="bg-blue-500/80 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-                          {roomData.status.toUpperCase()}
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${roomData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                          {roomData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
                         </span>
                       </motion.div>
                     </div>
                   </div>
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
                     <motion.svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-20 w-20 opacity-50"
@@ -139,12 +139,12 @@ const ViewRoomModal: FC<{
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </motion.svg>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
               {/* Right Column: Room Information */}
-          <div className="p-6 flex flex-col">
+              <div className="p-6 flex flex-col">
                 <motion.div
                   className="hidden md:block mb-4"
                   initial={{ y: 10, opacity: 0 }}
@@ -153,13 +153,11 @@ const ViewRoomModal: FC<{
                 >
                   <h1 className="text-3xl font-bold text-gray-900">{roomData.room_name}</h1>
                   <div className="flex items-center mt-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${roomData.status === 'available' ? 'bg-green-100 text-green-800' :
-                      roomData.status === 'occupied' ? 'bg-blue-100 text-blue-800' :
-                        'bg-amber-100 text-amber-800'
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${roomData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
                       }`}>
-                  {roomData.status.toUpperCase()}
-                </span>
-              </div>
+                      {roomData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
+                    </span>
+                  </div>
                 </motion.div>
 
                 {/* Description with a nice background */}
@@ -200,7 +198,7 @@ const ViewRoomModal: FC<{
                       </svg>
                       <span className="text-lg font-bold text-gray-800">{roomData.capacity}</span>
                     </div>
-              </div>
+                  </div>
                 </motion.div>
 
                 {/* Amenities Section */}
@@ -211,7 +209,7 @@ const ViewRoomModal: FC<{
                   transition={{ delay: 0.5 }}
                 >
                   <h3 className="text-sm uppercase tracking-wider text-indigo-500 font-medium mb-2">Amenities</h3>
-                {roomData.amenities.length === 0 ? (
+                  {roomData.amenities.length === 0 ? (
                     <p className="text-gray-500 italic">No amenities available for this room</p>
                   ) : (
                     <div className="grid grid-cols-1 gap-1">
@@ -376,9 +374,7 @@ const ManageRooms: FC = () => {
       status:
         room.status === "maintenance"
           ? "Maintenance"
-          : room.status === "occupied"
-            ? "Occupied"
-            : "Available",
+          : "Available",
       roomPrice: room.room_price,
       description: room.description,
       capacity: room.capacity,
@@ -410,7 +406,7 @@ const ManageRooms: FC = () => {
     const formData = new FormData();
     formData.append("room_name", roomData.roomName);
     formData.append("room_type", roomData.roomType);
-    formData.append("status", roomData.status.toLowerCase() || "available");
+    formData.append("status", roomData.status.toLowerCase());
     formData.append("room_price", String(roomData.roomPrice || 0));
     formData.append("description", roomData.description || "");
     formData.append("capacity", roomData.capacity || "");
@@ -505,8 +501,9 @@ const ManageRooms: FC = () => {
                   <h2 className="text-xl font-bold text-gray-900">
                     {room.room_name}
                   </h2>
-                  <span className="text-sm font-semibold text-blue-600 uppercase">
-                    {room.status}
+                  <span className={`text-sm font-semibold ${room.status === 'available' ? 'text-green-600' : 'text-amber-600'
+                    } uppercase`}>
+                    {room.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
                   </span>
                 </div>
                 <p className="text-gray-600 text-sm mb-1">
@@ -519,7 +516,7 @@ const ManageRooms: FC = () => {
 
                 <div className="mt-auto flex justify-between items-center">
                   <p className="text-lg font-bold text-gray-900">
-                    {room.room_price}
+                    {typeof room.room_price === 'string' ? room.room_price : room.room_price.toLocaleString()}
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -610,13 +607,13 @@ const ManageRooms: FC = () => {
         {/* Edit/Add Room Modal */}
         {showFormModal && (
           <AnimatePresence mode="wait">
-          <EditRoomModal
-            isOpen={showFormModal}
-            cancel={() => setShowFormModal(false)}
-            onSave={handleSave}
-            roomData={editRoomData}
-            loading={addRoomMutation.isPending || editRoomMutation.isPending}
-          />
+            <EditRoomModal
+              isOpen={showFormModal}
+              cancel={() => setShowFormModal(false)}
+              onSave={handleSave}
+              roomData={editRoomData}
+              loading={addRoomMutation.isPending || editRoomMutation.isPending}
+            />
           </AnimatePresence>
         )}
 
@@ -645,4 +642,4 @@ const ManageRooms: FC = () => {
   );
 };
 
-export default withSuspense(ManageRooms, { height: "500px" });
+export default ManageRooms;

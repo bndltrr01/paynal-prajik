@@ -51,12 +51,6 @@ const Navbar: FC = () => {
       console.log("Logout response:", response.status);
 
       clearAuthState();
-
-      setNotification({
-        message: "Logged out successfully",
-        type: "success",
-        icon: "fas fa-check-circle",
-      });
       setIsModalOpen(false);
 
       navigate("/", { replace: true });
