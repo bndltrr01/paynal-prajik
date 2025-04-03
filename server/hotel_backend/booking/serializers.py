@@ -318,12 +318,10 @@ class ReviewSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
-        # Ensure the user from the request is saved
         request = self.context.get('request')
         if request and hasattr(request, 'user') and request.user.is_authenticated:
             validated_data['user'] = request.user
         
-        # Verify booking exists and is checked out
         booking_id = validated_data.get('booking').id
         try:
             booking = Bookings.objects.get(id=booking_id)

@@ -12,10 +12,7 @@ export const getGuestDetails = async (id: string) => {
   }
 };
 
-export const getGuestBookings = async ({
-  page = 1,
-  pageSize = 9,
-}: { page?: number; pageSize?: number } = {}) => {
+export const getGuestBookings = async (page: number, pageSize: number) => {
   try {
     const response = await guest.get(`/bookings`, {
       params: {

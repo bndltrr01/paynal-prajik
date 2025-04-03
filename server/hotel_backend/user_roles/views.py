@@ -498,22 +498,18 @@ def change_profile_picture(request):
 @permission_classes([IsAuthenticated])
 def update_user_details(request, id):
     try:
-        # Check if the requesting user is updating their own profile
         if request.user.id != id:
             return Response({'error': 'You are not authorized to update this profile'}, 
                            status=status.HTTP_403_FORBIDDEN)
             
         user = CustomUsers.objects.get(id=id)
-        
-        # Extract data from request
         data = request.data.get('data', [])
         
-        if len(data) >= 3:  # Ensuring we have at least first_name, last_name, and email
+        if len(data) >= 3:
             user.first_name = data[0]
             user.last_name = data[1]
             user.email = data[2]
             
-            # Update username to match email if email changes
             if user.email != user.username:
                 user.username = user.email
                 

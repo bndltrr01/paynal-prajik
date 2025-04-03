@@ -109,7 +109,7 @@ const RoomAvailabilityCalendar = () => {
     visible: {
       opacity: 1,
       scale: 1,
-      transition: { type: "spring", damping: 12, stiffness: 100, delay: 0.2 }
+      transition: { type: "spring", stiffness: 300 }
     },
     hover: {
       scale: 1.03,
@@ -217,7 +217,7 @@ const RoomAvailabilityCalendar = () => {
                   whileHover="hover"
                   whileTap="tap"
                   onClick={handleCheckAvailability}
-                  className="w-full sm:w-auto py-4 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 uppercase font-semibold text-lg text-white shadow-lg flex items-center justify-center gap-3"
+                  className="w-full sm:w-auto py-4 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 uppercase font-semibold text-lg text-white cursor-pointer shadow-lg flex items-center justify-center gap-3"
                 >
                   <CalendarRange size={50} />
                   <span>Check Availability</span>

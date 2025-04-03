@@ -47,7 +47,7 @@ const GuestCancellations = lazy(() => import("./pages/guests/GuestCancellations"
 const GuestLayout = lazy(() => import("./layout/guest/GuestLayout"));
 
 const App = () => {
-  const { isAuthenticated, role, isLoading } = useUserContext();
+  const { isAuthenticated, role } = useUserContext();
   const location = useLocation();
 
   useEffect(() => {
@@ -64,14 +64,6 @@ const App = () => {
     location.pathname.startsWith("/registration") ||
     location.pathname.startsWith("/forgot-password") ||
     location.pathname.startsWith("/booking-accepted");
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingHydrate />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -116,9 +108,9 @@ const App = () => {
             <Route path="/guest" element={<GuestLayout />}>
               <Route index element={<GuestDashboard />} />
               <Route path=":id" element={<GuestProfile />} />
-              <Route path="change-password" element={<GuestChangePassword />} />
               <Route path="bookings" element={<GuestBookings />} />
               <Route path="cancellations" element={<GuestCancellations />} />
+              <Route path="change-password" element={<GuestChangePassword />} />
             </Route>
           </Route>
 
@@ -137,7 +129,6 @@ const App = () => {
         </Routes>
         {!isAdminRoute && <Footer />}
       </Suspense>
-
     </>
   );
 };

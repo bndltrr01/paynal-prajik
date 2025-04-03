@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django.db.models import Count, Sum
-from .models import AdminDetails
+from .email.booking import send_booking_confirmation_email, send_booking_rejection_email
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -628,33 +628,24 @@ def update_booking_status(request, booking_id):
     
     if status_value == 'reserved' and previous_status != 'reserved':
         try:
-            from .email.booking import send_booking_confirmation_email
             user_email = booking.user.email
-            email_sent = send_booking_confirmation_email(user_email, serializer.data)
-            if email_sent:
-                print(f"Confirmation email sent to {user_email} for booking {booking_id}")
-            else:
-                print(f"Failed to send confirmation email to {user_email} for booking {booking_id}")
-                
+            send_booking_confirmation_email(user_email, serializer.data)
         except Exception as e:
             print(f"Error while sending booking confirmation email: {str(e)}")
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     elif status_value == 'rejected' and previous_status != 'rejected':
         try:
-            from .email.booking import send_booking_rejection_email
-            
             user_email = booking.user.email
-            
-            email_sent = send_booking_rejection_email(user_email, serializer.data)
-            
-            if email_sent:
-                print(f"Rejection email sent to {user_email} for booking {booking_id}")
-            else:
-                print(f"Failed to send rejection email to {user_email} for booking {booking_id}")
-                
+            send_booking_rejection_email(user_email, serializer.data)
         except Exception as e:
             print(f"Error while sending booking rejection email: {str(e)}")
-
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     if booking.status not in ['reserved', 'checked_in'] and (status_value == 'cancelled' or status_value == 'rejected'):
         if booking.is_venue_booking and booking.area:
             area = booking.area

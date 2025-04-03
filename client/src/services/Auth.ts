@@ -14,13 +14,7 @@ export const authenticateUser = async () => {
 
 export const login = async (email: string, password: string) => {
   try {
-    const response = await API.post(
-      "/auth/login",
-      {
-        email: email,
-        password: password,
-      },
-      {
+    const response = await API.post("/auth/login", { email, password }, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -40,15 +34,8 @@ export const sendRegisterOtp = async (
   confirm_password: string
 ) => {
   try {
-    const response = await API.post(
-      "/auth/register",
-      {
-        email: email,
-        password: password,
-        confirm_password: confirm_password,
-      },
-      {
-        headers: {
+    const response = await API.post("/auth/register", { email, password, confirm_password }, {
+      headers: {
           "Content-Type": "application/json",
         },
       }
