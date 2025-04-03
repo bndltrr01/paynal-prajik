@@ -173,12 +173,10 @@ const BookingCalendar = () => {
         const dateString = format(date, 'yyyy-MM-dd');
         const booking = bookingsByDate[dateString];
 
-        // Check if this date is already booked with specific statuses
         if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending'].includes(booking.status.toLowerCase())) {
             return true;
         }
 
-        // Dates with checked_out status or no_show are considered available
         return false;
     }, [bookingsByDate]);
 
@@ -188,28 +186,23 @@ const BookingCalendar = () => {
     }, [bookingsByDate]);
 
     const isDateUnavailable = useCallback((date: Date) => {
-        // Always consider dates before today as unavailable
         if (isBefore(date, startOfDay(new Date()))) {
             return true;
         }
 
-        // Dates with specific booking statuses are unavailable
         return isDateBooked(date);
     }, [isDateBooked]);
 
     const handleDateClick = (date: Date) => {
         if (isDateUnavailable(date)) {
-            return; // Do nothing for unavailable dates
+            return;
         }
 
         if (!checkInDate || (checkInDate && checkOutDate)) {
-            // Start new selection
             setCheckInDate(date);
             setCheckOutDate(null);
         } else {
-            // Complete selection
             if (isBefore(date, checkInDate)) {
-                // If user clicks a date before check-in, swap the dates
                 setCheckOutDate(checkInDate);
                 setCheckInDate(date);
             } else {
@@ -221,6 +214,8 @@ const BookingCalendar = () => {
     const handleDateHover = (date: Date) => {
         if (!isDateUnavailable(date)) {
             setHoveredDate(date);
+        } else {
+            setHoveredDate(null);
         }
     };
 
@@ -249,69 +244,59 @@ const BookingCalendar = () => {
 
         let className = "relative h-10 w-10 flex items-center justify-center text-sm rounded-full";
 
-        // First check date status and apply appropriate styling
+        // First handle unavailable dates consistently
+        if (isUnavailable) {
+            className += " bg-gray-300 text-gray-500 cursor-not-allowed";
+            return className;
+        }
+
+        // Then handle dates with booking status
         if (dateStatus) {
-            switch (dateStatus.toLowerCase()) {
-                case 'reserved':
-                    className += " bg-green-100 text-green-800 border border-green-500";
-                    break;
-                case 'checked_in':
-                case 'occupied':
-                    className += " bg-blue-100 text-blue-800 border border-blue-500";
-                    break;
-                case 'checked_out':
-                case 'no_show':
-                    // Make checked_out and no_show dates appear as normal available dates
-                    if (isCheckinDate || isCheckoutDate) {
-                        className += " bg-blue-600 text-white";
-                    } else if (isInRange) {
-                        className += " bg-blue-200 text-blue-800";
-                    } else if (isHovered) {
-                        className += " bg-blue-100 border border-blue-300";
-                    } else {
-                        className += " bg-white border border-gray-300 hover:bg-gray-100";
-                    }
-                    break;
-                case 'rejected':
-                    className += " bg-red-100 text-red-800 border border-red-500";
-                    break;
-                default:
-                    // Apply standard styles if status doesn't match any of the above
-                    if (isCheckinDate || isCheckoutDate) {
-                        className += " bg-blue-600 text-white";
-                    } else if (isInRange) {
-                        className += " bg-blue-200 text-blue-800";
-                    } else if (isHovered) {
-                        className += " bg-blue-100 border border-blue-300";
-                    } else {
-                        className += " bg-white border border-gray-300 hover:bg-gray-100";
-                    }
+            if (['checked_in', 'reserved', 'occupied', 'pending'].includes(dateStatus.toLowerCase())) {
+                // These are booked/unavailable dates
+                switch (dateStatus.toLowerCase()) {
+                    case 'reserved':
+                        className += " bg-green-100 text-green-800 border border-green-500 cursor-not-allowed";
+                        break;
+                    case 'checked_in':
+                    case 'occupied':
+                        className += " bg-blue-100 text-blue-800 border border-blue-500 cursor-not-allowed";
+                        break;
+                    case 'pending':
+                        className += " bg-yellow-100 text-yellow-800 border border-yellow-500 cursor-not-allowed";
+                        break;
+                    default:
+                        className += " bg-gray-300 text-gray-500 cursor-not-allowed";
+                }
+                return className;
             }
-        } else {
-            // No booking status - apply standard styles
-            if (isUnavailable) {
-                className += " bg-gray-300 text-gray-500 cursor-not-allowed";
-            } else if (isCheckinDate || isCheckoutDate) {
+
+            // For other statuses like checked_out or no_show (available dates)
+            if (isCheckinDate || isCheckoutDate) {
                 className += " bg-blue-600 text-white";
             } else if (isInRange) {
                 className += " bg-blue-200 text-blue-800";
             } else if (isHovered) {
                 className += " bg-blue-100 border border-blue-300";
             } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100";
+                className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
+            }
+        } else {
+            // No booking status - available dates
+            if (isCheckinDate || isCheckoutDate) {
+                className += " bg-blue-600 text-white";
+            } else if (isInRange) {
+                className += " bg-blue-200 text-blue-800";
+            } else if (isHovered) {
+                className += " bg-blue-100 border border-blue-300";
+            } else {
+                className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
             }
         }
 
         // Add today indicator
-        if (isToday && !isCheckinDate && !isCheckoutDate && !isUnavailable) {
+        if (isToday && !isCheckinDate && !isCheckoutDate) {
             className += " border-blue-500 border-2";
-        }
-
-        // Add cursor style
-        if (isUnavailable) {
-            className += " cursor-not-allowed";
-        } else {
-            className += " cursor-pointer";
         }
 
         return className;
