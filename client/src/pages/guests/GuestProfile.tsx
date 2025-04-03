@@ -325,7 +325,7 @@ const GuestProfile = () => {
         variants={itemVariants}
         className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl overflow-hidden mb-8"
       >
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-36 sm:h-56"></div>
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-36 sm:h-56" />
         <div className="px-6 sm:px-8 pb-8 pt-0 -mt-16 relative">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-col sm:flex-row items-center sm:items-end">

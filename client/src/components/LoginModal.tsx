@@ -322,7 +322,7 @@ const LoginModal: FC<LoginProps> = ({ toggleLoginModal, openSignupModal, onSucce
                 >
                   {loading ? (
                     <div className="flex items-center">
-                      <FontAwesomeIcon icon={faSpinner} className="mr-2" />{" "}
+                      <FontAwesomeIcon icon={faSpinner} className="mr-2" spin />{" "}
                       Logging in...
                     </div>
                   ) : (

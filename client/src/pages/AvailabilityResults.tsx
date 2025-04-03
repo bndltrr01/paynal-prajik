@@ -9,6 +9,7 @@ import LoginModal from "../components/LoginModal";
 import SignupModal from "../components/SignupModal";
 import { useUserContext } from "../contexts/AuthContext";
 import { fetchAvailability } from "../services/Booking";
+import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
@@ -31,7 +32,7 @@ const AvailabilityResults = () => {
 
   const formatDisplayDate = (dateString: string) => {
     try {
-      return format(parseISO(dateString), "EEE, MMM dd, yyyy");
+      return format(parseISO(dateString), "MMM dd, yyyy");
     } catch {
       return dateString;
     }
@@ -93,6 +94,7 @@ const AvailabilityResults = () => {
     <>
       <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
         <div className="container mx-auto px-4 py-12 mt-[120px] pb-16">
+          <RoomAvailabilityCalendar />
           {/* Page Header with Animation */}
           <motion.div
             className="mb-10 text-center"
@@ -191,7 +193,7 @@ const AvailabilityResults = () => {
                             <div className="flex gap-2">
                               <Link
                                 to={`/rooms/${room.id}`}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-sm"
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
                               >
                                 <Eye size={16} /> <span>View</span>
                               </Link>
@@ -199,14 +201,14 @@ const AvailabilityResults = () => {
                               {isAuthenticated ? (
                                 <Link
                                   to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
-                                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-sm"
+                                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
                                 >
                                   <Book size={16} /> <span>Book</span>
                                 </Link>
                               ) : (
                                 <button
                                   disabled
-                                  className="bg-gray-400 text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed text-sm"
+                                  className="bg-gray-400 text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed text-md"
                                   title="Please login to book"
                                 >
                                   <Book size={16} /> <span>Book</span>
@@ -276,7 +278,7 @@ const AvailabilityResults = () => {
                             <div className="flex gap-2">
                               <button
                                 onClick={(e) => handleViewVenueDetails(e, area.id)}
-                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-sm"
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
                               >
                                 <Eye size={16} /> <span>View</span>
                               </button>
@@ -284,14 +286,14 @@ const AvailabilityResults = () => {
                               {isAuthenticated ? (
                                 <button
                                   onClick={(e) => handleBookVenue(e, area.id)}
-                                  className="bg-green-600 hover:bg-green-700 text-white font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
                                 >
                                   <Book size={16} /> <span>Book</span>
                                 </button>
                               ) : (
                                 <button
                                   disabled
-                                  className="bg-gray-400 text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed text-sm"
+                                  className="bg-gray-400 text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed text-md"
                                   title="Please login to book"
                                 >
                                   <Book size={16} /> <span>Book</span>
@@ -318,13 +320,13 @@ const AvailabilityResults = () => {
               {/* Call to action footer */}
               {(data.rooms?.length > 0 || data.areas?.length > 0) && (
                 <motion.div
-                  className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-8 text-center mt-12"
+                  className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-6 text-center mt-12"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
                 >
                   <h3 className="text-2xl font-bold mb-3">Found your perfect stay?</h3>
-                  <p className="text-blue-100 mb-6 max-w-2xl mx-auto">
+                  <p className="text-gray-100 mb-6 min-w-2xl text-2xl mx-auto">
                     Book now to secure your preferred accommodation for {formattedArrival} to {formattedDeparture}.
                   </p>
                   {!isAuthenticated && (
