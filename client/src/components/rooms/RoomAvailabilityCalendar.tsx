@@ -86,8 +86,8 @@ const RoomAvailabilityCalendar = () => {
         type: "spring",
         damping: 20,
         stiffness: 100,
-        staggerChildren: 0.15
-      }
+        staggerChildren: 0.15,
+      },
     },
   };
 
@@ -99,8 +99,8 @@ const RoomAvailabilityCalendar = () => {
       transition: {
         type: "spring",
         damping: 25,
-        stiffness: 120
-      }
+        stiffness: 120,
+      },
     },
   };
 
@@ -109,14 +109,15 @@ const RoomAvailabilityCalendar = () => {
     visible: {
       opacity: 1,
       scale: 1,
-      transition: { type: "spring", stiffness: 300 }
+      transition: { type: "spring", stiffness: 300 },
     },
     hover: {
       scale: 1.03,
-      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-      transition: { duration: 0.3 }
+      boxShadow:
+        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+      transition: { duration: 0.3 },
     },
-    tap: { scale: 0.97 }
+    tap: { scale: 0.97 },
   };
 
   return (
@@ -147,9 +148,15 @@ const RoomAvailabilityCalendar = () => {
         className="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-6 mb-8 sm:mb-15 w-full shadow-lg rounded-xl overflow-hidden border border-blue-100"
       >
         <motion.div variants={itemVariants} className="py-3 font-montserrat">
-          <motion.div variants={itemVariants} className="flex flex-col justify-around gap-5">
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col justify-around gap-5"
+          >
             {/* Header */}
-            <motion.div variants={itemVariants} className="flex justify-between items-center">
+            <motion.div
+              variants={itemVariants}
+              className="flex justify-between items-center"
+            >
               <motion.h1
                 variants={itemVariants}
                 className="text-lg md:text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text"
@@ -164,10 +171,7 @@ const RoomAvailabilityCalendar = () => {
               className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full"
             >
               {/* Arrival Date */}
-              <motion.div
-                variants={itemVariants}
-                className="w-full"
-              >
+              <motion.div variants={itemVariants} className="w-full">
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                     Check-in Date
@@ -186,10 +190,7 @@ const RoomAvailabilityCalendar = () => {
               </motion.div>
 
               {/* Departure Date */}
-              <motion.div
-                variants={itemVariants}
-                className="w-full"
-              >
+              <motion.div variants={itemVariants} className="w-full">
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                     Check-out Date
@@ -208,10 +209,7 @@ const RoomAvailabilityCalendar = () => {
               </motion.div>
 
               {/* Search Button */}
-              <motion.div
-                variants={itemVariants}
-                className="w-full sm:w-auto"
-              >
+              <motion.div variants={itemVariants} className="w-full sm:w-auto">
                 <motion.button
                   variants={buttonVariants}
                   whileHover="hover"

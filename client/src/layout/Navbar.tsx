@@ -66,9 +66,15 @@ const Navbar: FC = () => {
     }
   }, [clearAuthState, navigate]);
 
-  const toggleLoginModal = useCallback(() => setLoginModal(prev => !prev), []);
-  const toggleRegisterModal = useCallback(() => setRegisterModal(prev => !prev), []);
-  const toggleMenu = useCallback(() => setMenuOpen(prev => !prev), []);
+  const toggleLoginModal = useCallback(
+    () => setLoginModal((prev) => !prev),
+    []
+  );
+  const toggleRegisterModal = useCallback(
+    () => setRegisterModal((prev) => !prev),
+    []
+  );
+  const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
@@ -189,7 +195,6 @@ const Navbar: FC = () => {
                     className="ml-2 text-gray-700"
                   />
                 </div>
-
               </Dropdown>
             )}
           </div>
@@ -200,64 +205,84 @@ const Navbar: FC = () => {
               <i className="fa fa-bars"></i>
             </button>
           </div>
+
+          {menuOpen && (
+            <div className="lg:hidden">
+              <div
+                className="fixed inset-0 bg-black/30 z-40"
+                onClick={closeMenu}
+              ></div>
+              <ul className="fixed top-0 right-0 w-full h-screen md:w-3/5 sm:w-4/5 bg-white shadow-md text-black z-50 flex flex-col">
+                <div className="flex justify-between items-center pt-4 p-3 sm:p-5 md:p-6 bg-gray-200">
+                  <Link to="/">
+                    <img
+                      loading="lazy"
+                      src={hotelLogo}
+                      alt="Hotel Logo"
+                      className="h-8 w-auto cursor-pointer block sm:hidden md:hidden"
+                    />
+                  </Link>
+                  <button onClick={closeMenu}>
+                    <i className="fa fa-times text-3xl mr-3 sm:mr-0"></i>
+                  </button>
+                </div>
+                <li className="p-4 text-black/70">
+                  <i className="fa fa-bars text-black/70 mr-3"></i> Navigation
+                </li>
+                {navLinks.map((link, index) => (
+                  <li
+                    key={index}
+                    className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                    onClick={closeMenu}
+                  >
+                    <NavLink
+                      to={link.link}
+                      className={({ isActive }) =>
+                        `flex items-center ${
+                          isActive ? "text-purple-600 font-bold" : ""
+                        }`
+                      }
+                    >
+                      <i className={`mr-3 ${link.icon}`}></i> {link.text}
+                    </NavLink>
+                  </li>
+                ))}
+                {!isAuthenticated ? (
+                  <>
+                    <li
+                      className="p-4 border-t-2 mt-3 mx-7 border-gray-200 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={toggleLoginModal}
+                    >
+                      <i className="fa-regular fa-user mr-3"></i> Login
+                    </li>
+                    <li
+                      className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={toggleRegisterModal}
+                    >
+                      <i className="fa fa-user-plus mr-1"></i> Sign Up
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li
+                      className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={() => navigate(`/guest/${userDetails?.id}`)}
+                    >
+                      <i className="fa fa-user-circle mr-3"></i> Account
+                    </li>
+                    <li
+                      className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      <i className="fa fa-sign-out-alt mr-3"></i> Log Out
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </nav>
-
-      {menuOpen && (
-        <div className="lg:hidden">
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={closeMenu}
-          ></div>
-          <ul className="fixed top-0 right-0 w-full h-screen md:w-3/5 sm:w-4/5 bg-white shadow-md text-black z-50 flex flex-col">
-            <div className="flex justify-between items-center p-7 sm:p-9 md:p-9 bg-gray-200">
-              <Link to="/">
-                <img
-                  loading="lazy"
-                  src={hotelLogo}
-                  alt="Hotel Logo"
-                  className="h-12 w-auto cursor-pointer block sm:hidden md:hidden"
-                />
-              </Link>
-              <button onClick={closeMenu}>
-                <i className="fa fa-times text-3xl mr-3 sm:mr-0"></i>
-              </button>
-            </div>
-            <li className="p-4 text-black/70">
-              <i className="fa fa-bars text-black/70 mr-3"></i> Navigation
-            </li>
-            {navLinks.map((link, index) => (
-              <li
-                key={index}
-                className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-                onClick={closeMenu}
-              >
-                <NavLink
-                  to={link.link}
-                  className={({ isActive }) =>
-                    `flex items-center ${isActive ? "text-purple-600 font-bold" : ""
-                    }`
-                  }
-                >
-                  <i className={`mr-3 ${link.icon}`}></i> {link.text}
-                </NavLink>
-              </li>
-            ))}
-            <li
-              className="p-4 border-t-2 mt-3 mx-7 border-gray-200 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-              onClick={toggleLoginModal}
-            >
-              <i className="fa-regular fa-user mr-3"></i> Login
-            </li>
-            <li
-              className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-              onClick={toggleRegisterModal}
-            >
-              <i className="fa fa-user-plus mr-1"></i> Sign Up
-            </li>
-          </ul>
-        </div>
-      )}
 
       {loginModal && (
         <div className="fixed inset-0 bg-black/50 z-50">
@@ -282,7 +307,9 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
         loading={loading}
         confirmText={
           loading ? (
