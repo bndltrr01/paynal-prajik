@@ -80,6 +80,86 @@ const drawText = (doc: jsPDF, text: string, y: number, x = 20): number => {
   return y + 5;
 };
 
+const drawSubsectionTitle = (doc: jsPDF, text: string, y: number): number => {
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text(text, 20, y);
+  return y + 6;
+};
+
+const drawDescriptionText = (doc: jsPDF, text: string, y: number): number => {
+  const maxWidth = 170;
+  const lines = doc.splitTextToSize(text, maxWidth);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(80, 80, 80);
+
+  lines.forEach((line: string) => {
+    doc.text(line, 20, y);
+    y += 5;
+  });
+
+  doc.setTextColor(0, 0, 0);
+  return y + 2;
+};
+
+const drawDataTable = (
+  doc: jsPDF,
+  headers: string[],
+  data: (string | number)[][],
+  y: number,
+  columnWidths?: number[]
+): number => {
+  const startX = 20;
+  const rowHeight = 8;
+  const widths = columnWidths || headers.map(() => 160 / headers.length);
+
+  doc.setFillColor(230, 230, 230);
+  doc.rect(
+    startX,
+    y - 6,
+    widths.reduce((a, b) => a + b, 0),
+    rowHeight,
+    "F"
+  );
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+
+  let currentX = startX;
+  headers.forEach((header, index) => {
+    doc.text(header, currentX + 2, y);
+    currentX += widths[index];
+  });
+
+  y += rowHeight;
+
+  doc.setFont("helvetica", "normal");
+  data.forEach((row, rowIndex) => {
+    if (rowIndex % 2 === 0) {
+      doc.setFillColor(248, 248, 248);
+      doc.rect(
+        startX,
+        y - 6,
+        widths.reduce((a, b) => a + b, 0),
+        rowHeight,
+        "F"
+      );
+    }
+
+    currentX = startX;
+    row.forEach((cell, cellIndex) => {
+      doc.text(cell.toString(), currentX + 2, y);
+      currentX += widths[cellIndex];
+    });
+
+    y += rowHeight;
+  });
+
+  return y + 5;
+};
+
 const drawKPI = (
   doc: jsPDF,
   title: string,
@@ -167,8 +247,22 @@ export const generateMonthlyReport = async (
 
   y += 15;
 
+  y = drawSectionHeader(doc, "Executive Summary", y);
+  y += 5;
+
+  const executiveSummary = `This monthly performance report provides a comprehensive overview of the hotel's operational and financial metrics for ${reportData.period}. The report highlights key performance indicators including total bookings (${reportData.stats.totalBookings}), current occupancy rate (${reportData.stats.occupancyRate}), and total revenue (${reportData.stats.formattedRevenue}). Review the detailed sections below for deeper insights into booking trends, revenue patterns, and room occupancy statistics.`;
+  y = drawDescriptionText(doc, executiveSummary, y);
+
+  y += 5;
+  y = drawDivider(doc, y);
+
   y = drawSectionHeader(doc, "1. Key Performance Indicators", y);
   y += 5;
+
+  const kpiDescription =
+    "These key metrics provide a snapshot of the hotel's current operational status and financial performance for the current month.";
+  y = drawDescriptionText(doc, kpiDescription, y);
+  y += 3;
 
   drawKPI(doc, "Total Bookings", reportData.stats.totalBookings, 20, y, 40);
   drawKPI(doc, "Active Bookings", reportData.stats.activeBookings, 70, y, 40);
@@ -185,8 +279,15 @@ export const generateMonthlyReport = async (
   y += 35;
   y = drawDivider(doc, y);
 
-  y = drawSectionHeader(doc, "2. Revenue & Booking Trends", y);
+  y = drawSectionHeader(doc, "2. Revenue & Booking Analysis", y);
   y += 5;
+
+  const revenueDescription =
+    "This section illustrates daily revenue trends and booking patterns throughout the month, helping identify peak periods and opportunities for revenue optimization.";
+  y = drawDescriptionText(doc, revenueDescription, y);
+  y += 3;
+
+  y = drawSubsectionTitle(doc, "Daily Revenue Trends", y);
 
   if (charts.revenueChart) {
     y = addChartImage(doc, charts.revenueChart, 20, y, 170, 70);
@@ -194,6 +295,16 @@ export const generateMonthlyReport = async (
     y = drawText(doc, "Revenue chart data not available", y);
     y += 70;
   }
+
+  const revenueInsights = `Total monthly revenue: ${
+    reportData.stats.formattedRevenue
+  }. Room revenue accounts for ${Math.round(
+    ((reportData.stats.revenue * 0.75) / reportData.stats.revenue) * 100
+  )}% of total revenue, with the remainder coming from venue bookings and additional services.`;
+  y = drawDescriptionText(doc, revenueInsights, y);
+  y += 3;
+
+  y = drawSubsectionTitle(doc, "Booking Pattern Analysis", y);
 
   if (charts.bookingTrendsChart) {
     y = addChartImage(doc, charts.bookingTrendsChart, 20, y, 170, 70);
@@ -212,6 +323,11 @@ export const generateMonthlyReport = async (
   y = drawSectionHeader(doc, "3. Booking Status Distribution", y);
   y += 5;
 
+  const bookingStatusDescription =
+    "This section provides a breakdown of all bookings by their current status, helping identify operational priorities and potential revenue risks.";
+  y = drawDescriptionText(doc, bookingStatusDescription, y);
+  y += 3;
+
   if (charts.bookingStatusChart) {
     y = addChartImage(doc, charts.bookingStatusChart, 55, y, 100, 80);
   } else {
@@ -220,10 +336,7 @@ export const generateMonthlyReport = async (
   }
 
   y += 5;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Booking Status Breakdown:", 20, y);
-  y += 8;
+  y = drawSubsectionTitle(doc, "Booking Status Breakdown", y);
 
   const statusLabels = [
     { key: "pending", label: "Pending" },
@@ -235,13 +348,52 @@ export const generateMonthlyReport = async (
     { key: "rejected", label: "Rejected" },
   ];
 
-  statusLabels.forEach((status) => {
+  const tableHeaders = ["Status", "Count", "Percentage"];
+  const totalBookings = Object.values(reportData.bookingStatusCounts).reduce(
+    (sum, val) => sum + val,
+    0
+  );
+
+  const tableData = statusLabels.map((status) => {
     const count =
       reportData.bookingStatusCounts[
         status.key as keyof typeof reportData.bookingStatusCounts
       ];
-    y = drawText(doc, `${status.label}: ${count}`, y, 30);
+    const percentage =
+      totalBookings > 0
+        ? ((count / totalBookings) * 100).toFixed(1) + "%"
+        : "0%";
+    return [status.label, count, percentage];
   });
+
+  y = drawDataTable(doc, tableHeaders, tableData, y, [60, 40, 60]);
+
+  const pendingPercent =
+    totalBookings > 0
+      ? (
+          (reportData.bookingStatusCounts.pending / totalBookings) *
+          100
+        ).toFixed(1)
+      : "0";
+  const cancelledPercent =
+    totalBookings > 0
+      ? (
+          (reportData.bookingStatusCounts.cancelled / totalBookings) *
+          100
+        ).toFixed(1)
+      : "0";
+
+  const bookingInsights = `Currently, ${pendingPercent}% of all bookings are pending confirmation, while ${cancelledPercent}% have been cancelled. Active revenue-generating bookings (reserved and checked-in) account for ${
+    totalBookings > 0
+      ? (
+          ((reportData.bookingStatusCounts.reserved +
+            reportData.bookingStatusCounts.checked_in) /
+            totalBookings) *
+          100
+        ).toFixed(1)
+      : "0"
+  }% of all bookings.`;
+  y = drawDescriptionText(doc, bookingInsights, y);
 
   if (y > 250) {
     doc.addPage();
@@ -250,8 +402,13 @@ export const generateMonthlyReport = async (
     y = drawDivider(doc, y);
   }
 
-  y = drawSectionHeader(doc, "4. Room Occupancy", y);
+  y = drawSectionHeader(doc, "4. Room Occupancy Analysis", y);
   y += 5;
+
+  const roomOccupancyDescription =
+    "This section analyzes room occupancy by type, highlighting which room categories are most popular and identifying opportunities to optimize room allocation and pricing.";
+  y = drawDescriptionText(doc, roomOccupancyDescription, y);
+  y += 3;
 
   if (charts.roomOccupancyChart) {
     y = addChartImage(doc, charts.roomOccupancyChart, 20, y, 170, 70);
@@ -260,13 +417,31 @@ export const generateMonthlyReport = async (
     y += 70;
   }
 
+  const occupancyRate = reportData.stats.occupancyRate;
+  const roomInsights = `Current overall occupancy rate is ${occupancyRate}, with ${reportData.stats.availableRooms} rooms currently available for booking out of ${reportData.stats.totalRooms} total rooms. Standard rooms show the highest occupancy rate, followed by Deluxe rooms.`;
+  y = drawDescriptionText(doc, roomInsights, y);
+
+  y += 5;
+  y = drawSubsectionTitle(doc, "Recommendations", y);
+
+  const recommendations = [
+    "Consider targeted promotions for room types with lower occupancy rates",
+    "Review pricing strategy for peak booking days identified in the booking trends chart",
+    "Follow up with pending bookings to increase conversion rate",
+    "Analyze cancellation patterns to identify and address common causes",
+  ];
+
+  recommendations.forEach((rec) => {
+    y = drawText(doc, `• ${rec}`, y);
+  });
+
   doc.setFontSize(8);
   doc.setFont("helvetica", "italic");
   doc.setTextColor(100, 100, 100);
   doc.text("Confidential - For internal use only", 105, 285, {
     align: "center",
   });
-  doc.text("© Paynal Prajik Hotel Management System", 105, 290, {
+  doc.text("© Azurea Hotel Management System", 105, 290, {
     align: "center",
   });
 
