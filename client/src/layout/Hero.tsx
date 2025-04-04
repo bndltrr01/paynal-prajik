@@ -1,10 +1,30 @@
 import { motion } from "framer-motion";
 import { Autoplay } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { useNavigate } from "react-router-dom";
 import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
 import { slides } from "../constants/HomepageHeroSlides";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+  };
+
+  const getTomorrowString = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split("T")[0];
+  };
+
+  const handleCheckAvailability = () => {
+    const arrivalDate = getTodayString();
+    const departureDate = getTomorrowString();
+    navigate(`/availability?arrival=${arrivalDate}&departure=${departureDate}`);
+  };
+
   return (
     <section className="relative w-full h-screen">
       <Swiper
@@ -20,9 +40,9 @@ const Hero = () => {
               className="h-screen bg-cover bg-center relative before:absolute before:inset-0 before:bg-black/60 before:z-0"
               style={{
                 backgroundImage: `url(${slide.image})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                willChange: 'transform'
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                willChange: "transform",
               }}
             >
               {/* Preload next image */}
@@ -42,7 +62,7 @@ const Hero = () => {
                     transition={{
                       duration: 0.8,
                       delay: 0.3,
-                      ease: "easeOut"
+                      ease: "easeOut",
                     }}
                   >
                     {slide.heading}
@@ -54,11 +74,19 @@ const Hero = () => {
                     transition={{
                       duration: 0.8,
                       delay: 0.6,
-                      ease: "easeOut"
+                      ease: "easeOut",
                     }}
                   >
                     {slide.description}
                   </motion.p>
+                  <div className="flex justify-center items-center sm:hidden mt-10">
+                    <button
+                      onClick={handleCheckAvailability}
+                      className="sm:w-auto py-4 px-8 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 uppercase font-semibold text-lg text-white cursor-pointer shadow-lg flex items-center justify-center gap-3"
+                    >
+                      Check Availability
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -66,7 +94,7 @@ const Hero = () => {
         ))}
       </Swiper>
 
-      <div className="absolute bottom-10 w-full flex justify-center z-20">
+      <div className="hidden absolute bottom-10 w-full sm:flex justify-center z-20">
         <div className="lg:w-9/12 xl:w-8/12 2xl:w-7/12">
           <RoomAvailabilityCalendar />
         </div>
