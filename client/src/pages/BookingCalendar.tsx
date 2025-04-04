@@ -90,17 +90,14 @@ const BookingCalendar = () => {
         enabled: !!roomId,
     });
 
-    // Fetch room bookings data
     const { data: bookingsData, isLoading: isLoadingBookings } = useQuery<{ data: BookingData[] }>({
         queryKey: ['roomBookings', roomId, dateRange.startDate, dateRange.endDate],
         queryFn: async () => {
             return fetchRoomBookings(roomId || '', dateRange.startDate, dateRange.endDate);
         },
         enabled: !!roomId,
-        staleTime: 1000 * 60 * 2, // 2 minutes - bookings change more frequently
     });
 
-    // Process bookings data to map by date - memoized for performance
     useEffect(() => {
         if (bookingsData?.data) {
             const newBookingsByDate: BookingsByDate = {};
@@ -109,7 +106,6 @@ const BookingCalendar = () => {
                 const checkInDate = parseISO(booking.check_in_date);
                 const checkOutDate = parseISO(booking.check_out_date);
 
-                // Mark all dates in the booking range
                 const datesInRange = eachDayOfInterval({ start: checkInDate, end: checkOutDate });
 
                 datesInRange.forEach(date => {
@@ -125,7 +121,6 @@ const BookingCalendar = () => {
         }
     }, [bookingsData]);
 
-    // Prefetch next month's data when currentMonth changes
     useEffect(() => {
         if (roomId) {
             const nextMonth = addMonths(currentMonth, 2);
@@ -139,19 +134,15 @@ const BookingCalendar = () => {
         }
     }, [currentMonth, roomId, queryClient]);
 
-    // Calculate price when dates or room data changes - memoized for performance
     useEffect(() => {
         if (checkInDate && checkOutDate && roomData) {
             const days = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
             setNumberOfNights(days);
 
-            // Get price from either price_per_night or room_price field
             const priceString = roomData.price_per_night || roomData.room_price || '0';
 
-            // Convert price string to a number, handling various formats
             let priceValue = 0;
             try {
-                // Remove any non-numeric characters except decimal point
                 const numericValue = priceString.toString().replace(/[^\d.]/g, '');
                 priceValue = parseFloat(numericValue) || 0;
             } catch (error) {
@@ -166,13 +157,16 @@ const BookingCalendar = () => {
     const months = useMemo(() => [currentMonth, addMonths(currentMonth, 1)], [currentMonth]);
     const prevMonth = useCallback(() => setCurrentMonth(prev => addMonths(prev, -1)), []);
     const nextMonth = useCallback(() => setCurrentMonth(prev => addMonths(prev, 1)), []);
-    
+
     const isDateBooked = useCallback((date: Date): boolean => {
         const dateString = format(date, 'yyyy-MM-dd');
         const booking = bookingsByDate[dateString];
 
-        if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending'].includes(booking.status.toLowerCase())) {
-            return true;
+        if (booking && booking.status) {
+            const status = booking.status.toLowerCase();
+            if (['checked_in', 'reserved', 'occupied', 'pending'].includes(status)) {
+                return true;
+            }
         }
 
         return false;
@@ -247,8 +241,26 @@ const BookingCalendar = () => {
             return className;
         }
 
+        if (dateStatus && dateStatus.toLowerCase() === 'checked_out') {
+            if (isCheckinDate || isCheckoutDate) {
+                className += " bg-blue-600 text-white";
+            } else if (isInRange) {
+                className += " bg-blue-200 text-blue-800";
+            } else if (isHovered) {
+                className += " bg-blue-100 border border-blue-300";
+            } else {
+                className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
+            }
+
+            if (isToday && !isCheckinDate && !isCheckoutDate) {
+                className += " border-blue-500 border-2";
+            }
+
+            return className;
+        }
+
         if (dateStatus) {
-            if (['checked_in', 'reserved', 'occupied', 'pending'].includes(dateStatus.toLowerCase())) {
+            if (['checked_in', 'reserved', 'occupied'].includes(dateStatus.toLowerCase())) {
                 switch (dateStatus.toLowerCase()) {
                     case 'reserved':
                         className += " bg-green-100 text-green-800 border border-green-500 cursor-not-allowed";
@@ -256,9 +268,6 @@ const BookingCalendar = () => {
                     case 'checked_in':
                     case 'occupied':
                         className += " bg-blue-100 text-blue-800 border border-blue-500 cursor-not-allowed";
-                        break;
-                    case 'pending':
-                        className += " bg-yellow-100 text-yellow-800 border border-yellow-500 cursor-not-allowed";
                         break;
                     default:
                         className += " bg-gray-300 text-gray-500 cursor-not-allowed";

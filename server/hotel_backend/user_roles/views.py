@@ -528,3 +528,62 @@ def update_user_details(request, id):
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_guest_bookings(request):
+    try:
+        from booking.models import Bookings
+        from booking.serializers import BookingSerializer
+        from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+        
+        user = request.user
+        bookings = Bookings.objects.filter(user=user).order_by('-created_at')
+        
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 5)
+        
+        paginator = Paginator(bookings, page_size)
+        
+        try:
+            paginated_bookings = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_bookings = paginator.page(1)
+        except EmptyPage:
+            paginated_bookings = paginator.page(paginator.num_pages)
+            
+        booking_data = []
+        for booking in paginated_bookings:
+            booking_serializer = BookingSerializer(booking)
+            data = booking_serializer.data
+            
+            # Add additional property details if available
+            if booking.is_venue_booking and booking.area:
+                from property.serializers import AreaSerializer
+                area_serializer = AreaSerializer(booking.area)
+                data['area_details'] = area_serializer.data
+            elif booking.room:
+                from property.serializers import RoomSerializer
+                room_serializer = RoomSerializer(booking.room)
+                data['room_details'] = room_serializer.data
+            
+            # Handle valid_id (image) field
+            if booking.valid_id:
+                if hasattr(booking.valid_id, 'url'):
+                    data['valid_id'] = booking.valid_id.url
+                else:
+                    data['valid_id'] = booking.valid_id
+            
+            booking_data.append(data)
+        
+        return Response({
+            "data": booking_data,
+            "pagination": {
+                "total_pages": paginator.num_pages,
+                "current_page": int(page),
+                "total_items": paginator.count,
+                "page_size": int(page_size)
+            }
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

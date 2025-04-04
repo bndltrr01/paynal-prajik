@@ -11,7 +11,7 @@ interface AreaData {
     area_image: string;
     status: string;
     capacity: number;
-    price_per_hour: string; // Still named price_per_hour for API compatibility
+    price_per_hour: string;
 }
 
 interface BookingData {
@@ -63,7 +63,6 @@ const VenueBookingCalendar = () => {
         }
     }, [arrivalParam]);
 
-    // Fetch area data
     const { data: areaData, isLoading: isLoadingArea } = useQuery<AreaData>({
         queryKey: ['area', areaId],
         queryFn: async () => {
@@ -80,11 +79,9 @@ const VenueBookingCalendar = () => {
         enabled: !!areaId
     });
 
-    // Fetch area bookings data
     const { data: bookingsData, isLoading: isLoadingBookings } = useQuery<{ data: BookingData[] }>({
         queryKey: ['areaBookings', areaId, currentMonth],
         queryFn: async () => {
-            // Calculate a date range that covers two months
             const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
             const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
             return fetchAreaBookings(areaId || '', startDate, endDate);
@@ -92,7 +89,6 @@ const VenueBookingCalendar = () => {
         enabled: !!areaId
     });
 
-    // Process bookings data to map by date
     useEffect(() => {
         if (bookingsData?.data) {
             const newBookingsByDate: BookingsByDate = {};
@@ -100,7 +96,6 @@ const VenueBookingCalendar = () => {
             bookingsData.data.forEach(booking => {
                 const dateString = format(parseISO(booking.check_in_date), 'yyyy-MM-dd');
 
-                // Initialize the date if it doesn't exist
                 if (!newBookingsByDate[dateString]) {
                     newBookingsByDate[dateString] = {
                         status: booking.status,
@@ -109,7 +104,6 @@ const VenueBookingCalendar = () => {
                     };
                 }
 
-                // Add time slot info if available
                 if (booking.start_time && booking.end_time) {
                     newBookingsByDate[dateString].unavailableTimes.push({
                         start_time: booking.start_time,
@@ -126,12 +120,9 @@ const VenueBookingCalendar = () => {
     useEffect(() => {
         if (areaData) {
             try {
-                // Parse price from price_per_hour (using it as is)
                 const priceString = areaData.price_per_hour || '0';
                 const numericValue = priceString.toString().replace(/[^\d.]/g, '');
                 const venuePrice = parseFloat(numericValue) || 0;
-
-                // Set the price as is, without multiplication by 24
                 setPrice(venuePrice);
             } catch (error) {
                 console.error('Error parsing area price:', error);
@@ -150,9 +141,11 @@ const VenueBookingCalendar = () => {
         const dateString = format(date, 'yyyy-MM-dd');
         const booking = bookingsByDate[dateString];
 
-        // Check if the date has any booking status
-        if (booking && booking.status && ['checked_in', 'reserved', 'occupied'].includes(booking.status.toLowerCase())) {
-            return true;
+        if (booking && booking.status) {
+            const status = booking.status.toLowerCase();
+            if (['checked_in', 'reserved', 'occupied'].includes(status)) {
+                return true;
+            }
         }
 
         return false;
@@ -164,12 +157,10 @@ const VenueBookingCalendar = () => {
     };
 
     const isDateUnavailable = (date: Date) => {
-        // Only consider dates before today as unavailable
         if (isBefore(date, startOfDay(new Date()))) {
             return true;
         }
 
-        // Days with any booking status are also unavailable
         return isDateBooked(date);
     };
 
@@ -196,29 +187,38 @@ const VenueBookingCalendar = () => {
 
         let className = "relative h-10 w-10 flex items-center justify-center text-sm rounded-full";
 
-        // First check date status and apply appropriate styling
+        if (isUnavailable) {
+            className += " bg-gray-300 text-gray-500 cursor-not-allowed";
+            return className;
+        }
+
+        if (dateStatus && dateStatus.toLowerCase() === 'checked_out') {
+            if (isSelected) {
+                className += " bg-blue-600 text-white";
+            } else if (isHovered) {
+                className += " bg-blue-100 border border-blue-300";
+            } else {
+                className += " bg-white border border-gray-300 hover:bg-gray-100";
+            }
+
+            if (isToday && !isSelected) {
+                className += " border-blue-500 border-2";
+            }
+
+            className += " cursor-pointer";
+            return className;
+        }
+
         if (dateStatus) {
             switch (dateStatus.toLowerCase()) {
                 case 'reserved':
                     className += " bg-green-100 text-green-800 border border-green-500";
                     break;
                 case 'checked_in':
-                    className += " bg-blue-100 text-blue-800 border border-blue-500";
-                    break;
                 case 'occupied':
                     className += " bg-blue-100 text-blue-800 border border-blue-500";
                     break;
-                case 'checked_out':
-                    className += " bg-gray-100 text-gray-800 border border-gray-500";
-                    break;
-                case 'rejected':
-                    className += " bg-red-100 text-red-800 border border-red-500";
-                    break;
-                case 'missed_reservation':
-                    className += " bg-orange-100 text-orange-800 border border-orange-500";
-                    break;
                 default:
-                    // Apply standard styles if status doesn't match any of the above
                     if (isSelected) {
                         className += " bg-blue-600 text-white";
                     } else if (isHovered) {
@@ -228,7 +228,6 @@ const VenueBookingCalendar = () => {
                     }
             }
         } else {
-            // No booking status - apply standard styles
             if (isUnavailable) {
                 className += " bg-gray-300 text-gray-500 cursor-not-allowed";
             } else if (isSelected) {
@@ -240,12 +239,10 @@ const VenueBookingCalendar = () => {
             }
         }
 
-        // Add today indicator
         if (isToday && !isSelected && !isUnavailable) {
             className += " border-blue-500 border-2";
         }
 
-        // Add cursor style
         if (isUnavailable) {
             className += " cursor-not-allowed";
         } else {
@@ -289,7 +286,7 @@ const VenueBookingCalendar = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-lg shadow-md p-6">
+                    <div className="bg-white rounded-lg shadow-md ring-3 ring-blue-400 p-6">
                         <h3 className="text-2xl font-bold mb-4">Select Your Booking Date</h3>
 
                         {/* Selected Date */}
@@ -474,7 +471,7 @@ const VenueBookingCalendar = () => {
                 {/* Right Side - Area Info (1/3 width on large screens) */}
                 <div className="lg:col-span-1">
                     {areaData && (
-                        <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
+                        <div className="bg-white rounded-lg ring-blue-400 ring-3 shadow-md p-6 sticky top-24">
                             <div className="mb-4">
                                 <img
                                     loading='lazy'

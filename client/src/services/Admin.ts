@@ -422,3 +422,90 @@ export const getAllBookings = async ({
     throw error;
   }
 };
+// Enhanced Dashboard Analytics
+export const fetchOccupancyRate = async (
+  period: "daily" | "weekly" | "monthly" | "yearly" = "monthly"
+) => {
+  try {
+    const response = await ADMIN.get("/occupancy_rate", {
+      params: { period },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch occupancy rate: ${error}`);
+    throw error;
+  }
+};
+
+export const fetchRevenueAnalytics = async (
+  period: "daily" | "weekly" | "monthly" | "yearly" = "monthly"
+) => {
+  try {
+    const response = await ADMIN.get("/revenue_analytics", {
+      params: { period },
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch revenue analytics: ${error}`);
+    throw error;
+  }
+};
+
+export const fetchBookingAnalytics = async () => {
+  try {
+    const response = await ADMIN.get("/booking_analytics", {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch booking analytics: ${error}`);
+    throw error;
+  }
+};
+
+export const fetchCustomerAnalytics = async () => {
+  try {
+    const response = await ADMIN.get("/customer_analytics", {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch customer analytics: ${error}`);
+    throw error;
+  }
+};
+
+export const generatePdfReport = async (
+  reportType: string,
+  dateRange?: { start: string; end: string }
+) => {
+  try {
+    const response = await ADMIN.post(
+      "/generate_report",
+      {
+        report_type: reportType,
+        ...(dateRange && { date_range: dateRange }),
+      },
+      {
+        responseType: "blob",
+        withCredentials: true,
+      }
+    );
+
+    // Create download link for PDF
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${reportType}_report.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to generate ${reportType} report: ${error}`);
+    throw error;
+  }
+};
