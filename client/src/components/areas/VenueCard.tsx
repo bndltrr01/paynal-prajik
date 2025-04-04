@@ -12,7 +12,6 @@ interface AreaCardProps {
   priceRange: string;
   capacity: number;
   image: string;
-  status: string;
 }
 
 const VenueCard: FC<AreaCardProps> = ({

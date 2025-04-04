@@ -164,9 +164,7 @@ const BookingCalendar = () => {
 
         if (booking && booking.status) {
             const status = booking.status.toLowerCase();
-            if (['checked_in', 'reserved', 'occupied', 'pending'].includes(status)) {
-                return true;
-            }
+            return ['checked_in', 'reserved'].includes(status);
         }
 
         return false;
@@ -234,74 +232,48 @@ const BookingCalendar = () => {
         const isHovered = !isUnavailable && hoveredDate && isEqual(date, hoveredDate);
         const dateStatus = getDateStatus(date);
 
+        // Base class for all date cells
         let className = "relative h-10 w-10 flex items-center justify-center text-sm rounded-full";
 
-        if (isUnavailable) {
-            className += " bg-gray-300 text-gray-500 cursor-not-allowed";
-            return className;
+        // Handle selection first (highest priority)
+        if (isCheckinDate || isCheckoutDate) {
+            return `${className} bg-blue-600 text-white font-medium`;
         }
 
-        if (dateStatus && dateStatus.toLowerCase() === 'checked_out') {
-            if (isCheckinDate || isCheckoutDate) {
-                className += " bg-blue-600 text-white";
-            } else if (isInRange) {
-                className += " bg-blue-200 text-blue-800";
-            } else if (isHovered) {
-                className += " bg-blue-100 border border-blue-300";
-            } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
-            }
-
-            if (isToday && !isCheckinDate && !isCheckoutDate) {
-                className += " border-blue-500 border-2";
-            }
-
-            return className;
+        // Handle date range
+        if (isInRange) {
+            return `${className} bg-blue-200 text-blue-800`;
         }
 
-        if (dateStatus) {
-            if (['checked_in', 'reserved', 'occupied'].includes(dateStatus.toLowerCase())) {
-                switch (dateStatus.toLowerCase()) {
-                    case 'reserved':
-                        className += " bg-green-100 text-green-800 border border-green-500 cursor-not-allowed";
-                        break;
-                    case 'checked_in':
-                    case 'occupied':
-                        className += " bg-blue-100 text-blue-800 border border-blue-500 cursor-not-allowed";
-                        break;
-                    default:
-                        className += " bg-gray-300 text-gray-500 cursor-not-allowed";
-                }
-                return className;
-            }
-
-            if (isCheckinDate || isCheckoutDate) {
-                className += " bg-blue-600 text-white";
-            } else if (isInRange) {
-                className += " bg-blue-200 text-blue-800";
-            } else if (isHovered) {
-                className += " bg-blue-100 border border-blue-300";
-            } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
-            }
-        } else {
-            if (isCheckinDate || isCheckoutDate) {
-                className += " bg-blue-600 text-white";
-            } else if (isInRange) {
-                className += " bg-blue-200 text-blue-800";
-            } else if (isHovered) {
-                className += " bg-blue-100 border border-blue-300";
-            } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer";
-            }
+        // Handle hover effect for available dates
+        if (isHovered && !isUnavailable) {
+            return `${className} bg-blue-100 border border-blue-300 cursor-pointer`;
         }
 
-        // Add today indicator
-        if (isToday && !isCheckinDate && !isCheckoutDate) {
+        // Handle today indicator
+        if (isToday && !isUnavailable) {
             className += " border-blue-500 border-2";
         }
 
-        return className;
+        // Handle specific booked statuses
+        if (dateStatus && ['reserved', 'checked_in'].includes(dateStatus.toLowerCase())) {
+            switch (dateStatus.toLowerCase()) {
+                case 'reserved':
+                    return `${className} bg-green-200 text-green-800 border-2 border-green-600 font-medium cursor-not-allowed`;
+                case 'checked_in':
+                    return `${className} bg-blue-200 text-blue-800 border-2 border-blue-600 font-medium cursor-not-allowed`;
+                default:
+                    return `${className} bg-gray-300 text-gray-500 cursor-not-allowed`;
+            }
+        }
+
+        // Handle past dates
+        if (isUnavailable) {
+            return `${className} bg-gray-300 text-gray-500 cursor-not-allowed`;
+        }
+
+        // Default available date styling (including checked_out, cancelled, rejected, pending)
+        return `${className} bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer`;
     };
 
     const handleProceed = () => {
@@ -440,11 +412,11 @@ const BookingCalendar = () => {
 
                                 {/* Calendar Legend */}
                                 <div className="mt-6 border-t pt-4">
-                                    <h4 className="text-sm font-medium mb-3">LEGEND</h4>
+                                    <h4 className="text-sm font-medium mb-3">CALENDAR LEGEND</h4>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-white border border-gray-300 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Available Date</span>
+                                            <span className="text-sm">Available</span>
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-blue-600 mr-2 rounded-full"></div>
@@ -452,19 +424,19 @@ const BookingCalendar = () => {
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-blue-200 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Date Range</span>
+                                            <span className="text-sm">Selected Range</span>
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-gray-300 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Unavailable Date</span>
+                                            <span className="text-sm">Unavailable</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-green-100 border border-green-500 mr-2 rounded-full"></div>
+                                            <div className="h-6 w-6 bg-green-200 border-2 border-green-600 mr-2 rounded-full"></div>
                                             <span className="text-sm">Reserved</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-blue-100 border border-blue-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Occupied</span>
+                                            <div className="h-6 w-6 bg-blue-200 border-2 border-blue-600 mr-2 rounded-full"></div>
+                                            <span className="text-sm">Checked In</span>
                                         </div>
                                     </div>
                                 </div>

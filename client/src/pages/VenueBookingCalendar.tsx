@@ -143,9 +143,8 @@ const VenueBookingCalendar = () => {
 
         if (booking && booking.status) {
             const status = booking.status.toLowerCase();
-            if (['checked_in', 'reserved', 'occupied'].includes(status)) {
-                return true;
-            }
+            // Only consider reserved and checked_in statuses as booked/unavailable
+            return ['checked_in', 'reserved'].includes(status);
         }
 
         return false;
@@ -185,71 +184,43 @@ const VenueBookingCalendar = () => {
         const isToday = isSameDay(date, new Date());
         const dateStatus = getDateStatus(date);
 
+        // Base class for all date cells
         let className = "relative h-10 w-10 flex items-center justify-center text-sm rounded-full";
 
-        if (isUnavailable) {
-            className += " bg-gray-300 text-gray-500 cursor-not-allowed";
-            return className;
+        // Handle selection first (highest priority)
+        if (isSelected) {
+            return `${className} bg-blue-600 text-white font-medium`;
         }
 
-        if (dateStatus && dateStatus.toLowerCase() === 'checked_out') {
-            if (isSelected) {
-                className += " bg-blue-600 text-white";
-            } else if (isHovered) {
-                className += " bg-blue-100 border border-blue-300";
-            } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100";
-            }
-
-            if (isToday && !isSelected) {
-                className += " border-blue-500 border-2";
-            }
-
-            className += " cursor-pointer";
-            return className;
+        // Handle hover effect for available dates
+        if (isHovered && !isUnavailable) {
+            return `${className} bg-blue-100 border border-blue-300 cursor-pointer`;
         }
 
-        if (dateStatus) {
-            switch (dateStatus.toLowerCase()) {
-                case 'reserved':
-                    className += " bg-green-100 text-green-800 border border-green-500";
-                    break;
-                case 'checked_in':
-                case 'occupied':
-                    className += " bg-blue-100 text-blue-800 border border-blue-500";
-                    break;
-                default:
-                    if (isSelected) {
-                        className += " bg-blue-600 text-white";
-                    } else if (isHovered) {
-                        className += " bg-blue-100 border border-blue-300";
-                    } else {
-                        className += " bg-white border border-gray-300 hover:bg-gray-100";
-                    }
-            }
-        } else {
-            if (isUnavailable) {
-                className += " bg-gray-300 text-gray-500 cursor-not-allowed";
-            } else if (isSelected) {
-                className += " bg-blue-600 text-white";
-            } else if (isHovered) {
-                className += " bg-blue-100 border border-blue-300";
-            } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100";
-            }
-        }
-
-        if (isToday && !isSelected && !isUnavailable) {
+        // Handle today indicator
+        if (isToday && !isUnavailable) {
             className += " border-blue-500 border-2";
         }
 
-        if (isUnavailable) {
-            className += " cursor-not-allowed";
-        } else {
-            className += " cursor-pointer";
+        // Handle specific booked statuses
+        if (dateStatus && ['reserved', 'checked_in'].includes(dateStatus.toLowerCase())) {
+            switch (dateStatus.toLowerCase()) {
+                case 'reserved':
+                    return `${className} bg-green-200 text-green-800 border-2 border-green-600 font-medium cursor-not-allowed`;
+                case 'checked_in':
+                    return `${className} bg-blue-200 text-blue-800 border-2 border-blue-600 font-medium cursor-not-allowed`;
+                default:
+                    return `${className} bg-gray-300 text-gray-500 cursor-not-allowed`;
+            }
         }
 
-        return className;
+        // Handle past dates
+        if (isUnavailable) {
+            return `${className} bg-gray-300 text-gray-500 cursor-not-allowed`;
+        }
+
+        // Default available date styling (including checked_out, cancelled, rejected, pending)
+        return `${className} bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer`;
     };
 
     const getDateContent = (date: Date) => {
@@ -263,8 +234,6 @@ const VenueBookingCalendar = () => {
     const handleProceed = () => {
         if (selectedDate) {
             const dateStr = format(selectedDate, 'yyyy-MM-dd');
-
-            // Create full day booking (8:00 AM to 5:00 PM)
             const startTime = `${dateStr}T08:00:00`;
             const endTime = `${dateStr}T17:00:00`;
 
@@ -426,11 +395,11 @@ const VenueBookingCalendar = () => {
                         {/* Calendar Legend - only show if calendar is visible */}
                         {!arrivalParam && (
                             <div className="mt-6 border-t pt-4">
-                                <h4 className="text-sm font-medium mb-3">LEGEND</h4>
+                                <h4 className="text-sm font-medium mb-3">CALENDAR LEGEND</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
                                     <div className="flex items-center">
                                         <div className="h-6 w-6 bg-white border border-gray-300 mr-2 rounded-full"></div>
-                                        <span className="text-sm">Available Date</span>
+                                        <span className="text-sm">Available</span>
                                     </div>
                                     <div className="flex items-center">
                                         <div className="h-6 w-6 bg-blue-600 mr-2 rounded-full"></div>
@@ -438,15 +407,15 @@ const VenueBookingCalendar = () => {
                                     </div>
                                     <div className="flex items-center">
                                         <div className="h-6 w-6 bg-gray-300 mr-2 rounded-full"></div>
-                                        <span className="text-sm">Unavailable Date</span>
+                                        <span className="text-sm">Unavailable</span>
                                     </div>
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 bg-green-100 border border-green-500 mr-2 rounded-full"></div>
+                                        <div className="h-6 w-6 bg-green-200 border-2 border-green-600 mr-2 rounded-full"></div>
                                         <span className="text-sm">Reserved</span>
                                     </div>
                                     <div className="flex items-center">
-                                        <div className="h-6 w-6 bg-blue-100 border border-blue-500 mr-2 rounded-full"></div>
-                                        <span className="text-sm">Occupied</span>
+                                        <div className="h-6 w-6 bg-blue-200 border-2 border-blue-600 mr-2 rounded-full"></div>
+                                        <span className="text-sm">Checked In</span>
                                     </div>
                                 </div>
                             </div>
@@ -520,3 +489,4 @@ const VenueBookingCalendar = () => {
 };
 
 export default VenueBookingCalendar;
+

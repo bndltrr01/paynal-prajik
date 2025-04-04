@@ -8,9 +8,8 @@ interface RoomCardProps {
   name: string;
   image: string;
   title: string;
-  status: string;
   capacity: string;
-  price: string | number;
+  price: string;
 }
 
 const RoomCard: FC<RoomCardProps> = ({

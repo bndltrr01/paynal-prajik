@@ -342,8 +342,10 @@ export const updateBookingStatus = async (
     // Ensure data is properly formatted
     const payload = {
       status: data.status,
-      // Only include set_available if it's true
-      ...(data.set_available ? { set_available: true } : {}),
+      // Include set_available whether true or false if explicitly set
+      ...(Object.prototype.hasOwnProperty.call(data, "set_available")
+        ? { set_available: data.set_available }
+        : {}),
       // Only include reason if provided
       ...(data.reason ? { reason: data.reason } : {}),
     };
