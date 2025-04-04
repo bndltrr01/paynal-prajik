@@ -1,17 +1,67 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { cancelBooking } from "../../services/Booking";
-import CancellationModal from "./CancellationModal";
+import { motion } from "framer-motion";
+import { AlertCircle, Calendar, CheckCircle2, Clock, IdCard, User, XCircle } from "lucide-react";
+import { FC, ReactNode, memo, useMemo } from "react";
+
+const formatStatus = (status: string): string => {
+  return status.toUpperCase().replace(/_/g, ' ');
+};
+
+const getStatusInfo = (status: string): { color: string; icon: ReactNode } => {
+  const normalizedStatus = status.toLowerCase();
+
+  switch (normalizedStatus) {
+    case 'confirmed':
+      return {
+        color: 'bg-green-100 text-green-700 border-green-300',
+        icon: <CheckCircle2 className="w-4 h-4 mr-1" />
+      };
+    case 'pending':
+      return {
+        color: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+        icon: <Clock className="w-4 h-4 mr-1" />
+      };
+    case 'cancelled':
+      return {
+        color: 'bg-red-100 text-red-700 border-red-300',
+        icon: <XCircle className="w-4 h-4 mr-1" />
+      };
+    case 'rejected':
+      return {
+        color: 'bg-red-100 text-red-700 border-red-300',
+        icon: <XCircle className="w-4 h-4 mr-1" />
+      };
+    case 'reserved':
+      return {
+        color: 'bg-blue-100 text-blue-700 border-blue-300',
+        icon: <CheckCircle2 className="w-4 h-4 mr-1" />
+      };
+    case 'checked_in':
+    case 'checked in':
+      return {
+        color: 'bg-indigo-100 text-indigo-700 border-indigo-300',
+        icon: <CheckCircle2 className="w-4 h-4 mr-1" />
+      };
+    case 'checked_out':
+    case 'checked out':
+      return {
+        color: 'bg-purple-100 text-purple-700 border-purple-300',
+        icon: <CheckCircle2 className="w-4 h-4 mr-1" />
+      };
+    default:
+      return {
+        color: 'bg-gray-100 text-gray-700 border-gray-300',
+        icon: <AlertCircle className="w-4 h-4 mr-1" />
+      };
+  }
+};
 
 interface BookingCardProps {
   roomType: string;
   imageUrl: string;
   dates: string;
-  guests: number | string;
+  guests: number;
   price: number;
   status: string;
-  bookingId: string | number;
-  isVenueBooking?: boolean;
   roomDetails?: {
     room_image?: string;
   };
@@ -34,279 +84,217 @@ interface BookingCardProps {
   totalPrice?: number;
 }
 
-const BookingCard = ({
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const contentVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3
+    }
+  }
+};
+
+const BookingCard: FC<BookingCardProps> = memo(({
   roomType,
   imageUrl,
   dates,
   guests,
   price,
   status,
-  bookingId,
-  isVenueBooking,
-  roomDetails,
-  areaDetails,
   userDetails,
   specialRequest,
   validId,
   bookingDate,
   cancellationReason,
   cancellationDate,
-  totalPrice,
-}: BookingCardProps) => {
-  const [showCancellationModal, setShowCancellationModal] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
-  const queryClient = useQueryClient();
+  totalPrice
+}) => {
+  const statusInfo = useMemo(() => getStatusInfo(status), [status]);
+  const displayPrice = totalPrice || price;
 
-  const normalizedStatus = status.toLowerCase();
-  const isCancelled = normalizedStatus === "cancelled" || normalizedStatus === "canceled";
-
-  const cancelMutation = useMutation({
-    mutationFn: (reason: string) => cancelBooking(bookingId.toString(), reason),
-    onSuccess: () => {
-      setShowCancellationModal(false);
-      queryClient.invalidateQueries({ queryKey: ['booking'] });
-      queryClient.invalidateQueries({ queryKey: ['user-bookings'] });
-    },
-  });
-
-  const statusStyles: Record<string, string> = {
-    pending: "bg-yellow-500 text-white",
-    reserved: "bg-green-500 text-white",
-    booked: "bg-green-500 text-white",
-    confirmed: "bg-green-500 text-white",
-    checked_in: "bg-blue-500 text-white",
-    checked_out: "bg-gray-500 text-white",
-    cancelled: "bg-red-500 text-white",
-    canceled: "bg-red-500 text-white",
-    noshow: "bg-black text-white",
-  };
-
-  const styleClass = statusStyles[normalizedStatus] || statusStyles.pending;
-
-  const canCancel = normalizedStatus === "pending" ||
-    normalizedStatus === "confirmed" ||
-    normalizedStatus === "booked" ||
-    normalizedStatus === "reserved";
-
-  const getDisplayStatus = () => {
-    if (normalizedStatus === "booked") {
-      return "CONFIRMED";
-    }
-
-    return status
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-  };
-
-  const handleCancelClick = () => setShowCancellationModal(true);
-
-  const handleConfirmCancel = (reason: string) => cancelMutation.mutate(reason);
-
-  const toggleDetails = () => setShowDetails(!showDetails);
+  const imgSrc = useMemo(() => {
+    return imageUrl;
+  }, [imageUrl]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto bg-white shadow-md rounded-lg p-6 flex flex-col gap-6 mb-6">
-      {/* Main booking info */}
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="w-full md:w-60 h-auto flex items-center justify-center overflow-hidden rounded-lg bg-gray-200">
+    <motion.div
+      className="bg-white rounded-xl shadow-md overflow-hidden w-full mx-auto mb-6"
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      layout="position"
+    >
+      {/* Header Section */}
+      <div className="relative">
+        <div className="h-[300px] overflow-hidden">
           <img
-            src={isVenueBooking ? (areaDetails?.area_image || imageUrl) : (roomDetails?.room_image || imageUrl)}
+            src={imgSrc}
             alt={roomType}
-            loading="lazy"
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
-
-        <div className="flex-grow flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-semibold">{roomType}</h2>
-                {isVenueBooking ? (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">Venue Booking</span>
-                ) : (
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">Room Booking</span>
-                )}
-              </div>
-              {bookingDate && (
-                <p className="text-md text-gray-500">Booked on: {bookingDate}</p>
-              )}
-            </div>
-            <p className="text-gray-600 flex items-center my-2">
-              <span className="mr-2">👥</span>{guests} {isVenueBooking ? 'capacity' : 'guests'}
-            </p>
-            <p className="text-blue-600 font-semibold text-lg">
-              {isVenueBooking ? (
-                <>
-                  TOTAL: {typeof totalPrice === 'number' ? totalPrice.toLocaleString() : (totalPrice || price.toLocaleString())}
-                  {areaDetails?.price_per_hour && <span className="text-sm text-gray-600 ml-2">({areaDetails.price_per_hour}/hour)</span>}
-                </>
-              ) : (
-                <>PRICE: {typeof price === 'number' ? price.toLocaleString() : price}</>
-              )}
-            </p>
-
-            {isCancelled && (
-              <p className="text-red-600 mt-1 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span className="font-medium">Booking Cancelled</span>
-                {cancellationDate && <span className="ml-1">on {cancellationDate}</span>}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-end justify-between mt-4">
-            <span
-              className={`px-4 py-2 text-sm font-bold rounded-lg ${styleClass} min-w-[100px] text-center uppercase`}
-            >
-              {getDisplayStatus()}
-            </span>
-
-            <div className="flex gap-3 ml-auto">
-              <button
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                onClick={toggleDetails}
-              >
-                {showDetails ? 'Hide Details' : 'View Details'}
-              </button>
-
-              {canCancel && (
-                <button
-                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-                  onClick={handleCancelClick}
-                  disabled={cancelMutation.isPending}
-                >
-                  {cancelMutation.isPending ? 'Processing...' : 'Cancel Booking'}
-                </button>
-              )}
-            </div>
-          </div>
+        <div className="absolute top-4 right-4">
+          <span className={`flex items-center px-4 py-1 rounded-full border text-sm font-semibold ${statusInfo.color}`}>
+            {statusInfo.icon}
+            {formatStatus(status)}
+          </span>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+          <h2 className="text-5xl font-bold font-playfair text-white">{roomType}</h2>
         </div>
       </div>
 
-      {/* Expanded details section */}
-      {showDetails && (
-        <div className="border-t pt-4 mt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Guest Information */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-2xl border-b pb-2">Guest Information</h3>
+      {/* Content Section */}
+      <motion.div
+        className="p-6"
+        variants={contentVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Booking Details */}
+        <motion.div variants={itemVariants} className="mb-6">
+          <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-4">
+            <div className="flex items-center">
+              <Calendar className="w-5 h-5 text-blue-600 mr-2" />
+              <div>
+                <span className="block text-sm text-gray-500">Dates</span>
+                <span className="block font-medium">{dates}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="block text-2xl font-bold text-blue-600">{displayPrice.toLocaleString()}</span>
+            </div>
+          </div>
 
-              {userDetails ? (
-                <div className="space-y-2">
-                  <p className="flex justify-between">
-                    <span className="font-medium">Name:</span>
-                    <span>{userDetails.fullName}</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-medium">Email:</span>
-                    <span>{userDetails.email}</span>
-                  </p>
-                  {userDetails.phoneNumber && (
-                    <p className="flex justify-between">
-                      <span className="font-medium">Phone:</span>
-                      <span>{userDetails.phoneNumber}</span>
-                    </p>
-                  )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center">
+              <User className="w-5 h-5 text-indigo-600 mr-2 flex-shrink-0" />
+              <div>
+                <span className="block text-lg text-gray-500">Guests</span>
+                <span className="block font-semibold">{guests} {guests > 1 ? 'people' : 'person'}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <Clock className="w-5 h-5 text-indigo-600 mr-2 flex-shrink-0" />
+              <div>
+                <span className="block text-lg text-gray-500">Booked On</span>
+                <span className="block font-semibold">{bookingDate || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* User Information - only render when available */}
+        {userDetails && (
+          <motion.div
+            variants={itemVariants}
+            className="mb-6 bg-gray-50 rounded-lg p-4"
+          >
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+              <User className="w-5 h-5 mr-2 text-gray-600" />
+              Guest Information
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <span className="text-lg font-semibold text-gray-700">Name</span>
+                <span className="font-medium text-lg">{userDetails.fullName}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-lg font-semibold text-gray-700">Email</span>
+                <span className="font-medium text-lg">{userDetails.email}</span>
+              </div>
+              {userDetails.phoneNumber && (
+                <div className="flex flex-col sm:col-span-2">
+                  <span className="text-sm text-gray-500">Phone</span>
+                  <span className="font-medium">{userDetails.phoneNumber}</span>
                 </div>
-              ) : (
-                <p className="text-gray-500">Guest information not available</p>
               )}
             </div>
+          </motion.div>
+        )}
 
-            {/* Additional Booking Details */}
-            <div className="space-y-3">
-              <h3 className="font-semibold text-2xl border-b pb-2">Booking Details</h3>
+        {/* Special Requests - only render when available */}
+        {specialRequest && (
+          <motion.div
+            variants={itemVariants}
+            className="mb-6 bg-blue-50 rounded-lg p-4"
+          >
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">Special Requests</h3>
+            <p className="text-blue-700">{specialRequest}</p>
+          </motion.div>
+        )}
 
-              <div className="space-y-2">
-                <p className="flex justify-between">
-                  <span className="font-medium">Status:</span>
-                  <span className={`px-2 py-0.5 rounded text-sm ${styleClass}`}>{getDisplayStatus()}</span>
-                </p>
-                <p className="flex justify-between">
-                  <span className="font-medium">{isVenueBooking ? 'Start/End Time:' : 'Check-in/out:'}</span>
-                  <span>{dates}</span>
-                </p>
-                {isVenueBooking && areaDetails && (
-                  <>
-                    <p className="flex justify-between">
-                      <span className="font-medium">Capacity:</span>
-                      <span>{areaDetails.capacity} people</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-medium">Price per hour:</span>
-                      <span>{areaDetails.price_per_hour}</span>
-                    </p>
-                    <p className="flex justify-between">
-                      <span className="font-medium">Total Price:</span>
-                      <span>{typeof totalPrice === 'number' ? totalPrice.toLocaleString() : totalPrice || price.toLocaleString()}</span>
-                    </p>
-                  </>
-                )}
-              </div>
+        {/* Cancellation/Rejection Reason - only render when applicable */}
+        {(status.toLowerCase() === 'cancelled' || status.toLowerCase() === 'rejected') && cancellationReason && (
+          <motion.div
+            variants={itemVariants}
+            className="mb-6 bg-red-50 rounded-lg p-4"
+          >
+            <h3 className="text-lg font-semibold text-red-800 mb-2 flex items-center">
+              <XCircle className="w-5 h-5 mr-2" />
+              {status.toLowerCase() === 'cancelled' ? 'Cancellation Reason' : 'Rejection Reason'}
+            </h3>
+            <p className="text-red-700">{cancellationReason}</p>
+            {cancellationDate && (
+              <p className="text-sm text-red-500 mt-2">
+                {status.toLowerCase() === 'cancelled' ? 'Cancelled on: ' : 'Rejected on: '}
+                {cancellationDate}
+              </p>
+            )}
+          </motion.div>
+        )}
+
+        {/* Valid ID - only render when available */}
+        {validId && (
+          <motion.div
+            variants={itemVariants}
+            className="mt-6"
+          >
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+              <IdCard className="w-5 h-5 mr-2 text-gray-600" />
+              Valid ID
+            </h3>
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <img
+                src={validId}
+                alt="Valid ID"
+                className="w-full h-auto object-contain cursor-pointer transition-transform hover:scale-[1.01]"
+                loading="lazy"
+              />
             </div>
-
-            {/* Cancellation Information (if cancelled) */}
-            {isCancelled && (
-              <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-lg border-b pb-2 text-red-600">Cancellation Information</h3>
-                <div className="bg-red-50 p-4 rounded-md">
-                  {cancellationDate && (
-                    <p className="flex justify-between mb-2">
-                      <span className="font-medium">Cancelled on:</span>
-                      <span>{cancellationDate}</span>
-                    </p>
-                  )}
-                  {cancellationReason ? (
-                    <div>
-                      <p className="font-medium mb-1">Cancellation Reason:</p>
-                      <p className="text-gray-700 bg-white p-3 rounded-md border border-red-100">{cancellationReason}</p>
-                    </div>
-                  ) : (
-                    <p className="text-gray-700">No cancellation reason provided.</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Special Requests (if any) */}
-            {specialRequest && specialRequest.trim() !== '' && (
-              <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-2xl border-b pb-2">Special Requests</h3>
-                <p className="text-gray-700 bg-gray-50 p-3 rounded-md">{specialRequest}</p>
-              </div>
-            )}
-
-            {/* Valid ID (if available) */}
-            {validId && (
-              <div className="md:col-span-2 space-y-2">
-                <h3 className="font-semibold text-2xl border-b pb-2">Valid ID</h3>
-                <div className="rounded-md overflow-hidden">
-                  <img
-                    src={validId}
-                    alt="Valid ID"
-                    className="w-full h-auto max-h-64 object-contain"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Cancellation Modal */}
-      <CancellationModal
-        isOpen={showCancellationModal}
-        onClose={() => setShowCancellationModal(false)}
-        onConfirm={handleConfirmCancel}
-        bookingId={bookingId}
-      />
-    </div>
+          </motion.div>
+        )}
+      </motion.div>
+    </motion.div>
   );
-};
+});
+
+BookingCard.displayName = "BookingCard";
 
 export default BookingCard;

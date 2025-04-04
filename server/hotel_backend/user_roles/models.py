@@ -6,7 +6,6 @@ from cloudinary.models import CloudinaryField # type: ignore
 class CustomUsers(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
-        ('staff', 'Staff'),
         ('guest', 'Guest'),
     ]
     

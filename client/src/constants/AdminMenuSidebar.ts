@@ -4,7 +4,6 @@ import {
   faBed, 
   faUsers,
   faChartLine,
-  faComment,
   faConciergeBell,
   faCalendarCheck,
 } from "@fortawesome/free-solid-svg-icons";
@@ -37,17 +36,12 @@ export const menuItems = [
   },
   {
     icon: faUsers,
-    label: "Manage Staff",
-    link: '/admin/staff'
+    label: "Manage Users",
+    link: '/admin/users'
   },
-  {
-    icon: faComment,
-    label: "Comments",
-    link: '/admin/comments'
-  },
-  {
-    icon: faChartLine,
-    label: "Reports",
-    link: '/admin/reports'
-  },
+  // {
+  //   icon: faChartLine,
+  //   label: "Reports",
+  //   link: '/admin/reports'
+  // },
 ];

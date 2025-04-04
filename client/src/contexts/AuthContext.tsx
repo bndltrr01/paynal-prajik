@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, FC, ReactNode, useContext, useEffect, useState } from "react";
+import { createContext, FC, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { authenticateUser } from "../services/Auth";
 
 interface User {
@@ -15,13 +15,12 @@ interface UserContextType {
     userDetails: User | null;
     sessionExpired: boolean;
     role?: string;
-    loading: boolean;
+    isLoading: boolean;
     profileImage?: string;
     setIsAuthenticated: (value: boolean) => void;
     setUserDetails: (value: User | null) => void;
     setSessionExpired: (value: boolean) => void;
     setRole: (value: string) => void;
-    setLoading: (value: boolean) => void;
     setProfileImage?: (value: string) => void;
     clearAuthState: () => void;
 }
@@ -33,22 +32,29 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const [userDetails, setUserDetails] = useState<User | null>(null);
     const [sessionExpired, setSessionExpired] = useState<boolean>(false);
     const [role, setRole] = useState<string>("");
-    const [loading, setLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [profileImage, setProfileImage] = useState<string>("");
 
-    const clearAuthState = () => {
+    const clearAuthState = useCallback(() => {
         setIsAuthenticated(false);
         setUserDetails(null);
         setSessionExpired(false);
         setRole("");
         setProfileImage("");
-    };
+    }, []);
 
     useEffect(() => {
         const checkAuth = async () => {
+            setIsLoading(true);
             try {
                 const res = await authenticateUser();
-                if (res && res.data && res.data.isAuthenticated === true && res.data.user && res.data.user.id) {
+                if (
+                    res &&
+                    res.data &&
+                    res.data.isAuthenticated === true &&
+                    res.data.user &&
+                    res.data.user.id
+                ) {
                     setIsAuthenticated(true);
                     setUserDetails(res.data.user);
                     setProfileImage(res.data.user.profile_image || "");
@@ -56,41 +62,38 @@ export const UserProvider: FC<{ children: ReactNode }> = ({ children }) => {
                 } else {
                     clearAuthState();
                 }
-            } catch (error) {
+            } catch {
                 clearAuthState();
             } finally {
-                setLoading(false);
+                setIsLoading(false);
             }
         };
 
         checkAuth();
+    }, [clearAuthState]);
 
-        const handleFocus = () => {
-            checkAuth();
-        };
-
-        window.addEventListener('focus', handleFocus);
-
-        return () => {
-            window.removeEventListener('focus', handleFocus);
-        };
-    }, []);
-
-    const contextValue: UserContextType = {
+    const contextValue = useMemo(() => ({
         isAuthenticated,
         userDetails,
         sessionExpired,
         role,
-        loading,
+        isLoading,
         profileImage,
         setIsAuthenticated,
         setUserDetails,
         setSessionExpired,
         setRole,
-        setLoading,
         setProfileImage,
         clearAuthState
-    }
+    }), [
+        isAuthenticated,
+        userDetails,
+        sessionExpired,
+        role,
+        isLoading,
+        profileImage,
+        clearAuthState
+    ]);
 
     return (
         <UserContext.Provider value={contextValue}>

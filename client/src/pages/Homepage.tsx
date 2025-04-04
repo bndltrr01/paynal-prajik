@@ -1,20 +1,17 @@
-import { Suspense, lazy } from "react";
-import Promotion from "../components/Promotion";
-import Values from "../components/Values";
+import { Suspense } from "react";
 import Hero from "../layout/Hero";
-import AboutUs from "./AboutUs";
-
-const LoadingHydrate = lazy(() => import("../motions/loaders/LoadingHydrate"));
+import LoadingHydrate from "../motions/loaders/LoadingHydrate";
+import AboutUs from "./visitors/home/AboutUs";
+import Promotion from "./visitors/home/Promotion";
+import Values from "./visitors/home/Values";
 
 const Homepage = () => {
   return (
     <Suspense fallback={<LoadingHydrate />} >
-      <section>
-        <Hero />
-        <Promotion />
-        <AboutUs />
-        <Values />
-      </section>
+      <Hero />
+      <Promotion />
+      <AboutUs />
+      <Values />
     </Suspense>
   );
 };

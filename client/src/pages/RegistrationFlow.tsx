@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, KeyboardEvent, FormEvent, useEffect, FC } from "react";
 import { motion } from "framer-motion";
+import { FC, FormEvent, KeyboardEvent, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useUserContext } from "../contexts/AuthContext";
 import Notification from "../components/Notification";
-import { verifyOtp, resendOtp } from "../services/Auth";
+import { useUserContext } from "../contexts/AuthContext";
+import { completeRegistration, resendOtp, verifyOtp } from "../services/Auth";
 
 const RegistrationFlow: FC = () => {
     const [otp, setOTP] = useState<string[]>(Array(6).fill(""));
@@ -17,6 +17,12 @@ const RegistrationFlow: FC = () => {
         type: "success" | "error" | "info" | "warning";
         icon: string;
     } | null>(null);
+    const [firstName, setFirstName] = useState<string>("");
+    const [lastName, setLastName] = useState<string>("");
+    const [formErrors, setFormErrors] = useState<{
+        firstName?: string;
+        lastName?: string;
+    }>({});
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -80,6 +86,21 @@ const RegistrationFlow: FC = () => {
     const handleOTPSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setOtpError("");
+        setFormErrors({});
+
+        let hasErrors = false;
+        if (!firstName.trim()) {
+            setFormErrors(prev => ({ ...prev, firstName: "First name is required" }));
+            hasErrors = true;
+        }
+        if (!lastName.trim()) {
+            setFormErrors(prev => ({ ...prev, lastName: "Last name is required" }));
+            hasErrors = true;
+        }
+        if (hasErrors) {
+            return;
+        }
+
         setIsVerifying(true);
         const otpCode = otp.join("");
         if (otpCode.length !== 6) {
@@ -87,17 +108,49 @@ const RegistrationFlow: FC = () => {
             setIsVerifying(false);
             return;
         }
+
         try {
             const response = await verifyOtp(email, password, otpCode);
             if (response.status === 200) {
-                setNotification({
-                    message: "OTP verified successfully!",
-                    type: "success",
-                    icon: "fas fa-check-circle"
-                });
-                setIsAuthenticated(true);
-                setUserDetails(response.data.user);
-                navigate("/");
+                try {
+                    await completeRegistration(
+                        email,
+                        password,
+                        firstName,
+                        lastName,
+                    );
+
+                    setNotification({
+                        message: "Registration completed successfully!",
+                        type: "success",
+                        icon: "fas fa-check-circle"
+                    });
+
+                    setIsAuthenticated(true);
+                    setUserDetails({
+                        ...response.data.user,
+                        first_name: firstName,
+                        last_name: lastName
+                    });
+
+                    const hasPendingBooking = localStorage.getItem('pendingBookingCallback');
+                    const returnUrl = localStorage.getItem('bookingReturnUrl');
+
+                    if (hasPendingBooking) {
+                        localStorage.removeItem('pendingBookingCallback');
+
+                        if (returnUrl) {
+                            localStorage.removeItem('bookingReturnUrl');
+                            navigate(returnUrl);
+                        } else {
+                            navigate(-1);
+                        }
+                    } else {
+                        navigate("/");
+                    }
+                } catch (error: any) {
+                    setOtpError(error.response?.data?.error || "Failed to complete registration. Please try again.");
+                }
             }
         } catch (error: any) {
             if (error.response) {
@@ -145,10 +198,9 @@ const RegistrationFlow: FC = () => {
                             />
                         </svg>
                     </div>
-                    <h2 className="text-2xl font-semibold mb-1 text-center">Verify Your Email Address</h2>
+                    <h2 className="text-2xl font-semibold mb-1 text-center">Complete Your Registration</h2>
                     <p className="text-gray-500 text-center max-w-xs">
-                        We&apos;ve sent a 6-digit verification code to your email address.
-                        Please enter the code below to continue.
+                        Please enter your information and the 6-digit verification code sent to your email.
                     </p>
                 </div>
                 {otpError && (
@@ -157,6 +209,43 @@ const RegistrationFlow: FC = () => {
                     </div>
                 )}
                 <form onSubmit={handleOTPSubmit}>
+                    <div className="mb-4">
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                            First Name
+                        </label>
+                        <input
+                            type="text"
+                            id="firstName"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter your first name"
+                        />
+                        {formErrors.firstName && (
+                            <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>
+                        )}
+                    </div>
+
+                    <div className="mb-6">
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                            Last Name
+                        </label>
+                        <input
+                            type="text"
+                            id="lastName"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter your last name"
+                        />
+                        {formErrors.lastName && (
+                            <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>
+                        )}
+                    </div>
+
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Verification Code
+                    </label>
                     <div className="flex justify-center gap-2 mb-4">
                         {otp.map((digit, index) => (
                             <input
@@ -197,7 +286,7 @@ const RegistrationFlow: FC = () => {
                         disabled={isVerifying}
                         className={`w-full bg-blue-500 text-white py-2 rounded-md cursor-pointer hover:bg-blue-600 transition-colors ${isVerifying ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
-                        {isVerifying ? "Verifying..." : "Verify OTP"}
+                        {isVerifying ? "Processing..." : "Complete Registration"}
                     </button>
                 </form>
             </motion.div>

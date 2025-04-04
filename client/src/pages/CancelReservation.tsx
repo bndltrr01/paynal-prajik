@@ -16,9 +16,9 @@ const CancelReservation = () => {
         mutationFn: (cancelData: { bookingId: string, reason: string }) =>
             cancelBooking(cancelData.bookingId, cancelData.reason),
         onSuccess: () => {
-            navigate('/my-booking?cancelled=true');
+            navigate(`/guest/bookings?cancelled=true`);
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             setFormError(error?.message || 'Failed to cancel booking. Please try again.');
         }
     });
@@ -157,8 +157,8 @@ const CancelReservation = () => {
                             type="submit"
                             disabled={cancelMutation.isPending}
                             className={`w-full py-3 px-6 rounded-md text-white text-center font-semibold ${cancelMutation.isPending
-                                    ? 'bg-red-400 cursor-not-allowed'
-                                    : 'bg-red-600 hover:bg-red-700 transition-colors'
+                                ? 'bg-red-400 cursor-not-allowed'
+                                : 'bg-red-600 hover:bg-red-700 transition-colors'
                                 }`}
                         >
                             {cancelMutation.isPending ? 'Processing...' : 'Cancel Booking'}

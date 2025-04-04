@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { Outlet } from "react-router-dom";
-import AdminSidebar from "../../layout/admin/AdminSidebar";
+import AdminSidebar from "./AdminSidebar";
 import { useUserContext } from "../../contexts/AuthContext";
 
 const AdminLayout: FC = () => {

@@ -1,21 +1,18 @@
-import RoomHero from "../layout/RoomHero";
-import RoomList from "../components/rooms/RoomList";
-import RoomFeatures from "../components/rooms/RoomFeatures";
-import RoomIncluded from "../components/rooms/RoomIncluded";
-import RoomAbout from "../components/rooms/RoomAbout";
-import { Suspense, lazy } from "react";
-
-const LoadingHydrate = lazy(() => import("../motions/loaders/LoadingHydrate"));
+import RoomAbout from "./visitors/rooms/RoomAbout";
+import RoomFeatures from "./visitors/rooms/RoomFeatures";
+import RoomHero from "./visitors/rooms/RoomHero";
+import RoomIncluded from "./visitors/rooms/RoomIncluded";
+import RoomList from "./visitors/rooms/RoomList";
 
 const Rooms = () => {
   return (
-    <Suspense fallback={<LoadingHydrate />}>
+    <>
       <RoomHero />
       <RoomFeatures />
       <RoomAbout />
       <RoomIncluded />
       <RoomList />
-    </Suspense>
+    </>
   );
 };
 

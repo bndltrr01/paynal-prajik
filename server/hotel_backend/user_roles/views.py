@@ -134,6 +134,8 @@ def verify_otp(request):
         email = request.data.get("email")
         password = request.data.get("password")
         received_otp = request.data.get("otp")
+        first_name = request.data.get("first_name", "Guest")
+        last_name = request.data.get("last_name", "")
         
         if not email or not password or not received_otp:
             return Response({"error": "Email, password, and OTP are required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -148,14 +150,9 @@ def verify_otp(request):
         if str(cached_otp) != str(received_otp):
             return Response({"error": "Incorrect OTP code. Please try again"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # OTP is valid: remove from cache.
         cache.delete(cache_key)
 
-        # Create guest user with default values.
         DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
-        
-        first_name = "Guest"
-        last_name = ""
         
         if CustomUsers.objects.filter(email=email).exists():
             return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
@@ -171,7 +168,6 @@ def verify_otp(request):
         )
         user.save()
 
-        # Authenticate and log in the new user.
         user_auth = authenticate(request, username=email, password=password)
         if user_auth is not None:
             login(request, user_auth)
@@ -439,11 +435,8 @@ def user_login(request):
 def user_auth(request):
     try:
         user = request.user
-        print(f"User authentication check: {user.username} (ID: {user.id})")
         
-        # Check if user is properly authenticated
         if not user.is_authenticated:
-            print(f"User {user.username} is not authenticated")
             return Response({
                 'isAuthenticated': False,
                 'error': 'User is not authenticated'
@@ -462,7 +455,6 @@ def user_auth(request):
             }
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"Auth check error: {str(e)}")
         return Response({
             'isAuthenticated': False,
             'error': str(e)
@@ -499,5 +491,40 @@ def change_profile_picture(request):
             'message': 'Profile picture updated successfully',
             'profile_image': user.profile_image.url
         }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user_details(request, id):
+    try:
+        if request.user.id != id:
+            return Response({'error': 'You are not authorized to update this profile'}, 
+                           status=status.HTTP_403_FORBIDDEN)
+            
+        user = CustomUsers.objects.get(id=id)
+        data = request.data.get('data', [])
+        
+        if len(data) >= 3:
+            user.first_name = data[0]
+            user.last_name = data[1]
+            user.email = data[2]
+            
+            if user.email != user.username:
+                user.username = user.email
+                
+            user.save()
+            
+            serializer = CustomUserSerializer(user)
+            return Response({
+                'message': 'Profile updated successfully',
+                'data': serializer.data
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Insufficient data provided'}, 
+                           status=status.HTTP_400_BAD_REQUEST)
+            
+    except CustomUsers.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

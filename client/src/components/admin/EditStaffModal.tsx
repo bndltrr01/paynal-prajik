@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChangeEvent, FC, FormEvent, memo, useCallback, useEffect, useState } from "react";
 
-export interface IStaff {
+export interface IUser {
     id: number;
     first_name: string;
     last_name: string;
@@ -11,26 +11,26 @@ export interface IStaff {
     confirm_password: string;
 }
 
-interface IStaffFormModalProps {
+interface IUserFormModalProps {
     isOpen: boolean;
     cancel: () => void;
-    onSave: (staff: IStaff) => Promise<void>;
-    staffData?: IStaff | null;
+    onSave: (user: IUser) => Promise<void>;
+    userData?: IUser | null;
     loading?: boolean;
 }
 
-const EditStaffModal: FC<IStaffFormModalProps> = ({
+const EditUserModal: FC<IUserFormModalProps> = ({
     isOpen,
     cancel,
     onSave,
-    staffData,
+    userData,
     loading = false,
 }) => {
-    const [formState, setFormState] = useState<IStaff>({
-        id: staffData?.id || 0,
-        first_name: staffData?.first_name || "",
-        last_name: staffData?.last_name || "",
-        email: staffData?.email || "",
+    const [formState, setFormState] = useState<IUser>({
+        id: userData?.id || 0,
+        first_name: userData?.first_name || "",
+        last_name: userData?.last_name || "",
+        email: userData?.email || "",
         password: "",
         confirm_password: "",
     });
@@ -39,15 +39,15 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
 
     useEffect(() => {
         setFormState({
-            id: staffData?.id || 0,
-            first_name: staffData?.first_name || "",
-            last_name: staffData?.last_name || "",
-            email: staffData?.email || "",
+            id: userData?.id || 0,
+            first_name: userData?.first_name || "",
+            last_name: userData?.last_name || "",
+            email: userData?.email || "",
             password: "",
             confirm_password: "",
         });
         setErrors({});
-    }, [staffData]);
+    }, [userData]);
 
     const handleChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -98,7 +98,7 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
                         transition={{ duration: 0.2 }}
                     >
                         <h2 className="text-xl font-semibold mb-4">
-                            {staffData ? "Edit Staff" : "Add Staff"}
+                            {userData ? "Edit User" : "Add User"}
                         </h2>
 
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -165,7 +165,7 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
                             {/* Password */}
                             <div>
                                 <label className="block text-sm font-medium mb-1">
-                                    Password {staffData ? "(leave empty to keep current)" : ""}
+                                    Password {userData ? "(leave empty to keep current)" : ""}
                                 </label>
                                 <input
                                     type="password"
@@ -173,7 +173,7 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
                                     value={formState.password}
                                     onChange={handleChange}
                                     className="w-full p-2 border rounded-md"
-                                    required={!staffData}
+                                    required={!userData}
                                 />
                                 {errors.password && (
                                     <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -191,7 +191,7 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
                                     value={formState.confirm_password}
                                     onChange={handleChange}
                                     className="w-full p-2 border rounded-md"
-                                    required={!staffData}
+                                    required={!userData}
                                 />
                                 {errors.confirm_password && (
                                     <p className="text-red-500 text-xs mt-1">
@@ -232,4 +232,4 @@ const EditStaffModal: FC<IStaffFormModalProps> = ({
     );
 };
 
-export default memo(EditStaffModal);
+export default memo(EditUserModal);

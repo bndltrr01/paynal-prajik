@@ -32,7 +32,6 @@ interface AddAmenityResponse {
 
 const ManageAmenities = () => {
   const [search, setSearch] = useState<string>("");
-  const [filter, setFilter] = useState<string>("all");
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedAmenity, setSelectedAmenity] = useState<IAmenity | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -116,7 +115,6 @@ const ManageAmenities = () => {
     const matchesSearch = amenity.description
       .toLowerCase()
       .includes(search.toLowerCase());
-    if (filter === "all") return matchesSearch;
     return matchesSearch;
   });
 
@@ -184,17 +182,10 @@ const ManageAmenities = () => {
           <input
             type="text"
             placeholder="Search by description"
-            className="p-2 border rounded w-full md:w-1/2"
+            className="p-3 px-6 ring-1 rounded-full w-full md:w-1/2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select
-            className="p-2 border rounded w-full md:w-1/2"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="all">All Amenities</option>
-          </select>
         </div>
 
         {/* Grid of Amenity Cards */}

@@ -1,6 +1,6 @@
-import VenueList from "../components/bookings/VenueList";
-import withSuspense from "../hoc/withSuspense";
-import VenueHero from "../layout/VenueHero";
+
+import VenueHero from "./visitors/areas/VenueHero";
+import VenueList from "./visitors/areas/VenueList";
 
 const Venue = () => {
   return (
@@ -11,4 +11,4 @@ const Venue = () => {
   );
 };
 
-export default withSuspense(Venue, { loaderType: "card", count: 3 });
+export default Venue;
