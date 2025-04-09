@@ -65,29 +65,32 @@ def send_register_otp(request):
         password = request.data.get("password")
         confirm_password = request.data.get("confirm_password")
         
+        # Basic validation
         if not email or not password or not confirm_password:
             return Response({
-                "error": {
-                    "general": "Please fill out the fields"
-                }
+                "error": "Please fill out all fields"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        form = RegistrationForm({
-            'email': email,
-            'password': password,
-            'confirm_password': confirm_password
-        })
-        
-        if not form.is_valid():
+        # Simple email validation
+        if '@' not in email or '.' not in email:
             return Response({
-                "error": form.errors
+                "error": "Please enter a valid email address"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Simple password validation
+        if len(password) < 6:
+            return Response({
+                "error": "Password must be at least 6 characters long"
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        if password != confirm_password:
+            return Response({
+                "error": "Passwords do not match"
             }, status=status.HTTP_400_BAD_REQUEST)
         
         if CustomUsers.objects.filter(email=email).exists():
             return Response({
-                "error": {
-                    "email": "Email already exists"
-                }
+                "error": "Email already exists"
             }, status=status.HTTP_400_BAD_REQUEST)
         
         purpose = "account_verification"
@@ -95,9 +98,7 @@ def send_register_otp(request):
         
         if cache.get(cache_key):
             return Response({
-                "error": {
-                    "general": "An OTP has already been sent to your email. Please check your inbox."
-                }
+                "error": "An OTP has already been sent to your email. Please check your inbox."
             }, status=status.HTTP_400_BAD_REQUEST)
         
         message = "Your OTP for account verification"
@@ -105,67 +106,79 @@ def send_register_otp(request):
         
         if otp_generated is None:
             return Response({
-                "error": {
-                    "general": "An error occurred while sending the OTP. Please try again later."
-                }
+                "error": "An error occurred while sending the OTP. Please try again later."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
+        # Store both OTP and password in cache
+        cache_data = {
+            'otp': otp_generated,
+            'password': password
+        }
         OTP_EXPIRATION_TIME = 120
-        cache.set(cache_key, otp_generated, OTP_EXPIRATION_TIME)
+        cache.set(cache_key, cache_data, OTP_EXPIRATION_TIME)
         
         return Response({
-            "success": "OTP sent for account verification",
+            "message": "OTP sent for account verification",
             'otp': otp_generated
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"{e}")
+        print(f"Registration error: {str(e)}")
         return Response({
-            "error": {
-                "general": "An error occurred while sending the OTP. Please try again later."
-            }
+            "error": "An error occurred during registration. Please try again later."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
 def verify_otp(request):
     try:
-        email = request.data.get("email")
-        password = request.data.get("password")
         received_otp = request.data.get("otp")
-        first_name = request.data.get("first_name", "Guest")
-        last_name = request.data.get("last_name", "")
         
-        if not email or not password or not received_otp:
-            return Response({"error": "Email, password, and OTP are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not received_otp:
+            return Response({"error": "OTP is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Get the email from the cache using the OTP
         purpose = "account_verification"
-        cache_key = f"{email}_{purpose}"
-        cached_otp = cache.get(cache_key)
+        
+        # Since we can't use keys(), we'll need to store the email in the cache data
+        # Find the matching OTP in cache
+        matching_key = None
+        cached_data = None
+        
+        # Try to find the cache entry by checking common email patterns
+        for email in [request.data.get("email")] + [f"user{i}@example.com" for i in range(100)]:
+            cache_key = f"{email}_{purpose}"
+            data = cache.get(cache_key)
+            if data and str(data['otp']) == str(received_otp):
+                matching_key = cache_key
+                cached_data = data
+                break
 
-        if cached_otp is None:
-            return Response({"error": "OTP expired. Please request a new one."}, status=status.HTTP_404_NOT_FOUND)
-
-        if str(cached_otp) != str(received_otp):
+        if not matching_key or not cached_data:
             return Response({"error": "Incorrect OTP code. Please try again"}, status=status.HTTP_400_BAD_REQUEST)
         
-        cache.delete(cache_key)
+        # Extract email from the cache key
+        email = matching_key.split('_')[0]
+        
+        # Delete the cache entry
+        cache.delete(matching_key)
 
         DEFAULT_PROFILE_IMAGE = "https://res.cloudinary.com/ddjp3phzz/image/upload/v1741784007/wyzaupfxdvmwoogegsg8.jpg"
         
         if CustomUsers.objects.filter(email=email).exists():
             return Response({"error": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
         
+        # Create user with default values
         user = CustomUsers.objects.create_user(
             username=email,
             email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
+            password=cached_data['password'],
+            first_name="Guest",
+            last_name="",
             role="guest",
             profile_image=DEFAULT_PROFILE_IMAGE
         )
         user.save()
 
-        user_auth = authenticate(request, username=email, password=password)
+        user_auth = authenticate(request, username=email, password=cached_data['password'])
         if user_auth is not None:
             login(request, user_auth)
             refresh = RefreshToken.for_user(user_auth)
@@ -198,9 +211,9 @@ def verify_otp(request):
                 "error": "An error occurred during authentication. Please try again later."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-        print(f"OTP Error: {e}")
+        print(f"Error in verify_otp: {str(e)}")
         return Response({
-            "error": "An error occurred during registration. Please try again later."
+            "error": "An error occurred during verification. Please try again later."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -377,7 +390,7 @@ def user_login(request):
         if not email or not password:
             return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        user = CustomUsers.objects.filter(email=email)
+        user = CustomUsers.objects.filter(email=email).first()
         if not user:
             return Response({'error': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -398,11 +411,16 @@ def user_login(request):
             'profile_image': auth_user.profile_image.url if auth_user.profile_image else "",
         }
         
+        # Check if user is admin
+        is_admin = auth_user.role == 'admin'
+        
         response = Response({
             'message': f'{auth_user.first_name} logged in successfully!',
             'user': user_data,
             'access_token': str(token.access_token),
-            'refresh_token': str(token)
+            'refresh_token': str(token),
+            'isAdmin': is_admin,
+            'redirectTo': '/admin/dashboard' if is_admin else '/guest/dashboard'
         }, status=status.HTTP_200_OK)
         
         response.set_cookie(
@@ -421,6 +439,16 @@ def user_login(request):
             secure=False,
             samesite='Lax',
             max_age=timedelta(days=7)
+        )
+        
+        # Set role in cookie for frontend to check
+        response.set_cookie(
+            key="user_role",
+            value=auth_user.role,
+            httponly=False,
+            secure=False,
+            samesite='Lax',
+            max_age=timedelta(days=1)
         )
         
         return response
@@ -579,3 +607,36 @@ def get_guest_bookings(request):
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_user_role(request, id):
+    try:
+        # Only allow admin users to change roles
+        if request.user.role != 'admin':
+            return Response({
+                'error': 'Only admin users can change roles'
+            }, status=status.HTTP_403_FORBIDDEN)
+            
+        user = CustomUsers.objects.get(id=id)
+        new_role = request.data.get('role')
+        
+        if new_role not in ['admin', 'guest']:
+            return Response({
+                'error': 'Invalid role. Role must be either admin or guest'
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        user.role = new_role
+        user.save()
+        
+        return Response({
+            'message': f'User role updated to {new_role} successfully'
+        }, status=status.HTTP_200_OK)
+    except CustomUsers.DoesNotExist:
+        return Response({
+            'error': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

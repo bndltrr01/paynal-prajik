@@ -116,7 +116,7 @@ WSGI_APPLICATION = 'hotel_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'hotel_backend',  # Replace with your actual database name
+        'NAME': 'hotel_management',  # Replace with your actual database name
         'USER': 'root',  # Change if using a different user
         'PASSWORD': 'Bn_dltrr103102',  # Replace with your actual password
         'HOST': 'localhost',
@@ -124,13 +124,13 @@ DATABASES = {
     }
 }
 
+# Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'your-email@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'your-app-password')
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -192,12 +192,10 @@ cloudinary.config(
     api_secret=os.getenv('API_SECRET')
 )
 
-# Cache settings
+# Cache Configuration
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 300,  # 5 minutes
     }
 }
 

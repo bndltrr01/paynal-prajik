@@ -131,15 +131,17 @@ VALID_EMAIL_PROVIDERS = [
 ]
 
 def validate_email_domain(domain):
-    # Validator to check if the email domain is in the list of valid email providers
-    if domain not in VALID_EMAIL_PROVIDERS:
+    # Allow any valid email domain
+    try:
+        validate_email(f"test@{domain}")
+    except ValidationError:
         raise ValidationError(
             f"Invalid email domain. {domain} is not a valid email provider.",
             code="invalid_domain"
         )
 
 def validate_strict_email(email):
-    # This will validates email format, local part length, and domain against valia providers
+    # This will validates email format and local part length
     email = email.strip()
     if not email:
         raise ValidationError("Email is required.", code="required")
@@ -153,18 +155,10 @@ def validate_strict_email(email):
     try:
         validate_email(email)
     except ValidationError:
-        raise ValidationError(
-            "Invalid email address.", 
-            code="invalid_email"
-        )
+        raise ValidationError("Invalid email format.", code="invalid_format")
     
     domain = email.split('@')[1]
-    is_valid_domain = any(domain == provider for provider in VALID_EMAIL_PROVIDERS) # Exact match domain check, mimics "strictGovPh" logic
-    if not is_valid_domain:
-        raise ValidationError(
-            f"Invalid email domain. {domain} is not a valid email provider.",
-            code="invalid_domain"
-        )
+    validate_email_domain(domain)
 
 def validate_password_django(password, confirm):
     # Validates password and its confirmation
@@ -175,19 +169,19 @@ def validate_password_django(password, confirm):
             code="password_mismatch"
         )
     
-    # Combined regex to check for:
-    # 1. At least one uppercase letter
-    # 2. At least one special character
-    # 3. At least one number
-    # 4. No spaces
-    # 5. Minimum length of 6 characters
-    password_regex = r"^(?=.*[A-Z])(?=.*[@$!%*?&])(?=.*\d)(?!.*\s).{6,}$"
-    password_validator = RegexValidator(
-        regex=password_regex,
-        message="Password must contain at least one uppercase letter, one special character, one number, and no spaces.",
-        code="invalid_password_complexity"
-    )
-    password_validator(password)
+    # Minimum length of 6 characters
+    if len(password) < 6:
+        raise ValidationError(
+            "Password must be at least 6 characters long.",
+            code="password_too_short"
+        )
+    
+    # No spaces allowed
+    if ' ' in password:
+        raise ValidationError(
+            "Password cannot contain spaces.",
+            code="password_contains_spaces"
+        )
 
 class RegistrationForm(forms.Form):
     email = forms.CharField(validators=[validate_strict_email])

@@ -1,6 +1,7 @@
 from django.core.mail import EmailMultiAlternatives
 import random, os
 from dotenv import load_dotenv
+from django.conf import settings
 
 load_dotenv()
 
@@ -37,14 +38,18 @@ def send_otp_to_email(email, message):
     </body>
 </html>
 """
-        email_from = os.getenv('EMAIL_HOST_USER')
+        email_from = settings.EMAIL_HOST_USER
+        if not email_from:
+            print("Email configuration is missing. Please set EMAIL_HOST_USER in your environment variables.")
+            return None
+            
         msg = EmailMultiAlternatives(subject, message, email_from, [email])
         msg.attach_alternative(otp_message, "text/html")
         msg.send()
         
         return otp
     except Exception as e:
-        print(str(e))
+        print(f"Error sending email: {str(e)}")
         return None
 
 def send_reset_password(email):

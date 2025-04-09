@@ -47,17 +47,12 @@ export const sendRegisterOtp = async (
   }
 };
 
-export const verifyOtp = async (
-  email: string,
-  password: string,
-  otp: string
-) => {
+export const verifyOtp = async (email: string, otp: string) => {
   try {
     const response = await API.post(
       "/auth/verify",
       {
         email: email,
-        password: password,
         otp: otp,
       },
       {
