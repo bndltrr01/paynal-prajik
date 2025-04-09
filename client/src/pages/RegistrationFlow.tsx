@@ -4,6 +4,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Notification from "../components/Notification";
 import { useUserContext } from "../contexts/AuthContext";
 import { verifyOtp } from "../services/Auth";
+import { AxiosResponse } from "axios";
+
+interface VerifyResponse {
+    user: {
+        id: number;
+        email: string;
+        role: string;
+    };
+    isAdmin: boolean;
+}
 
 const RegistrationFlow: FC = () => {
     const [otp, setOTP] = useState<string[]>(Array(6).fill(""));
@@ -44,18 +54,18 @@ const RegistrationFlow: FC = () => {
 
         try {
             const otpString = otp.join("");
-            const response = await verifyOtp(email, otpString);
+            const response = await verifyOtp(email, otpString) as AxiosResponse<VerifyResponse>;
             
-            if (response) {
+            if (response.data) {
                 setIsAuthenticated(true);
-                setUserDetails(response.user);
+                setUserDetails(response.data.user);
                 setNotification({
                     message: "Registration successful! Redirecting...",
                     type: "success",
                     icon: "✅"
                 });
                 setTimeout(() => {
-                    navigate(response.isAdmin ? "/admin/dashboard" : "/guest/dashboard");
+                    navigate(response.data.isAdmin ? "/admin/dashboard" : "/guest/dashboard");
                 }, 2000);
             }
         } catch (error: any) {

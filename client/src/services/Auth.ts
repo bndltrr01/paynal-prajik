@@ -1,4 +1,14 @@
 import { API } from "./_axios";
+import { AxiosResponse } from "axios";
+
+interface VerifyResponse {
+    user: {
+        id: number;
+        email: string;
+        role: string;
+    };
+    isAdmin: boolean;
+}
 
 export const authenticateUser = async () => {
   try {
@@ -47,7 +57,7 @@ export const sendRegisterOtp = async (
   }
 };
 
-export const verifyOtp = async (email: string, otp: string) => {
+export const verifyOtp = async (email: string, otp: string): Promise<AxiosResponse<VerifyResponse>> => {
   try {
     const response = await API.post(
       "/auth/verify",
