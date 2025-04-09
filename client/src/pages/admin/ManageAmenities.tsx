@@ -32,7 +32,6 @@ interface AddAmenityResponse {
 
 const ManageAmenities = () => {
   const [search, setSearch] = useState<string>("");
-  const [filter, setFilter] = useState<string>("all");
   const [showFormModal, setShowFormModal] = useState(false);
   const [selectedAmenity, setSelectedAmenity] = useState<IAmenity | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -116,7 +115,6 @@ const ManageAmenities = () => {
     const matchesSearch = amenity.description
       .toLowerCase()
       .includes(search.toLowerCase());
-    if (filter === "all") return matchesSearch;
     return matchesSearch;
   });
 
@@ -164,7 +162,7 @@ const ManageAmenities = () => {
         {/* Loader Overlay */}
         {loading && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
-            <ManageRoomLoader size="80px" color="white" text={loaderText} />
+            <ManageRoomLoader size="80px" text={loaderText} />
           </div>
         )}
 
@@ -184,17 +182,10 @@ const ManageAmenities = () => {
           <input
             type="text"
             placeholder="Search by description"
-            className="p-2 border rounded w-full md:w-1/2"
+            className="p-3 px-6 ring-1 rounded-full w-full md:w-1/2"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <select
-            className="p-2 border rounded w-full md:w-1/2"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="all">All Amenities</option>
-          </select>
         </div>
 
         {/* Grid of Amenity Cards */}
@@ -214,13 +205,13 @@ const ManageAmenities = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditAmenity(amenity)}
-                      className="px-3 py-2 uppercase font-semibold bg-green-600 text-white rounded hover:bg-green-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-green-600 text-white rounded cursor-pointer hover:bg-green-700 transition-colors duration-300"
                     >
                       <Edit size={22} />
                     </button>
                     <button
                       onClick={() => handleDeleteAmenity(amenity.id)}
-                      className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded cursor-pointer hover:bg-red-700 transition-colors duration-300"
                     >
                       <Trash2 size={22} />
                     </button>
@@ -237,7 +228,7 @@ const ManageAmenities = () => {
             <button
               onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
               disabled={page === 1}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              className="px-4 py-2 cursor-pointer bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -251,7 +242,7 @@ const ManageAmenities = () => {
                 )
               }
               disabled={page >= amenitiesResponse.pages}
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              className="px-4 py-2 cursor-pointer bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>

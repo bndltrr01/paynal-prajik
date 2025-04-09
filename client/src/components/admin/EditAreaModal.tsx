@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AnimatePresence, motion } from "framer-motion";
 import { ChangeEvent, FC, useEffect, useState } from "react";
+import { parsePriceValue } from "../../utils/formatters";
 
 export interface IArea {
   id: number;
@@ -8,7 +9,7 @@ export interface IArea {
   description: string;
   capacity: number;
   price_per_hour: number;
-  status: "available" | "occupied" | "maintenance";
+  status: "available" | "maintenance";
   area_image: File | string;
 }
 
@@ -32,7 +33,7 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
     area_name: areaData?.area_name || "",
     description: areaData?.description || "",
     capacity: areaData?.capacity || 0,
-    price_per_hour: areaData?.price_per_hour || 0,
+    price_per_hour: areaData?.price_per_hour ? parsePriceValue(areaData.price_per_hour) : 0,
     status: areaData?.status || "available",
     area_image: areaData?.area_image || "",
   });
@@ -50,15 +51,17 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
   };
 
   useEffect(() => {
-    setFormState({
-      id: areaData?.id || 0,
-      area_name: areaData?.area_name || "",
-      description: areaData?.description || "",
-      capacity: areaData?.capacity || 0,
-      price_per_hour: areaData?.price_per_hour || 0,
-      status: areaData?.status || "available",
-      area_image: areaData?.area_image || "",
-    });
+    if (areaData) {
+      setFormState({
+        id: areaData.id || 0,
+        area_name: areaData.area_name || "",
+        description: areaData.description || "",
+        capacity: areaData.capacity || 0,
+        price_per_hour: areaData.price_per_hour ? parsePriceValue(areaData.price_per_hour) : 0,
+        status: areaData.status || "available",
+        area_image: areaData.area_image || "",
+      });
+    }
   }, [areaData]);
 
   useEffect(() => {
@@ -117,6 +120,23 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cancel, isOpen]);
 
+  // Animation variants for staggered children
+  const formVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.07,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -125,25 +145,51 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 flex items-center justify-center z-10 bg-black/45 overflow-y-auto"
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 overflow-y-auto p-4"
+          onClick={cancel}
         >
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white w-full max-w-3xl mx-4 rounded shadow-lg p-6 relative max-h-[90vh] overflow-y-auto"
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-white w-full max-w-3xl rounded-xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-semibold mb-4">
+            {/* Close button - positioned on top right */}
+            <motion.button
+              onClick={cancel}
+              className="absolute top-4 right-4 z-50 bg-white/80 hover:bg-white text-gray-700 hover:text-red-600 rounded-full p-2 transition-all duration-200 shadow-md"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </motion.button>
+
+            <motion.h2
+              className="text-2xl font-bold mb-6 text-gray-800"
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
               {areaData ? "Edit Area" : "Add New Area"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            </motion.h2>
+
+            <motion.form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+              variants={formVariants}
+              initial="hidden"
+              animate="visible"
+            >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Left Column */}
                 <div className="space-y-4">
                   {/* Area Name */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  <motion.div variants={itemVariants}>
+                    <label className="block text-sm font-medium mb-1 text-gray-700">
                       Area Name
                     </label>
                     <input
@@ -152,20 +198,25 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                       value={formState.area_name}
                       onChange={handleChange}
                       placeholder="Enter Area Name"
-                      className="border border-gray-300 rounded w-full p-2"
+                      className="border border-gray-300 rounded-md w-full p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     />
                     {errors[fieldMapping.name] && (
-                      <p className="text-red-500 text-xs mt-1">
+                      <motion.p
+                        className="text-red-500 text-xs mt-1"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
                         {errors[fieldMapping.name]}
-                      </p>
+                      </motion.p>
                     )}
-                  </div>
+                  </motion.div>
 
                   {/* Grid layout for Capacity and Price */}
                   <div className="grid grid-cols-2 gap-4">
                     {/* Capacity */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
                         Capacity
                       </label>
                       <input
@@ -173,18 +224,23 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                         name="capacity"
                         value={formState.capacity}
                         onChange={handleChange}
-                        className="border border-gray-300 rounded w-full p-2"
+                        className="border border-gray-300 rounded-md w-full p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       />
                       {errors[fieldMapping.capacity] && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <motion.p
+                          className="text-red-500 text-xs mt-1"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
                           {errors[fieldMapping.capacity]}
-                        </p>
+                        </motion.p>
                       )}
-                    </div>
+                    </motion.div>
 
                     {/* Price Per Hour */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
                         Price (₱)
                       </label>
                       <input
@@ -192,43 +248,52 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                         name="price_per_hour"
                         value={formState.price_per_hour}
                         onChange={handleChange}
-                        className="border border-gray-300 rounded w-full p-2"
+                        className="border border-gray-300 rounded-md w-full p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       />
                       {errors[fieldMapping.price_per_hour] && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <motion.p
+                          className="text-red-500 text-xs mt-1"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
                           {errors[fieldMapping.price_per_hour]}
-                        </p>
+                        </motion.p>
                       )}
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Status - Only show for editing existing areas */}
                   {areaData?.id ? (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
                         Status
                       </label>
                       <select
                         name="status"
                         value={formState.status}
                         onChange={handleChange}
-                        className="border border-gray-300 rounded w-full p-2"
+                        className="border border-gray-300 rounded-md w-full p-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       >
                         <option value="available">Available</option>
-                        <option value="occupied">Occupied</option>
                         <option value="maintenance">Maintenance</option>
                       </select>
                       {errors[fieldMapping.status] && (
-                        <p className="text-red-500 text-xs mt-1">
+                        <motion.p
+                          className="text-red-500 text-xs mt-1"
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
                           {errors[fieldMapping.status]}
-                        </p>
+                        </motion.p>
                       )}
-                    </div>
+                    </motion.div>
                   ) : null}
 
                   {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  <motion.div variants={itemVariants}>
+                    <label className="block text-sm font-medium mb-1 text-gray-700">
                       Description
                     </label>
                     <textarea
@@ -237,64 +302,112 @@ const EditAreaModal: FC<IAreaFormModalProps> = ({
                       onChange={handleChange}
                       rows={4}
                       placeholder="Enter description"
-                      className="border border-gray-300 rounded w-full p-2 resize-none"
+                      className="border border-gray-300 rounded-md w-full p-2 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     />
                     {errors[fieldMapping.description] && (
-                      <p className="text-red-500 text-xs mt-1">
+                      <motion.p
+                        className="text-red-500 text-xs mt-1"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
                         {errors[fieldMapping.description]}
-                      </p>
+                      </motion.p>
                     )}
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* Right Column */}
                 <div className="space-y-4">
                   {/* Area Image */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
+                  <motion.div variants={itemVariants}>
+                    <label className="block text-sm font-medium mb-1 text-gray-700">
                       Area Image
                     </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="mb-2 ring-1 rounded-sm p-2"
-                    />
-                    {previewUrl && (
-                      <img
-                        loading="lazy"
-                        src={previewUrl}
-                        alt="Preview"
-                        className="w-full h-48 object-cover border border-gray-200 mt-2"
+                    <div className="border border-dashed border-gray-300 rounded-md p-4 text-center hover:border-blue-500 transition-colors duration-200">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                        id="area-image-upload"
                       />
+                      <motion.label
+                        htmlFor="area-image-upload"
+                        className="cursor-pointer flex flex-col items-center justify-center"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-sm text-gray-500">Click to upload an image</span>
+                      </motion.label>
+                    </div>
+
+                    {previewUrl && (
+                      <motion.div
+                        className="mt-4 relative"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: "spring", damping: 20 }}
+                      >
+                        <img
+                          loading="lazy"
+                          src={previewUrl}
+                          alt="Preview"
+                          className="w-full h-48 object-cover border border-gray-200 rounded-md shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setFormState(prev => ({ ...prev, area_image: "" }))}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors duration-200"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </motion.div>
                     )}
+
                     {errors["area_image"] && (
-                      <p className="text-red-500 text-xs mt-1">
+                      <motion.p
+                        className="text-red-500 text-xs mt-1"
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
                         {errors["area_image"]}
-                      </p>
+                      </motion.p>
                     )}
-                  </div>
+                  </motion.div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-2 pt-4">
-                <button
-                  type="button"
-                  onClick={cancel}
-                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition-colors duration-300 uppercase font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
+              <motion.div
+                className="flex justify-end space-x-3 pt-6 border-t border-gray-100 mt-6"
+                variants={itemVariants}
+              >
+                <motion.button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 uppercase font-semibold"
+                  className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-300 font-medium ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  whileHover={loading ? {} : { scale: 1.05 }}
+                  whileTap={loading ? {} : { scale: 0.95 }}
                 >
-                  {areaData ? "Update" : "Save"}
-                </button>
-              </div>
-            </form>
+                  {loading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Processing...
+                    </span>
+                  ) : areaData ? "Update Area" : "Create Area"}
+                </motion.button>
+              </motion.div>
+            </motion.form>
           </motion.div>
         </motion.div>
       )}

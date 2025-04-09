@@ -1,12 +1,11 @@
 import {
-  faCalendarCheck,
   faChevronDown,
   faCircleUser,
   faRightToBracket,
   faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import DefaultImg from "../assets/Default_pfp.jpg";
 import hotelLogo from "../assets/hotel_logo.png";
@@ -44,9 +43,7 @@ const Navbar: FC = () => {
     clearAuthState,
   } = useUserContext();
 
-  const [imageLoading, setImageLoading] = useState<boolean>(false);
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     setLoading(true);
     try {
       console.log("Starting logout process");
@@ -54,12 +51,6 @@ const Navbar: FC = () => {
       console.log("Logout response:", response.status);
 
       clearAuthState();
-
-      setNotification({
-        message: "Logged out successfully",
-        type: "success",
-        icon: "fas fa-check-circle",
-      });
       setIsModalOpen(false);
 
       navigate("/", { replace: true });
@@ -73,10 +64,18 @@ const Navbar: FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [clearAuthState, navigate]);
 
-  const toggleLoginModal = () => setLoginModal(!loginModal);
-  const toggleRegisterModal = () => setRegisterModal(!registerModal);
+  const toggleLoginModal = useCallback(
+    () => setLoginModal((prev) => !prev),
+    []
+  );
+  const toggleRegisterModal = useCallback(
+    () => setRegisterModal((prev) => !prev),
+    []
+  );
+  const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,14 +98,11 @@ const Navbar: FC = () => {
   useEffect(() => {
     const fetchProfileImage = async () => {
       if (isAuthenticated && userDetails?.id) {
-        setImageLoading(true);
         try {
           const data = await getGuestDetails(userDetails.id);
           setProfileImage(data.data.profile_image);
         } catch (err) {
           console.error(`Failed to fetch user profile for Navbar: ${err}`);
-        } finally {
-          setImageLoading(false);
         }
       }
     };
@@ -176,13 +172,8 @@ const Navbar: FC = () => {
                 options={[
                   {
                     label: "Account",
-                    onClick: () => navigate("/guest/bookings"),
+                    onClick: () => navigate(`/guest/${userDetails?.id}`),
                     icon: <FontAwesomeIcon icon={faCircleUser} />,
-                  },
-                  {
-                    label: "My Bookings",
-                    onClick: () => navigate("/guest/bookings"),
-                    icon: <FontAwesomeIcon icon={faCalendarCheck} />,
                   },
                   {
                     label: "Log Out",
@@ -192,92 +183,106 @@ const Navbar: FC = () => {
                 ]}
                 position="bottom"
               >
-                {imageLoading ? (
-                  <div className="h-10 w-10 flex items-center justify-center">
-                    <i className="fa fa-spinner fa-spin"></i>
-                  </div>
-                ) : (
-                  <div className="flex items-center bg-white rounded-full px-2 py-1 border hover:border-violet-500 transition-all duration-200">
-                    <img
-                      loading="lazy"
-                      src={profileImage || DefaultImg}
-                      alt="Profile"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                    <FontAwesomeIcon
-                      icon={faChevronDown}
-                      className="ml-2 text-gray-700"
-                    />
-                  </div>
-                )}
+                <div className="flex items-center bg-gray-50 rounded-full px-2 py-1">
+                  <img
+                    loading="lazy"
+                    src={profileImage || DefaultImg}
+                    alt="Profile"
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <FontAwesomeIcon
+                    icon={faChevronDown}
+                    className="ml-2 text-gray-700"
+                  />
+                </div>
               </Dropdown>
             )}
           </div>
 
           {/* Mobile Menu */}
           <div className="lg:hidden flex items-center">
-            <button onClick={() => setMenuOpen(true)} className="text-2xl p-2">
+            <button onClick={toggleMenu} className="text-2xl p-2">
               <i className="fa fa-bars"></i>
             </button>
           </div>
+
+          {menuOpen && (
+            <div className="lg:hidden">
+              <div
+                className="fixed inset-0 bg-black/30 z-40"
+                onClick={closeMenu}
+              ></div>
+              <ul className="fixed top-0 right-0 w-full h-screen md:w-3/5 sm:w-4/5 bg-white shadow-md text-black z-50 flex flex-col">
+                <div className="flex justify-between items-center pt-4 p-3 sm:p-5 md:p-6 bg-gray-200">
+                  <Link to="/">
+                    <img
+                      loading="lazy"
+                      src={hotelLogo}
+                      alt="Hotel Logo"
+                      className="h-8 w-auto cursor-pointer block sm:hidden md:hidden"
+                    />
+                  </Link>
+                  <button onClick={closeMenu}>
+                    <i className="fa fa-times text-3xl mr-3 sm:mr-0"></i>
+                  </button>
+                </div>
+                <li className="p-4 text-black/70">
+                  <i className="fa fa-bars text-black/70 mr-3"></i> Navigation
+                </li>
+                {navLinks.map((link, index) => (
+                  <li
+                    key={index}
+                    className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                    onClick={closeMenu}
+                  >
+                    <NavLink
+                      to={link.link}
+                      className={({ isActive }) =>
+                        `flex items-center ${
+                          isActive ? "text-purple-600 font-bold" : ""
+                        }`
+                      }
+                    >
+                      <i className={`mr-3 ${link.icon}`}></i> {link.text}
+                    </NavLink>
+                  </li>
+                ))}
+                {!isAuthenticated ? (
+                  <>
+                    <li
+                      className="p-4 border-t-2 mt-3 mx-7 border-gray-200 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={toggleLoginModal}
+                    >
+                      <i className="fa-regular fa-user mr-3"></i> Login
+                    </li>
+                    <li
+                      className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={toggleRegisterModal}
+                    >
+                      <i className="fa fa-user-plus mr-1"></i> Sign Up
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li
+                      className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={() => navigate(`/guest/${userDetails?.id}`)}
+                    >
+                      <i className="fa fa-user-circle mr-3"></i> Account
+                    </li>
+                    <li
+                      className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      <i className="fa fa-sign-out-alt mr-3"></i> Log Out
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </nav>
-
-      {menuOpen && (
-        <div className="lg:hidden">
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setMenuOpen(false)}
-          ></div>
-          <ul className="fixed top-0 right-0 w-full h-screen md:w-3/5 sm:w-4/5 bg-white shadow-md text-black z-50 flex flex-col">
-            <div className="flex justify-between items-center p-7 sm:p-9 md:p-9 bg-gray-200">
-              <Link to="/">
-                <img
-                  loading="lazy"
-                  src={hotelLogo}
-                  alt="Hotel Logo"
-                  className="h-12 w-auto cursor-pointer block sm:hidden md:hidden"
-                />
-              </Link>
-              <button onClick={() => setMenuOpen(false)}>
-                <i className="fa fa-times text-3xl mr-3 sm:mr-0"></i>
-              </button>
-            </div>
-            <li className="p-4 text-black/70">
-              <i className="fa fa-bars text-black/70 mr-3"></i> Navigation
-            </li>
-            {navLinks.map((link, index) => (
-              <li
-                key={index}
-                className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-                onClick={() => setMenuOpen(false)}
-              >
-                <NavLink
-                  to={link.link}
-                  className={({ isActive }) =>
-                    `flex items-center ${isActive ? "text-purple-600 font-bold" : ""
-                    }`
-                  }
-                >
-                  <i className={`mr-3 ${link.icon}`}></i> {link.text}
-                </NavLink>
-              </li>
-            ))}
-            <li
-              className="p-4 border-t-2 mt-3 mx-7 border-gray-200 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-              onClick={toggleLoginModal}
-            >
-              <i className="fa-regular fa-user mr-3"></i> Login
-            </li>
-            <li
-              className="p-4 mx-7 hover:bg-blue-200 hover:text-blue-700 rounded-md cursor-pointer"
-              onClick={toggleRegisterModal}
-            >
-              <i className="fa fa-user-plus mr-1"></i> Sign Up
-            </li>
-          </ul>
-        </div>
-      )}
 
       {loginModal && (
         <div className="fixed inset-0 bg-black/50 z-50">
@@ -302,7 +307,9 @@ const Navbar: FC = () => {
         description="Are you sure you want to log out?"
         cancel={() => setIsModalOpen(!isModalOpen)}
         onConfirm={handleLogout}
-        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+        className={`bg-red-600 text-white active:bg-red-700 font-bold uppercase px-4 py-2 cursor-pointer rounded-md shadow hover:shadow-lg outline-none focus:outline-none mr-1 mb-1 transition-all duration-150 ${
+          loading ? "opacity-50 cursor-not-allowed" : ""
+        }`}
         loading={loading}
         confirmText={
           loading ? (

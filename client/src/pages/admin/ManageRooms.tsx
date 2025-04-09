@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import EditRoomModal, { IRoom } from "../../components/admin/EditRoomModal";
@@ -51,7 +52,7 @@ const ViewRoomModal: FC<{
   roomData: Room | null;
   allAmenities: Amenity[];
 }> = ({ isOpen, onClose, roomData, allAmenities }) => {
-  if (!isOpen || !roomData) return null;
+  if (!roomData) return null;
 
   const getAmenityDescription = (id: number) => {
     const found = allAmenities.find((a) => a.id === id);
@@ -59,89 +60,195 @@ const ViewRoomModal: FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg relative max-h-[100vh] overflow-y-auto">
-        {/* Two-column layout (like RoomDetails) */}
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left Column: Image */}
-          <div className="h-64 md:h-auto">
-            {roomData.room_image ? (
-              <img
-                loading="lazy"
-                src={roomData.room_image}
-                alt={roomData.room_name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
-                No Image
-              </div>
-            )}
-          </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="bg-white w-full max-w-4xl rounded-xl shadow-2xl relative max-h-[90vh] overflow-hidden"
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            {/* Close button - positioned on top right */}
+            <motion.button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-50 bg-white/80 hover:bg-white text-gray-700 hover:text-red-600 rounded-full p-2 transition-all duration-200 shadow-md"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </motion.button>
 
-          {/* Right Column: Information */}
-          <div className="p-6 flex flex-col">
-            <h1 className="text-3xl font-bold mb-4">{roomData.room_name}</h1>
-            <p className="text-gray-700 mb-6">{roomData.description}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Room Type
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomData.room_type}
-                </span>
-              </div>
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Status
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomData.status.toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Capacity
-                </span>
-                <span className="text-lg font-semibold">
-                  {roomData.capacity}
-                </span>
-              </div>
-              {/* Amenities as a bulleted list */}
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Amenities
-                </span>
-                {roomData.amenities.length === 0 ? (
-                  <span className="text-lg font-semibold">None</span>
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              {/* Left Column: Image with gradient overlay */}
+              <div className="relative h-64 md:h-auto">
+                {roomData.room_image ? (
+                  <div className="relative h-full">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent z-10"></div>
+                    <motion.img
+                      loading="lazy"
+                      src={roomData.room_image}
+                      alt={roomData.room_name}
+                      className="w-full h-full object-cover"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    />
+                    <div className="absolute bottom-4 left-4 z-20 md:hidden">
+                      <motion.h1
+                        className="text-2xl font-bold text-white mb-1"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        {roomData.room_name}
+                      </motion.h1>
+                      <motion.div
+                        className="flex items-center"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${roomData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                          {roomData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
+                        </span>
+                      </motion.div>
+                    </div>
+                  </div>
                 ) : (
-                  <ul className="list-disc list-inside text-gray-700 text-sm mt-1">
-                    {roomData.amenities.map((amenityId) => {
-                      const desc = getAmenityDescription(amenityId);
-                      return <li key={amenityId}>{desc}</li>;
-                    })}
-                  </ul>
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                    <motion.svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-20 w-20 opacity-50"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.5 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </motion.svg>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Price + optional button */}
-            <div className="mt-auto">
-              <p className="text-2xl font-bold mb-4">
-                {roomData.room_price.toLocaleString()}
-              </p>
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
-              >
-                Close
-              </button>
+              {/* Right Column: Room Information */}
+              <div className="p-6 flex flex-col">
+                <motion.div
+                  className="hidden md:block mb-4"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <h1 className="text-3xl font-bold text-gray-900">{roomData.room_name}</h1>
+                  <div className="flex items-center mt-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${roomData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                      {roomData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
+                    </span>
+                  </div>
+                </motion.div>
+
+                {/* Description with a nice background */}
+                <motion.div
+                  className="bg-gray-50 p-4 rounded-lg mb-5 shadow-inner"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h3 className="text-sm uppercase tracking-wider text-gray-500 font-medium mb-2">Description</h3>
+                  <p className="text-gray-700">
+                    {roomData.description || "No description available."}
+                  </p>
+                </motion.div>
+
+                {/* Details in a grid */}
+                <motion.div
+                  className="grid grid-cols-2 gap-4 mb-6"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <span className="block text-gray-500 text-sm">Room Type</span>
+                    <div className="flex items-center mt-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                      <span className="text-lg font-bold text-gray-800">{roomData.room_type}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <span className="block text-gray-500 text-sm">Capacity</span>
+                    <div className="flex items-center mt-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span className="text-lg font-bold text-gray-800">{roomData.capacity}</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Amenities Section */}
+                <motion.div
+                  className="bg-indigo-50 p-4 rounded-lg mb-5"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <h3 className="text-sm uppercase tracking-wider text-indigo-500 font-medium mb-2">Amenities</h3>
+                  {roomData.amenities.length === 0 ? (
+                    <p className="text-gray-500 italic">No amenities available for this room</p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-1">
+                      {roomData.amenities.map((amenityId, index) => (
+                        <motion.div
+                          key={amenityId}
+                          className="flex items-center py-1"
+                          initial={{ x: -10, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.5 + (index * 0.05) }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-indigo-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-gray-700">{getAmenityDescription(amenityId)}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Price Section */}
+                <motion.div
+                  className="mb-5 bg-amber-50 p-4 rounded-lg"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <h3 className="text-sm uppercase tracking-wider text-amber-600 font-medium mb-2">Pricing</h3>
+                  <div className="flex items-center">
+                    <span className="text-2xl font-bold text-gray-800">{roomData.room_price.toLocaleString()}</span>
+                  </div>
+                </motion.div>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -151,7 +258,6 @@ const ManageRooms: FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(9);
 
-  // For the read-only view
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewRoomData, setViewRoomData] = useState<Room | null>(null);
 
@@ -162,7 +268,6 @@ const ManageRooms: FC = () => {
 
   const queryClient = useQueryClient();
 
-  // 1. Fetch Rooms with pagination
   const {
     data: roomsResponse,
     isLoading,
@@ -175,14 +280,12 @@ const ManageRooms: FC = () => {
     queryFn: fetchRooms,
   });
 
-  // 2. Also fetch ALL amenities (for the View modal)
   const { data: allAmenitiesData } = useQuery<{ data: Amenity[] }>({
     queryKey: ["allAmenitiesForView", 1, 100],
     queryFn: fetchAmenities,
   });
   const allAmenities = allAmenitiesData?.data || [];
 
-  // 3. Mutations for Create, Update, Delete
   const addRoomMutation = useMutation<AddRoomResponse, unknown, FormData>({
     mutationFn: addNewRoom,
     onMutate: () => {
@@ -190,21 +293,16 @@ const ManageRooms: FC = () => {
       setLoaderText("Adding room...");
     },
     onSuccess: () => {
-      // Force a refetch to ensure data is fresh, all queries with the key "rooms"
       queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === "rooms"
       });
       setShowFormModal(false);
-      // Display success toast
       toast.success("Room added successfully!");
-
-      // Set to first page to see the new room
       setCurrentPage(1);
     },
     onError: (error: any) => {
-      // Display error toast
-      toast.error(`Failed to add room: ${error.message || 'Unknown error'}`);
-      console.error("Error adding room:", error);
+      toast.error(`Failed to add room.`);
+      console.error(`Error adding room: ${error}`);
     },
     onSettled: () => {
       setLoading(false);
@@ -223,18 +321,15 @@ const ManageRooms: FC = () => {
       setLoaderText("Updating room...");
     },
     onSuccess: () => {
-      // Force a refetch to ensure data is fresh, all queries with the key "rooms"
       queryClient.invalidateQueries({
         predicate: (query) => query.queryKey[0] === "rooms"
       });
       setShowFormModal(false);
-      // Display success toast
       toast.success("Room updated successfully!");
     },
     onError: (error: any) => {
-      // Display error toast
-      toast.error(`Failed to update room: ${error.message || 'Unknown error'}`);
-      console.error("Error updating room:", error);
+      toast.error(`Failed to update room.`);
+      console.error(`Error updating room: ${error}`);
     },
     onSettled: () => {
       setLoading(false);
@@ -254,8 +349,6 @@ const ManageRooms: FC = () => {
       });
       setShowModal(false);
 
-      // If we're on a page with only one item and it's not the first page,
-      // go back to the previous page
       if (rooms.length === 1 && currentPage > 1) {
         setCurrentPage(prev => prev - 1);
       }
@@ -266,15 +359,11 @@ const ManageRooms: FC = () => {
     },
   });
 
-  // 4. Handlers
-
-  // A. Add New Room
   const handleAddNew = () => {
     setEditRoomData(null);
     setShowFormModal(true);
   };
 
-  // B. Edit Existing Room
   const handleEdit = (room: Room) => {
     setEditRoomData({
       id: room.id,
@@ -284,9 +373,7 @@ const ManageRooms: FC = () => {
       status:
         room.status === "maintenance"
           ? "Maintenance"
-          : room.status === "occupied"
-            ? "Occupied"
-            : "Available",
+          : "Available",
       roomPrice: room.room_price,
       description: room.description,
       capacity: room.capacity,
@@ -295,13 +382,11 @@ const ManageRooms: FC = () => {
     setShowFormModal(true);
   };
 
-  // C. View (READ)
   const handleView = (room: Room) => {
     setViewRoomData(room);
     setShowViewModal(true);
   };
 
-  // D. Delete Room
   const handleDelete = (roomId: number) => {
     setDeleteRoomId(roomId);
     setShowModal(true);
@@ -316,24 +401,21 @@ const ManageRooms: FC = () => {
     setShowModal(false);
   };
 
-  // E. Save (Create or Update)
   const handleSave = async (roomData: IRoom): Promise<void> => {
     const formData = new FormData();
     formData.append("room_name", roomData.roomName);
     formData.append("room_type", roomData.roomType);
-    formData.append("status", roomData.status.toLowerCase() || "available");
+    formData.append("status", roomData.status.toLowerCase());
     formData.append("room_price", String(roomData.roomPrice || 0));
     formData.append("description", roomData.description || "");
     formData.append("capacity", roomData.capacity || "");
 
-    // Only add amenities that are selected
     if (roomData.amenities && roomData.amenities.length > 0) {
       roomData.amenities.forEach((amenityId) => {
         formData.append("amenities", String(amenityId));
       });
     }
 
-    // Only append the image if it's a File object (new upload)
     if (roomData.roomImage instanceof File) {
       formData.append("room_image", roomData.roomImage);
     }
@@ -350,7 +432,6 @@ const ManageRooms: FC = () => {
     }
   };
 
-  // Pagination handlers
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
@@ -367,11 +448,9 @@ const ManageRooms: FC = () => {
     setCurrentPage(page);
   };
 
-  // 5. Loading & Error States
   if (isLoading) return <DashboardSkeleton />;
   if (isError) return <Error />;
 
-  // 6. Rooms array and pagination data from API
   const rooms = roomsResponse?.data || [];
   const pagination = roomsResponse?.pagination;
 
@@ -381,7 +460,7 @@ const ManageRooms: FC = () => {
         {/* Loader Overlay */}
         {loading && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
-            <EventLoader size="80px" color="white" text={loaderText} />
+            <EventLoader size="80px" text={loaderText} />
           </div>
         )}
 
@@ -421,8 +500,9 @@ const ManageRooms: FC = () => {
                   <h2 className="text-xl font-bold text-gray-900">
                     {room.room_name}
                   </h2>
-                  <span className="text-sm font-semibold text-blue-600 uppercase">
-                    {room.status}
+                  <span className={`text-sm font-semibold ${room.status === 'available' ? 'text-green-600' : 'text-amber-600'
+                    } uppercase`}>
+                    {room.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
                   </span>
                 </div>
                 <p className="text-gray-600 text-sm mb-1">
@@ -435,24 +515,24 @@ const ManageRooms: FC = () => {
 
                 <div className="mt-auto flex justify-between items-center">
                   <p className="text-lg font-bold text-gray-900">
-                    {room.room_price}
+                    {typeof room.room_price === 'string' ? room.room_price : room.room_price.toLocaleString()}
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleView(room)}
-                      className="px-3 py-2 uppercase font-semibold bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-gray-600 text-white rounded cursor-pointer hover:bg-gray-700 transition-colors duration-300"
                     >
                       <Eye />
                     </button>
                     <button
                       onClick={() => handleEdit(room)}
-                      className="px-3 py-2 uppercase font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 transition-colors duration-300"
                     >
                       <Edit />
                     </button>
                     <button
                       onClick={() => handleDelete(room.id)}
-                      className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
+                      className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded cursor-pointer hover:bg-red-700 transition-colors duration-300"
                     >
                       <Trash2 />
                     </button>
@@ -525,13 +605,15 @@ const ManageRooms: FC = () => {
 
         {/* Edit/Add Room Modal */}
         {showFormModal && (
-          <EditRoomModal
-            isOpen={showFormModal}
-            cancel={() => setShowFormModal(false)}
-            onSave={handleSave}
-            roomData={editRoomData}
-            loading={addRoomMutation.isPending || editRoomMutation.isPending}
-          />
+          <AnimatePresence mode="wait">
+            <EditRoomModal
+              isOpen={showFormModal}
+              cancel={() => setShowFormModal(false)}
+              onSave={handleSave}
+              roomData={editRoomData}
+              loading={addRoomMutation.isPending || editRoomMutation.isPending}
+            />
+          </AnimatePresence>
         )}
 
         {/* Delete Confirmation Modal */}
@@ -543,7 +625,7 @@ const ManageRooms: FC = () => {
           cancel={cancelDelete}
           onConfirm={confirmDelete}
           className="px-4 py-2 bg-red-600 text-white rounded-md uppercase font-bold hover:bg-red-700 transition-all duration-300"
-          cancelText="No"
+          cancelText="Cancel"
           confirmText="Delete Room"
         />
 

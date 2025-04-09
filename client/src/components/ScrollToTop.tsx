@@ -5,6 +5,7 @@ const ScrollToTop = (): null => {
   const { pathname } = useLocation();
 
   useEffect(() => {
+    let frameId: number;
     const scrollToTop = () => {
       window.scrollTo({
         top: 0,
@@ -12,7 +13,16 @@ const ScrollToTop = (): null => {
       });
     };
 
-    requestAnimationFrame(scrollToTop);
+    const timeoutId = setTimeout(() => {
+      frameId = requestAnimationFrame(scrollToTop);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+    };
   }, [pathname]);
 
   return null;

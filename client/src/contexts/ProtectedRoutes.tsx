@@ -1,17 +1,20 @@
 import { FC, ReactNode } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import LoadingHydrate from "../motions/loaders/LoadingHydrate";
 import { useUserContext } from "./AuthContext";
-
 interface ProtectedRouteProps {
   requiredRole: string;
   children?: ReactNode;
 }
 
 const ProtectedRoute: FC<ProtectedRouteProps> = ({ requiredRole, children }) => {
-  const { isAuthenticated, role } = useUserContext();
+  const { isAuthenticated, role, isLoading } = useUserContext();
+  const location = useLocation();
+
+  if (isLoading) return <LoadingHydrate />
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   if (requiredRole.toLowerCase() === "admin") {

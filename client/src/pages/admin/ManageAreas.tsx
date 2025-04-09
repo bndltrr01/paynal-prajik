@@ -16,6 +16,7 @@ import {
 } from "../../services/Admin";
 import Error from "../_ErrorBoundary";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Edit, Eye, MapPin, Trash2 } from "lucide-react";
 
 interface Area {
@@ -25,7 +26,7 @@ interface Area {
   description?: string;
   capacity: number;
   price_per_hour: number;
-  status: "available" | "occupied" | "maintenance";
+  status: "available" | "maintenance";
 }
 
 interface AddAreaResponse {
@@ -45,69 +46,169 @@ const ViewAreaModal: FC<{
   onClose: () => void;
   areaData: Area | null;
 }> = ({ isOpen, onClose, areaData }) => {
-  if (!isOpen || !areaData) return null;
+  if (!areaData) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-4xl mx-4 rounded shadow-lg relative max-h-[100vh] overflow-y-auto">
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          {/* Left Column: Image */}
-          <div className="h-64 md:h-auto">
-            {areaData.area_image ? (
-              <img
-                loading="lazy"
-                src={areaData.area_image}
-                alt={areaData.area_name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
-                No Image
-              </div>
-            )}
-          </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="bg-white w-full max-w-4xl rounded-xl shadow-2xl relative max-h-[90vh] overflow-hidden"
+            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          >
+            {/* Close button - positioned on top right */}
+            <motion.button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-50 bg-white/80 hover:bg-white text-gray-700 hover:text-red-600 rounded-full p-2 transition-all duration-200 shadow-md"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </motion.button>
 
-          {/* Right Column: Information */}
-          <div className="p-6 flex flex-col">
-            <h1 className="text-3xl font-bold mb-4">{areaData.area_name}</h1>
-            <p className="text-gray-700 mb-6">
-              {areaData.description || "No description available."}
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <span className="block text-gray-600 font-medium">
-                  Capacity
-                </span>
-                <span className="text-lg font-semibold">
-                  {areaData.capacity} people
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-2">
+              {/* Left Column: Image with gradient overlay */}
+              <div className="relative h-64 md:h-auto">
+                {areaData.area_image ? (
+                  <div className="relative h-full">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent z-10"></div>
+                    <motion.img
+                      loading="lazy"
+                      src={areaData.area_image}
+                      alt={areaData.area_name}
+                      className="w-full h-full object-cover"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    />
+                    <div className="absolute bottom-4 left-4 z-20 md:hidden">
+                      <motion.h1
+                        className="text-2xl font-bold text-white mb-1"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        {areaData.area_name}
+                      </motion.h1>
+                      <motion.div
+                        className="flex items-center"
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${areaData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                          {areaData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
+                        </span>
+                      </motion.div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500">
+                    <motion.svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-20 w-20 opacity-50"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.5 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </motion.svg>
+                  </div>
+                )}
               </div>
-              <div>
-                <span className="block text-gray-600 font-medium">Status</span>
-                <span className="text-lg font-semibold">
-                  {areaData.status.toUpperCase()}
-                </span>
+
+              {/* Right Column: Area Information */}
+              <div className="p-6 flex flex-col">
+                <motion.div
+                  className="hidden md:block mb-4"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <h1 className="text-3xl font-bold text-gray-900">{areaData.area_name}</h1>
+                  <div className="flex items-center mt-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${areaData.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                      {areaData.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
+                    </span>
+                  </div>
+                </motion.div>
+
+                {/* Description with a nice background */}
+                <motion.div
+                  className="bg-gray-50 p-4 rounded-lg mb-5 shadow-inner"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h3 className="text-sm uppercase tracking-wider text-gray-500 font-medium mb-2">Description</h3>
+                  <p className="text-gray-700">
+                    {areaData.description || "No description available."}
+                  </p>
+                </motion.div>
+
+                {/* Details in a grid */}
+                <motion.div
+                  className="grid grid-cols-2 gap-4 mb-6"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <span className="block text-gray-500 text-sm">Capacity</span>
+                    <div className="flex items-center mt-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span className="text-xl font-bold text-gray-800">{areaData.capacity} <span className="text-sm font-normal text-gray-600">people</span></span>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <span className="block text-gray-500 text-sm">Price</span>
+                    <div className="flex items-center mt-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-600 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-xl font-bold text-gray-800">{areaData.price_per_hour.toLocaleString()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Booking Info */}
+                <motion.div
+                  className="bg-indigo-50 p-4 rounded-lg mb-5"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <h3 className="text-sm uppercase tracking-wider text-indigo-500 font-medium mb-2">Booking Information</h3>
+                  <p className="text-gray-700 text-sm">
+                    This venue is available for fixed hours (8:00 AM - 5:00 PM) and can be booked for
+                    <span className="font-medium"> {areaData.price_per_hour.toLocaleString()}</span> per booking.
+                  </p>
+                </motion.div>
               </div>
             </div>
-
-            {/* Price + button */}
-            <div className="mt-auto">
-              <p className="text-2xl font-bold mb-4">
-                {areaData.price_per_hour.toLocaleString()}
-              </p>
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
@@ -117,7 +218,6 @@ const ManageAreas = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(9);
 
-  // For view modal
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewAreaData, setViewAreaData] = useState<Area | null>(null);
 
@@ -142,7 +242,6 @@ const ManageAreas = () => {
   const areas = areasResponse?.data || [];
   const pagination = areasResponse?.pagination;
 
-  // Pagination handlers
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
@@ -175,7 +274,8 @@ const ManageAreas = () => {
       setCurrentPage(1);
     },
     onError: (error: any) => {
-      toast.error(`Failed to add area: ${error.message || 'Unknown error'}`);
+      console.error(`Error adding area: ${error}`);
+      toast.error(`Failed to add area.`);
     },
     onSettled: () => {
       setLoading(false);
@@ -222,8 +322,6 @@ const ManageAreas = () => {
       });
       setShowModal(false);
 
-      // If we're on a page with only one item and it's not the first page,
-      // go back to the previous page
       if (areas.length === 1 && currentPage > 1) {
         setCurrentPage(prev => prev - 1);
       }
@@ -234,19 +332,16 @@ const ManageAreas = () => {
     },
   });
 
-  // Open modal to add a new area
   const handleAddNew = () => {
     setEditAreaData(null);
     setShowFormModal(true);
   };
 
-  // View area details
   const handleView = (area: Area) => {
     setViewAreaData(area);
     setShowViewModal(true);
   };
 
-  // Map the API data to the modal's IEditArea shape when editing
   const handleEdit = (area: Area) => {
     setEditAreaData({
       id: area.id,
@@ -261,7 +356,6 @@ const ManageAreas = () => {
     setShowFormModal(true);
   };
 
-  // Open delete confirmation modal
   const handleDelete = (areaId: number) => {
     setDeleteAreaId(areaId);
     setShowModal(true);
@@ -278,7 +372,6 @@ const ManageAreas = () => {
     setShowModal(false);
   };
 
-  // When saving, convert area data to FormData
   const handleSave = async (areaData: IEditArea): Promise<void> => {
     const formData = new FormData();
     formData.append("area_name", areaData.area_name);
@@ -287,7 +380,6 @@ const ManageAreas = () => {
     formData.append("price_per_hour", areaData.price_per_hour.toString());
     formData.append("status", areaData.status);
 
-    // Only append the image if it's a File object (new upload)
     if (areaData.area_image instanceof File) {
       formData.append("area_image", areaData.area_image);
     }
@@ -312,7 +404,7 @@ const ManageAreas = () => {
       <div className="p-3 container mx-auto">
         {loading && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
-            <EventLoader size="80px" color="white" text={loaderText} />
+            <EventLoader size="80px" text={loaderText} />
           </div>
         )}
 
@@ -353,8 +445,9 @@ const ManageAreas = () => {
                     <h2 className="text-xl font-bold text-gray-900">
                       {area.area_name}
                     </h2>
-                    <span className="text-sm font-semibold text-blue-600 uppercase">
-                      {area.status}
+                    <span className={`text-sm font-semibold ${area.status === 'available' ? 'text-green-600' : 'text-amber-600'
+                      } uppercase`}>
+                      {area.status === 'available' ? 'AVAILABLE' : 'MAINTENANCE'}
                     </span>
                   </div>
                   <p className="text-gray-600 text-sm mb-1">
@@ -371,19 +464,19 @@ const ManageAreas = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleView(area)}
-                        className="px-3 py-2 uppercase font-semibold bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors duration-300"
+                        className="px-3 py-2 uppercase font-semibold bg-gray-600 text-white rounded cursor-pointer hover:bg-gray-700 transition-colors duration-300"
                       >
                         <Eye />
                       </button>
                       <button
                         onClick={() => handleEdit(area)}
-                        className="px-3 py-2 uppercase font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-300"
+                        className="px-3 py-2 uppercase font-semibold bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 transition-colors duration-300"
                       >
                         <Edit />
                       </button>
                       <button
                         onClick={() => handleDelete(area.id)}
-                        className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded hover:bg-red-700 transition-colors duration-300"
+                        className="px-3 py-2 uppercase font-semibold bg-red-600 text-white rounded cursor-pointer hover:bg-red-700 transition-colors duration-300"
                       >
                         <Trash2 />
                       </button>
@@ -466,13 +559,15 @@ const ManageAreas = () => {
 
         {/* Edit/Add Area Modal */}
         {showFormModal && (
-          <EditAreaModal
-            isOpen={showFormModal}
-            cancel={() => setShowFormModal(false)}
-            onSave={handleSave}
-            areaData={editAreaData}
-            loading={addAreaMutation.isPending || editAreaMutation.isPending}
-          />
+          <AnimatePresence mode="wait">
+            <EditAreaModal
+              isOpen={showFormModal}
+              cancel={() => setShowFormModal(false)}
+              onSave={handleSave}
+              areaData={editAreaData}
+              loading={addAreaMutation.isPending || editAreaMutation.isPending}
+            />
+          </AnimatePresence>
         )}
 
         {/* View Area Modal */}

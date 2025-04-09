@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { addMonths, eachDayOfInterval, endOfMonth, format, isBefore, isEqual, isWithinInterval, parseISO, startOfDay, startOfMonth } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { fetchRoomBookings, fetchRoomById } from '../services/Booking';
 
@@ -36,7 +37,6 @@ interface BookingsByDate {
     };
 }
 
-// Add a type guard function
 function isAmenityObject(amenity: any): amenity is AmenityObject {
     return amenity && typeof amenity === 'object' && 'description' in amenity;
 }
@@ -47,6 +47,7 @@ const BookingCalendar = () => {
     const arrivalParam = searchParams.get("arrival");
     const departureParam = searchParams.get("departure");
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [checkInDate, setCheckInDate] = useState<Date | null>(null);
@@ -70,36 +71,33 @@ const BookingCalendar = () => {
         }
     }, [arrivalParam, departureParam]);
 
-    // Fetch room data
+    const dateRange = useMemo(() => {
+        const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
+        return { startDate, endDate };
+    }, [currentMonth]);
+
     const { data: roomData, isLoading: isLoadingRoom } = useQuery<RoomData>({
         queryKey: ['room', roomId],
         queryFn: async () => {
-            console.log(`Fetching room details for ID: ${roomId}`);
             try {
-                const data = await fetchRoomById(roomId || '');
-                console.log('Room data received:', data);
-                return data;
+                return await fetchRoomById(roomId || '');
             } catch (error) {
                 console.error('Error fetching room:', error);
                 throw error;
             }
         },
-        enabled: !!roomId
+        enabled: !!roomId,
     });
 
-    // Fetch room bookings data
     const { data: bookingsData, isLoading: isLoadingBookings } = useQuery<{ data: BookingData[] }>({
-        queryKey: ['roomBookings', roomId, currentMonth],
+        queryKey: ['roomBookings', roomId, dateRange.startDate, dateRange.endDate],
         queryFn: async () => {
-            // Calculate a date range that covers two months
-            const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-            const endDate = format(endOfMonth(addMonths(currentMonth, 1)), 'yyyy-MM-dd');
-            return fetchRoomBookings(roomId || '', startDate, endDate);
+            return fetchRoomBookings(roomId || '', dateRange.startDate, dateRange.endDate);
         },
-        enabled: !!roomId
+        enabled: !!roomId,
     });
 
-    // Process bookings data to map by date
     useEffect(() => {
         if (bookingsData?.data) {
             const newBookingsByDate: BookingsByDate = {};
@@ -108,7 +106,6 @@ const BookingCalendar = () => {
                 const checkInDate = parseISO(booking.check_in_date);
                 const checkOutDate = parseISO(booking.check_out_date);
 
-                // Mark all dates in the booking range
                 const datesInRange = eachDayOfInterval({ start: checkInDate, end: checkOutDate });
 
                 datesInRange.forEach(date => {
@@ -125,17 +122,27 @@ const BookingCalendar = () => {
     }, [bookingsData]);
 
     useEffect(() => {
+        if (roomId) {
+            const nextMonth = addMonths(currentMonth, 2);
+            const prefetchStartDate = format(startOfMonth(nextMonth), 'yyyy-MM-dd');
+            const prefetchEndDate = format(endOfMonth(nextMonth), 'yyyy-MM-dd');
+
+            queryClient.prefetchQuery({
+                queryKey: ['roomBookings', roomId, prefetchStartDate, prefetchEndDate],
+                queryFn: () => fetchRoomBookings(roomId, prefetchStartDate, prefetchEndDate),
+            });
+        }
+    }, [currentMonth, roomId, queryClient]);
+
+    useEffect(() => {
         if (checkInDate && checkOutDate && roomData) {
             const days = Math.round((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
             setNumberOfNights(days);
 
-            // Get price from either price_per_night or room_price field
             const priceString = roomData.price_per_night || roomData.room_price || '0';
 
-            // Convert price string to a number, handling various formats
             let priceValue = 0;
             try {
-                // Remove any non-numeric characters except decimal point
                 const numericValue = priceString.toString().replace(/[^\d.]/g, '');
                 priceValue = parseFloat(numericValue) || 0;
             } catch (error) {
@@ -147,53 +154,45 @@ const BookingCalendar = () => {
         }
     }, [checkInDate, checkOutDate, roomData]);
 
-    const months = [currentMonth, addMonths(currentMonth, 1)];
+    const months = useMemo(() => [currentMonth, addMonths(currentMonth, 1)], [currentMonth]);
+    const prevMonth = useCallback(() => setCurrentMonth(prev => addMonths(prev, -1)), []);
+    const nextMonth = useCallback(() => setCurrentMonth(prev => addMonths(prev, 1)), []);
 
-    const prevMonth = () => setCurrentMonth(addMonths(currentMonth, -1));
-
-    const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-
-    const isDateBooked = (date: Date): boolean => {
+    const isDateBooked = useCallback((date: Date): boolean => {
         const dateString = format(date, 'yyyy-MM-dd');
         const booking = bookingsByDate[dateString];
 
-        // Check if this date is already booked with specific statuses
-        if (booking && booking.status && ['checked_in', 'reserved', 'occupied', 'pending', 'no_show'].includes(booking.status.toLowerCase())) {
-            return true;
+        if (booking && booking.status) {
+            const status = booking.status.toLowerCase();
+            return ['checked_in', 'reserved'].includes(status);
         }
 
-        // Dates with checked_out status are considered available
         return false;
-    };
+    }, [bookingsByDate]);
 
-    const getDateStatus = (date: Date): string | null => {
+    const getDateStatus = useCallback((date: Date): string | null => {
         const dateString = format(date, 'yyyy-MM-dd');
         return bookingsByDate[dateString]?.status || null;
-    };
+    }, [bookingsByDate]);
 
-    const isDateUnavailable = (date: Date) => {
-        // Always consider dates before today as unavailable
+    const isDateUnavailable = useCallback((date: Date) => {
         if (isBefore(date, startOfDay(new Date()))) {
             return true;
         }
 
-        // Dates with specific booking statuses are unavailable
         return isDateBooked(date);
-    };
+    }, [isDateBooked]);
 
     const handleDateClick = (date: Date) => {
         if (isDateUnavailable(date)) {
-            return; // Do nothing for unavailable dates
+            return;
         }
 
         if (!checkInDate || (checkInDate && checkOutDate)) {
-            // Start new selection
             setCheckInDate(date);
             setCheckOutDate(null);
         } else {
-            // Complete selection
             if (isBefore(date, checkInDate)) {
-                // If user clicks a date before check-in, swap the dates
                 setCheckOutDate(checkInDate);
                 setCheckInDate(date);
             } else {
@@ -205,6 +204,8 @@ const BookingCalendar = () => {
     const handleDateHover = (date: Date) => {
         if (!isDateUnavailable(date)) {
             setHoveredDate(date);
+        } else {
+            setHoveredDate(null);
         }
     };
 
@@ -213,7 +214,6 @@ const BookingCalendar = () => {
             return isWithinInterval(date, { start: checkInDate, end: checkOutDate });
         }
         if (checkInDate && hoveredDate && !checkOutDate) {
-            // Handle the case when user is selecting the end date
             if (isBefore(hoveredDate, checkInDate)) {
                 return isWithinInterval(date, { start: hoveredDate, end: checkInDate });
             } else {
@@ -232,76 +232,48 @@ const BookingCalendar = () => {
         const isHovered = !isUnavailable && hoveredDate && isEqual(date, hoveredDate);
         const dateStatus = getDateStatus(date);
 
+        // Base class for all date cells
         let className = "relative h-10 w-10 flex items-center justify-center text-sm rounded-full";
 
-        // First check date status and apply appropriate styling
-        if (dateStatus) {
-            switch (dateStatus.toLowerCase()) {
-                case 'reserved':
-                    className += " bg-green-100 text-green-800 border border-green-500";
-                    break;
-                case 'checked_in':
-                case 'occupied':
-                    className += " bg-blue-100 text-blue-800 border border-blue-500";
-                    break;
-                case 'checked_out':
-                    // Make checked_out dates appear as normal available dates
-                    if (isCheckinDate || isCheckoutDate) {
-                        className += " bg-blue-600 text-white";
-                    } else if (isInRange) {
-                        className += " bg-blue-200 text-blue-800";
-                    } else if (isHovered) {
-                        className += " bg-blue-100 border border-blue-300";
-                    } else {
-                        className += " bg-white border border-gray-300 hover:bg-gray-100";
-                    }
-                    break;
-                case 'no_show':
-                    className += " bg-purple-100 text-purple-800 border border-purple-500";
-                    break;
-                case 'rejected':
-                    className += " bg-red-100 text-red-800 border border-red-500";
-                    break;
-                default:
-                    // Apply standard styles if status doesn't match any of the above
-                    if (isCheckinDate || isCheckoutDate) {
-                        className += " bg-blue-600 text-white";
-                    } else if (isInRange) {
-                        className += " bg-blue-200 text-blue-800";
-                    } else if (isHovered) {
-                        className += " bg-blue-100 border border-blue-300";
-                    } else {
-                        className += " bg-white border border-gray-300 hover:bg-gray-100";
-                    }
-            }
-        } else {
-            // No booking status - apply standard styles
-            if (isUnavailable) {
-                className += " bg-gray-300 text-gray-500 cursor-not-allowed";
-            } else if (isCheckinDate || isCheckoutDate) {
-                className += " bg-blue-600 text-white";
-            } else if (isInRange) {
-                className += " bg-blue-200 text-blue-800";
-            } else if (isHovered) {
-                className += " bg-blue-100 border border-blue-300";
-            } else {
-                className += " bg-white border border-gray-300 hover:bg-gray-100";
-            }
+        // Handle selection first (highest priority)
+        if (isCheckinDate || isCheckoutDate) {
+            return `${className} bg-blue-600 text-white font-medium`;
         }
 
-        // Add today indicator
-        if (isToday && !isCheckinDate && !isCheckoutDate && !isUnavailable) {
+        // Handle date range
+        if (isInRange) {
+            return `${className} bg-blue-200 text-blue-800`;
+        }
+
+        // Handle hover effect for available dates
+        if (isHovered && !isUnavailable) {
+            return `${className} bg-blue-100 border border-blue-300 cursor-pointer`;
+        }
+
+        // Handle today indicator
+        if (isToday && !isUnavailable) {
             className += " border-blue-500 border-2";
         }
 
-        // Add cursor style
-        if (isUnavailable) {
-            className += " cursor-not-allowed";
-        } else {
-            className += " cursor-pointer";
+        // Handle specific booked statuses
+        if (dateStatus && ['reserved', 'checked_in'].includes(dateStatus.toLowerCase())) {
+            switch (dateStatus.toLowerCase()) {
+                case 'reserved':
+                    return `${className} bg-green-200 text-green-800 border-2 border-green-600 font-medium cursor-not-allowed`;
+                case 'checked_in':
+                    return `${className} bg-blue-200 text-blue-800 border-2 border-blue-600 font-medium cursor-not-allowed`;
+                default:
+                    return `${className} bg-gray-300 text-gray-500 cursor-not-allowed`;
+            }
         }
 
-        return className;
+        // Handle past dates
+        if (isUnavailable) {
+            return `${className} bg-gray-300 text-gray-500 cursor-not-allowed`;
+        }
+
+        // Default available date styling (including checked_out, cancelled, rejected, pending)
+        return `${className} bg-white border border-gray-300 hover:bg-gray-100 cursor-pointer`;
     };
 
     const handleProceed = () => {
@@ -324,7 +296,7 @@ const BookingCalendar = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <div className="bg-white rounded-lg shadow-xl p-6">
+                    <div className="bg-white ring-3 ring-blue-400 rounded-lg shadow-xl p-6">
                         <h3 className="text-2xl font-bold mb-4">Select Your Stay Dates</h3>
 
                         {/* Selected Dates */}
@@ -350,7 +322,6 @@ const BookingCalendar = () => {
                         </div>
 
                         {arrivalParam && departureParam ? (
-                            // If we have dates from URL, focus on confirmation
                             <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                                 <p className="font-medium text-blue-800">
                                     Dates pre-selected: {checkInDate && checkOutDate
@@ -394,18 +365,13 @@ const BookingCalendar = () => {
                                         const monthEnd = endOfMonth(month);
                                         const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-                                        // Get the weekday index of the first day (0 for Sunday, 1 for Monday, etc.)
                                         const startWeekday = monthStart.getDay();
-
-                                        // Create an array of days including empty spots for proper alignment
                                         const calendarDays = [];
 
-                                        // Add empty slots for days of the week before the first day of the month
                                         for (let i = 0; i < startWeekday; i++) {
                                             calendarDays.push(null);
                                         }
 
-                                        // Add the actual days of the month
                                         calendarDays.push(...days);
 
                                         return (
@@ -446,11 +412,11 @@ const BookingCalendar = () => {
 
                                 {/* Calendar Legend */}
                                 <div className="mt-6 border-t pt-4">
-                                    <h4 className="text-sm font-medium mb-3">LEGEND</h4>
+                                    <h4 className="text-sm font-medium mb-3">CALENDAR LEGEND</h4>
                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4">
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-white border border-gray-300 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Available Date</span>
+                                            <span className="text-sm">Available</span>
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-blue-600 mr-2 rounded-full"></div>
@@ -458,19 +424,19 @@ const BookingCalendar = () => {
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-blue-200 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Date Range</span>
+                                            <span className="text-sm">Selected Range</span>
                                         </div>
                                         <div className="flex items-center">
                                             <div className="h-6 w-6 bg-gray-300 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Unavailable Date</span>
+                                            <span className="text-sm">Unavailable</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-green-100 border border-green-500 mr-2 rounded-full"></div>
+                                            <div className="h-6 w-6 bg-green-200 border-2 border-green-600 mr-2 rounded-full"></div>
                                             <span className="text-sm">Reserved</span>
                                         </div>
                                         <div className="flex items-center">
-                                            <div className="h-6 w-6 bg-blue-100 border border-blue-500 mr-2 rounded-full"></div>
-                                            <span className="text-sm">Occupied</span>
+                                            <div className="h-6 w-6 bg-blue-200 border-2 border-blue-600 mr-2 rounded-full"></div>
+                                            <span className="text-sm">Checked In</span>
                                         </div>
                                     </div>
                                 </div>
@@ -496,7 +462,7 @@ const BookingCalendar = () => {
                 {/* Room Info Card - Right Side */}
                 <div className="lg:col-span-1">
                     {roomData && (
-                        <div className="bg-white rounded-lg shadow-xl p-6 sticky top-24">
+                        <div className="bg-white rounded-lg ring-blue-400 ring-3 shadow-xl p-6 sticky top-24">
                             <div className="mb-4">
                                 <img
                                     loading="lazy"
@@ -568,4 +534,4 @@ const BookingCalendar = () => {
     );
 };
 
-export default BookingCalendar; 
+export default BookingCalendar;

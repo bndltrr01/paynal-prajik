@@ -1,14 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Eye, Search, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, MessageSquare, Search, XCircle } from "lucide-react";
 import { FC, useCallback, useMemo, useState } from "react";
+import "react-loading-skeleton/dist/skeleton.css";
 import { useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 import BookingData from "../../components/bookings/BookingData";
 import CancellationModal from "../../components/bookings/CancellationModal";
+import GuestBookingComment from "../../components/guests/GuestBookingComment";
 import { useUserContext } from "../../contexts/AuthContext";
-import withSuspense from "../../hoc/withSuspense";
-import LoadingHydrate from "../../motions/loaders/LoadingHydrate";
-import { cancelBooking, fetchBookingDetail, fetchUserBookings } from "../../services/Booking";
-import { getGuestBookings } from "../../services/Guest";
+import { BookingDetailsSkeleton, BookingsTableSkeleton } from "../../motions/skeletons/GuestDetailSkeleton";
+import { BookingResponse, cancelBooking, fetchBookingDetail } from "../../services/Booking";
+import { fetchGuestBookings } from "../../services/Guest";
 
 const formatStatus = (status: string): string => {
   return status.toUpperCase().replace(/_/g, ' ');
@@ -16,7 +19,6 @@ const formatStatus = (status: string): string => {
 
 const formatDate = (dateString: string): string => {
   if (!dateString) return 'N/A';
-
   try {
     const options: Intl.DateTimeFormatOptions = {
       month: 'long',
@@ -25,6 +27,7 @@ const formatDate = (dateString: string): string => {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   } catch (e) {
+    console.error(`Error formatting date: ${dateString}`, e);
     return dateString;
   }
 };
@@ -34,21 +37,23 @@ const getStatusColor = (status: string): string => {
 
   switch (normalizedStatus) {
     case 'confirmed':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 text-green-800';
     case 'pending':
-      return 'bg-yellow-100 text-yellow-700';
+      return 'bg-yellow-100 text-yellow-800';
     case 'cancelled':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 text-red-800';
+    case 'rejected':
+      return 'bg-red-100 text-red-800';
     case 'reserved':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 text-green-800';
     case 'checked in':
-      return 'bg-indigo-100 text-indigo-700';
+      return 'bg-blue-100 text-blue-800';
     case 'checked out':
-      return 'bg-purple-100 text-purple-700';
-    case 'missed reservation':
-      return 'bg-orange-100 text-orange-700';
+      return 'bg-gray-100 text-gray-800';
+    case 'no show':
+      return 'bg-purple-100 text-purple-800';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-gray-100 text-gray-800';
   }
 };
 
@@ -61,21 +66,32 @@ const GuestBookings: FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 5;
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [reviewBookingDetails, setReviewBookingDetails] = useState<any>(null);
   const queryClient = useQueryClient();
+  const pageSize = 5;
 
-  const isSuccess = searchParams.get('success') === 'true';
-  const isCancelled = searchParams.get('cancelled') === 'true';
-
-  const userBookingsQuery = useQuery({
-    queryKey: ['userBookings', currentPage, pageSize],
-    queryFn: () => fetchUserBookings({ page: currentPage, pageSize }),
-  });
-
-  const guestBookingsQuery = useQuery({
-    queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize],
-    queryFn: () => getGuestBookings(userDetails?.id || '', { page: currentPage, pageSize }),
-    enabled: !!userDetails?.id && userBookingsQuery.isError,
+  const bookingsQuery = useQuery<{
+    data: BookingResponse[],
+    pagination?: {
+      total_pages: number;
+      current_page: number;
+      total_items: number;
+      page_size: number;
+    }
+  }, Error>({
+    queryKey: ["guest-bookings", userDetails?.id, currentPage, pageSize],
+    queryFn: async () => {
+      try {
+        const response = await fetchGuestBookings({ page: currentPage, pageSize });
+        return response;
+      } catch (err) {
+        console.error('Error fetching guest bookings:', err);
+        throw err;
+      }
+    },
+    enabled: !!userDetails?.id,
   });
 
   const bookingDetailsQuery = useQuery({
@@ -85,34 +101,30 @@ const GuestBookings: FC = () => {
   });
 
   const cancelBookingMutation = useMutation({
-    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) =>
-      cancelBooking(bookingId, reason),
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) => {
+      return cancelBooking(bookingId, reason);
+    },
     onSuccess: () => {
-      searchParams.set('cancelled', 'true');
-      setSearchParams(searchParams);
-
       setShowCancelModal(false);
       setCancellationBookingId(null);
 
-      queryClient.invalidateQueries({ queryKey: ['userBookings', currentPage, pageSize] });
-      if (userBookingsQuery.isError) {
-        queryClient.invalidateQueries({
-          queryKey: ['guestBookings', userDetails?.id, currentPage, pageSize]
-        });
-      }
+      queryClient.invalidateQueries({ queryKey: ['guest-bookings', currentPage, pageSize] });
+      toast.success("Booking cancelled successfully!");
+    },
+    onError: (error: any) => {
+      console.error(`Error cancelling booking: ${error}`);
+      toast.error("Failed to cancel booking. Please try again.");
     }
   });
 
   const { bookings, totalPages, isLoading, errorMessage } = useMemo(() => {
     return {
-      bookings: userBookingsQuery.data?.data || (guestBookingsQuery.data?.data || []),
-      totalPages: userBookingsQuery.data?.pagination?.total_pages ||
-        guestBookingsQuery.data?.pagination?.total_pages || 1,
-      isLoading: userBookingsQuery.isPending ||
-        (guestBookingsQuery.isPending && userBookingsQuery.isError) ||
+      bookings: bookingsQuery.data?.data || [],
+      totalPages: bookingsQuery.data?.pagination?.total_pages || 1,
+      isLoading: bookingsQuery.isPending ||
         (bookingDetailsQuery.isPending && !!bookingId) ||
         cancelBookingMutation.isPending,
-      errorMessage: (userBookingsQuery.isError && guestBookingsQuery.isError)
+      errorMessage: bookingsQuery.isError
         ? "Failed to load bookings. Please try again later."
         : (bookingDetailsQuery.isError && !!bookingId)
           ? "Failed to load booking details. Please try again later."
@@ -121,8 +133,7 @@ const GuestBookings: FC = () => {
             : null
     };
   }, [
-    userBookingsQuery.data, userBookingsQuery.isPending, userBookingsQuery.isError,
-    guestBookingsQuery.data, guestBookingsQuery.isPending, guestBookingsQuery.isError,
+    bookingsQuery.data, bookingsQuery.isPending, bookingsQuery.isError,
     bookingDetailsQuery.isPending, bookingDetailsQuery.isError, bookingId,
     cancelBookingMutation.isPending, cancelBookingMutation.isError
   ]);
@@ -147,12 +158,15 @@ const GuestBookings: FC = () => {
         ? (booking.status || '').toLowerCase() === filterStatus.toLowerCase()
         : true;
 
-      return matchesSearch && matchesStatus;
+      const isNotCancelled = (booking.status || '').toLowerCase() !== 'cancelled';
+      return matchesSearch && matchesStatus && isNotCancelled;
     });
   }, [bookings, searchTerm, filterStatus]);
 
   const handleCancelBooking = useCallback((reason: string) => {
-    if (!cancellationBookingId || !reason.trim()) return;
+    if (!cancellationBookingId || !reason.trim()) {
+      return;
+    }
 
     cancelBookingMutation.mutate({
       bookingId: cancellationBookingId,
@@ -171,6 +185,8 @@ const GuestBookings: FC = () => {
   }, []);
 
   const viewBookingDetails = useCallback((id: string) => {
+    searchParams.delete('cancelled');
+    searchParams.delete('success');
     searchParams.set('bookingId', id);
     setSearchParams(searchParams);
   }, [searchParams, setSearchParams]);
@@ -187,13 +203,51 @@ const GuestBookings: FC = () => {
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    setCurrentPage(1);
   }, []);
 
   const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterStatus(e.target.value);
+    setCurrentPage(1);
   }, []);
 
-  if (isLoading) return <LoadingHydrate />;
+  const openReviewModal = useCallback((booking: any) => {
+    setReviewBookingId(booking.id.toString());
+
+    const propertyName = booking.is_venue_booking
+      ? (booking.area_name || booking.area_details?.area_name || "Venue")
+      : (booking.room_name || booking.room_details?.room_name || "Room");
+
+    setReviewBookingDetails({
+      propertyName,
+      propertyType: booking.is_venue_booking ? "venue" : "room",
+      checkInDate: booking.check_in_date,
+      checkOutDate: booking.check_out_date
+    });
+
+    setShowReviewModal(true);
+  }, []);
+
+  const closeReviewModal = useCallback(() => {
+    setShowReviewModal(false);
+    setReviewBookingId(null);
+    setReviewBookingDetails(null);
+  }, []);
+
+
+  const shouldShowReviewButton = useCallback((booking: any) => {
+    return (
+      booking.status.toLowerCase() === 'checked_out' &&
+      !(booking.has_user_review || booking.has_review)
+    );
+  }, []);
+
+  if (isLoading) {
+    return (
+      bookingId ? <BookingDetailsSkeleton /> : <BookingsTableSkeleton />
+    );
+  }
+
   if (errorMessage) return <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">{errorMessage}</div>;
 
   if (bookingId) {
@@ -209,50 +263,17 @@ const GuestBookings: FC = () => {
           </button>
         </div>
 
-        {isSuccess && (
-          <div className="mb-6">
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Success!</strong>
-              <span className="block sm:inline"> Your booking has been confirmed.</span>
-            </div>
-          </div>
-        )}
-
-        {isCancelled && (
-          <div className="mb-6">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Booking Cancelled!</strong>
-              <span className="block sm:inline"> Your booking has been successfully cancelled.</span>
-            </div>
-          </div>
-        )}
-
         <BookingData bookingId={bookingId} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 container mx-auto py-4">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">My Bookings</h1>
-        <p className="text-gray-600">Manage all your hotel bookings</p>
+        <p className="text-gray-600 text-lg">Manage all your hotel bookings</p>
       </div>
-
-      {/* Success/Cancellation Messages */}
-      {isSuccess && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Success!</strong>
-          <span className="block sm:inline"> Your booking has been confirmed.</span>
-        </div>
-      )}
-
-      {isCancelled && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Booking Cancelled!</strong>
-          <span className="block sm:inline"> Your booking has been successfully cancelled.</span>
-        </div>
-      )}
 
       {/* Search and Filters */}
       <div className="bg-white p-4 rounded-lg shadow-sm flex flex-col md:flex-row justify-between gap-4">
@@ -277,13 +298,12 @@ const GuestBookings: FC = () => {
             className="py-2 px-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">All Statuses</option>
-            <option value="confirmed">Confirmed</option>
             <option value="pending">Pending</option>
             <option value="reserved">Reserved</option>
-            <option value="cancelled">Cancelled</option>
             <option value="checked_in">Checked In</option>
             <option value="checked_out">Checked Out</option>
-            <option value="missed_reservation">Missed Reservation</option>
+            <option value="no_show">No Show</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>
@@ -296,12 +316,12 @@ const GuestBookings: FC = () => {
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
                 <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Reservation</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Reservation</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -316,7 +336,7 @@ const GuestBookings: FC = () => {
 
                       const startTime = booking.start_time || booking.check_in_date;
                       const endTime = booking.end_time || booking.check_out_date;
-                      let duration = 1; 
+                      let duration = 1;
 
                       if (startTime && endTime) {
                         try {
@@ -334,28 +354,26 @@ const GuestBookings: FC = () => {
                           .toString()
                           .replace(/[^0-9.]/g, '')) || 0;
 
-                      totalAmount = booking.total_price || booking.total_amount || venuePrice;
+                      totalAmount = booking.total_price || booking.total_amount || (venuePrice * duration);
                     } else {
                       itemName = booking.room_name || booking.room_details?.room_name || "Room";
                       itemImage = booking.room_image || booking.room_details?.room_image;
 
-                      // For rooms - Calculate based on nights
                       const checkInDate = booking.check_in_date;
                       const checkOutDate = booking.check_out_date;
-                      let nights = 1; // Default to 1 night
+                      let nights = 1;
 
                       if (checkInDate && checkOutDate) {
                         try {
                           const checkIn = new Date(checkInDate);
                           const checkOut = new Date(checkOutDate);
                           const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
-                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1; // Days
+                          nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
                         } catch (e) {
                           console.error("Error calculating room nights:", e);
                         }
                       }
 
-                      // Get nightly rate and calculate total
                       const nightlyRate =
                         parseFloat((booking.room_price || booking.room_details?.room_price || "0")
                           .toString()
@@ -402,7 +420,7 @@ const GuestBookings: FC = () => {
                           {formatDate(checkOutDate)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 inline-flex text-lg leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
+                          <span className={`px-3 py-1 text-md leading-5 font-semibold rounded-full ${getStatusColor(status)}`}>
                             {status}
                           </span>
                         </td>
@@ -415,14 +433,22 @@ const GuestBookings: FC = () => {
                               className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                               onClick={() => viewBookingDetails(id.toString())}
                             >
-                              <Eye size={16} className="mr-1" /> View
+                              <Eye size={30} className="mr-1" /> View
                             </button>
                             {booking.status.toLowerCase() === 'pending' && (
                               <button
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
                                 onClick={() => openCancelModal(id.toString())}
                               >
-                                <XCircle size={16} className="mr-1" /> Cancel
+                                <XCircle size={30} className="mr-1" /> Cancel
+                              </button>
+                            )}
+                            {shouldShowReviewButton(booking) && (
+                              <button
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full flex items-center cursor-pointer transition-all duration-300"
+                                onClick={() => openReviewModal(booking)}
+                              >
+                                <MessageSquare size={30} className="mr-1" /> Review
                               </button>
                             )}
                           </div>
@@ -484,14 +510,29 @@ const GuestBookings: FC = () => {
         </div>
       </div>
 
+      {/* Review Modal */}
+      <GuestBookingComment
+        bookingId={reviewBookingId || ""}
+        isOpen={showReviewModal}
+        onClose={closeReviewModal}
+        bookingDetails={reviewBookingDetails}
+      />
+
       {/* Use the CancellationModal component */}
       <CancellationModal
         isOpen={showCancelModal}
         onClose={closeCancelModal}
         onConfirm={handleCancelBooking}
+        bookingId={cancellationBookingId}
+        title="Cancel Booking"
+        description="Please provide a reason for cancelling this booking. Note that cancellations may be subject to fees according to our cancellation policy."
+        reasonLabel="Reason for Cancellation"
+        reasonPlaceholder="Enter detailed reason for cancelling this booking..."
+        confirmButtonText="Confirm Cancellation"
+        showPolicyNote={true}
       />
     </div>
   );
 };
 
-export default withSuspense(GuestBookings);
+export default GuestBookings;

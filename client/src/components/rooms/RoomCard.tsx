@@ -1,15 +1,15 @@
 import { Book, Eye } from "lucide-react";
 import { FC } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUserContext } from "../../contexts/AuthContext";
 
 interface RoomCardProps {
   id: string | number;
   name: string;
   image: string;
   title: string;
-  status: string;
   capacity: string;
-  price: string | number;
+  price: string;
 }
 
 const RoomCard: FC<RoomCardProps> = ({
@@ -17,29 +17,18 @@ const RoomCard: FC<RoomCardProps> = ({
   name,
   image,
   title,
-  status,
   capacity,
   price,
 }) => {
   const navigate = useNavigate();
-
-  const getStatusBadgeColor = (status: string): string => {
-    switch (status.toLowerCase()) {
-      case 'available':
-        return 'bg-green-100 text-green-700';
-      case 'occupied':
-        return 'bg-red-100 text-red-700';
-      case 'maintenance':
-        return 'bg-gray-100 text-gray-700';
-      case 'reserved':
-        return 'bg-yellow-100 text-yellow-700';
-      default:
-        return 'bg-blue-100 text-blue-700';
-    }
-  };
+  const { isAuthenticated } = useUserContext();
 
   const handleReserveClick = () => {
-    navigate(`/booking/${id}`);
+    if (isAuthenticated) {
+      navigate(`/booking/${id}`);
+    } else {
+      navigate(`/rooms/${id}?showLogin=true`);
+    }
   };
 
   return (
@@ -69,9 +58,9 @@ const RoomCard: FC<RoomCardProps> = ({
               <Eye size={16} /> <span>View</span>
             </button>
             <button
-              className="bg-green-600 hover:bg-green-700 text-white text-sm px-3 py-2 rounded-md transition-colors cursor-pointer flex items-center gap-1"
+              className={`${isAuthenticated ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'} text-white text-sm px-3 py-2 rounded-md transition-colors flex items-center gap-1`}
               onClick={handleReserveClick}
-              title="Book this room"
+              title={isAuthenticated ? "Book this room" : "Login required to book"}
             >
               <Book size={16} /> <span>Book</span>
             </button>

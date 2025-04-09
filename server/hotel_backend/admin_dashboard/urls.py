@@ -32,7 +32,7 @@ urlpatterns = [
     # Regular Users Management
     path('users', views.fetch_all_users, name='fetch_all_users'),
     path('show_user/<int:user_id>', views.show_user_details, name='show_user_details'),
-    path('edit_user/<int:user_id>', views.edit_user, name='edit_user'),
+    path('edit_user/<int:user_id>', views.manage_user, name='manage_user'),
     path('archive_user/<int:user_id>', views.archive_user, name='archive_user'),
 
     # Add booking management endpoints

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import ContentLoader from "../../motions/loaders/ContentLoader";
-import { fetchAreas } from "../../services/Area";
-import VenueCard from "./VenueCard";
+import VenueCard from "../../../components/areas/VenueCard";
+import ContentLoader from "../../../motions/loaders/ContentLoader";
+import { fetchAreas } from "../../../services/Area";
 
 interface Area {
   id: number;
@@ -28,9 +28,9 @@ const VenueList = () => {
         <h2 className="text-center text-3xl sm:text-4xl font-bold mb-8">
           Select Your Perfect Event Space
         </h2>
-        <ContentLoader type="card" count={3} />
+        <ContentLoader />
       </div>
-    );
+    );  
   }
 
   if (isError) {
@@ -46,7 +46,7 @@ const VenueList = () => {
     );
   }
 
-  const areas = areasData?.data || [];
+  const availableAreas = areasData?.data?.filter(area => area.status === 'available') || [];
 
   return (
     <div className="container mx-auto p-6">
@@ -54,17 +54,16 @@ const VenueList = () => {
         Select Your Perfect Event Space
       </h2>
 
-      {areas.length === 0 ? (
+      {availableAreas.length === 0 ? (
         <div className="text-center p-8 bg-gray-50 rounded-lg border border-gray-200">
           <p className="text-lg text-gray-600">No areas available at the moment.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {areas.map((area: Area) => (
+          {availableAreas.map((area: Area) => (
             <div
               key={area.id}
               onClick={() => setSelectedArea(selectedArea === area.id ? null : area.id)}
-              className={area.status.toLowerCase() !== 'available' ? 'opacity-90' : ''}
             >
               <VenueCard
                 id={area.id}
@@ -72,7 +71,6 @@ const VenueList = () => {
                 priceRange={area.price_per_hour}
                 capacity={area.capacity}
                 image={area.area_image}
-                status={area.status}
               />
             </div>
           ))}

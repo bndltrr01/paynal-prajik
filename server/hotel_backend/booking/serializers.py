@@ -83,24 +83,19 @@ class BookingSerializer(serializers.ModelSerializer):
         
     def get_valid_id(self, obj):
         if obj.valid_id:
-            # Handle both CloudinaryField objects and string URLs
             if hasattr(obj.valid_id, 'url'):
                 return obj.valid_id.url
             else:
-                # If it's already a string URL, return it directly
                 return obj.valid_id
         return None
     
     def to_representation(self, instance):
-        representation = super().to_representation(instance)
-        
-        # Format total_price with peso sign for all bookings
+        representation = super().to_representation(instance)        
         if instance.total_price is not None:
             try:
                 representation['total_price'] = f"₱{float(instance.total_price):,.2f}"
             except (ValueError, TypeError):
-                pass
-                
+                pass 
         return representation
 
 class BookingRequestSerializer(serializers.Serializer):
@@ -217,7 +212,8 @@ class BookingRequestSerializer(serializers.Serializer):
                 # Verify the URL is accessible
                 if booking.valid_id:
                     try:
-                        url = booking.valid_id.url
+                        # Handle both CloudinaryField objects and string URLs
+                        url = booking.valid_id if isinstance(booking.valid_id, str) else booking.valid_id.url
                         print(f"Valid ID URL is accessible: {url}")
                     except Exception as e:
                         print(f"Error accessing valid_id URL: {str(e)}")
@@ -247,7 +243,6 @@ class ReservationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         
-        # Format total_price with peso sign
         if instance.total_price is not None:
             try:
                 representation['total_price'] = f"₱{float(instance.total_price):,.2f}"
@@ -264,6 +259,71 @@ class TransactionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    booking_details = serializers.SerializerMethodField()
+    user_profile_image = serializers.SerializerMethodField()
+    formatted_date = serializers.SerializerMethodField()
+    
     class Meta:
         model = Reviews
-        fields = '__all__'
+        fields = ['id', 'booking', 'user', 'review_text', 'rating', 'created_at', 
+                 'user_name', 'booking_details', 'user_profile_image', 'formatted_date']
+        read_only_fields = ['user', 'created_at']
+    
+    def get_user_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}"
+        return "Anonymous"
+    
+    def get_user_profile_image(self, obj):
+        if obj.user and obj.user.profile_image:
+            request = self.context.get('request')
+            if request and hasattr(obj.user.profile_image, 'url'):
+                return request.build_absolute_uri(obj.user.profile_image.url)
+            return obj.user.profile_image.url if hasattr(obj.user.profile_image, 'url') else None
+        return None
+    
+    def get_formatted_date(self, obj):
+        if obj.created_at:
+            return obj.created_at.strftime('%B %d, %Y')
+        return None
+    
+    def get_booking_details(self, obj):
+        if obj.booking:
+            if obj.booking.is_venue_booking and obj.booking.area:
+                return {
+                    "type": "venue",
+                    "name": obj.booking.area.area_name if obj.booking.area else "Unknown Venue",
+                    "check_in_date": obj.booking.check_in_date,
+                    "check_out_date": obj.booking.check_out_date
+                }
+            else:
+                return {
+                    "type": "room",
+                    "name": obj.booking.room.room_name if obj.booking.room else "Unknown Room",
+                    "check_in_date": obj.booking.check_in_date,
+                    "check_out_date": obj.booking.check_out_date
+                }
+        return None
+    
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("Rating must be between 1 and 5")
+        return value
+    
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        
+        booking_id = validated_data.get('booking').id
+        try:
+            booking = Bookings.objects.get(id=booking_id)
+            if booking.status != 'checked_out':
+                raise serializers.ValidationError(
+                    "Reviews can only be submitted for checked-out bookings"
+                )
+        except Bookings.DoesNotExist:
+            raise serializers.ValidationError("Booking not found")
+            
+        return super().create(validated_data)

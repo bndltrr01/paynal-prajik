@@ -1,17 +1,19 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from .models import Reservations, Bookings
+from .models import Reservations, Bookings, Reviews
 from property.models import Rooms, Areas
 from property.serializers import AreaSerializer
 from .serializers import (
     ReservationSerializer, 
     BookingSerializer, 
     BookingRequestSerializer,
-    RoomSerializer
+    RoomSerializer,
+    ReviewSerializer
 )
+from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
-from datetime import datetime, timezone
+from datetime import datetime
 from django.db.models import Q
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
@@ -39,11 +41,11 @@ def fetch_availability(request):
             'error': "Departure date should be greater than arrival date"
         }, status=status.HTTP_400_BAD_REQUEST)
         
-    available_rooms = Rooms.objects.filter(status='available')
-    available_areas = Areas.objects.filter(status='available')
+    rooms = Rooms.objects.filter(status='available')
+    areas = Areas.objects.filter(status='available')
     
-    room_serializer = RoomSerializer(available_rooms, many=True, context={'request': request})
-    area_serializer = AreaSerializer(available_areas, many=True)
+    room_serializer = RoomSerializer(rooms, many=True, context={'request': request})
+    area_serializer = AreaSerializer(areas, many=True)
     
     return Response({
         "rooms": room_serializer.data,
@@ -56,7 +58,6 @@ def bookings_list(request):
     try:
         if request.method == 'GET':
             bookings = Bookings.objects.all().order_by('-created_at').select_related('user', 'room', 'area')
-            
             serializer = BookingSerializer(bookings, many=True)
             
             return Response({
@@ -99,6 +100,12 @@ def booking_detail(request, booking_id):
         elif booking.room:
             room_serializer = RoomSerializer(booking.room)
             data['room'] = room_serializer.data
+        
+        if booking.valid_id:
+            if hasattr(booking.valid_id, 'url'):
+                data['valid_id'] = booking.valid_id.url
+            else:
+                data['valid_id'] = booking.valid_id
             
         return Response({
             "data": data
@@ -245,7 +252,10 @@ def user_bookings(request):
                 data['room'] = room_serializer.data
             
             if booking.valid_id:
-                data['valid_id'] = booking.valid_id.url
+                if hasattr(booking.valid_id, 'url'):
+                    data['valid_id'] = booking.valid_id.url
+                else:
+                    data['valid_id'] = booking.valid_id
             
             booking_data.append(data)
         
@@ -259,7 +269,6 @@ def user_bookings(request):
             }
         }, status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"Error in user_bookings: {str(e)}")
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -267,53 +276,44 @@ def user_bookings(request):
 def cancel_booking(request, booking_id):
     try:
         booking = Bookings.objects.get(id=booking_id)
-        
-        if booking.user.id != request.user.id and request.user.role not in ['admin', 'staff']:
-            return Response({
-                "error": "You do not have permission to cancel this booking"
-            }, status=status.HTTP_403_FORBIDDEN)
-        
-        if booking.status in ['cancelled', 'checked_out', 'no_show', 'rejected']:
-            return Response({
-                "error": f"Cannot cancel a booking with status '{booking.status}'"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        reason = request.data.get('reason', '')
-        if not reason:
-            return Response({
-                "error": "A reason for cancellation is required"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        previous_status = booking.status
-        booking.status = 'cancelled'
-        booking.cancellation_reason = reason
-        booking.cancellation_date = timezone.now()
-        booking.save()
-        
-        if previous_status == 'reserved':
-            if booking.is_venue_booking and booking.area:
-                area = booking.area
-                area.status = 'available'
-                area.save()
-            elif booking.room:
-                room = booking.room
-                room.status = 'available'
-                room.save()
-        
-        serializer = BookingSerializer(booking)
-        
-        return Response({
-            "message": "Booking cancelled successfully",
-            "data": serializer.data
-        }, status=status.HTTP_200_OK)
     except Bookings.DoesNotExist:
-        return Response({
-            "error": "Booking not found"
-        }, status=status.HTTP_404_NOT_FOUND)
-    except Exception as e:
-        return Response({
-            "error": str(e)
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.user.role == 'guest':
+        if booking.user != request.user:
+            return Response({"error": "You do not have permission to cancel this booking"},
+                            status=status.HTTP_403_FORBIDDEN)
+        if booking.status.lower() != 'pending':
+            return Response({"error": "You can only cancel bookings that are pending"},
+                            status=status.HTTP_400_BAD_REQUEST)
+    else:
+        if booking.status.lower() == 'cancelled':
+            return Response({"error": "Booking is already cancelled"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    reason = request.data.get('reason', '').strip()
+    if not reason:
+        return Response({"error": "A cancellation reason is required"},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    booking.status = 'cancelled'
+    booking.cancellation_reason = reason
+    booking.cancellation_date = timezone.now()
+    booking.save()
+
+    if booking.status.lower() == 'reserved':
+        if booking.is_venue_booking and booking.area:
+            booking.area.status = 'available'
+            booking.area.save()
+        elif booking.room:
+            booking.room.status = 'available'
+            booking.room.save()
+
+    serializer = BookingSerializer(booking)
+    return Response({
+        "message": "Booking cancelled successfully",
+        "data": serializer.data
+    }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def fetch_room_bookings(request, room_id):
@@ -386,5 +386,118 @@ def fetch_area_bookings(request, area_id):
             "data": booking_data
         }, status=status.HTTP_200_OK)
     
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def booking_reviews(request, booking_id):
+    try:
+        booking = Bookings.objects.get(id=booking_id)
+    except Bookings.DoesNotExist:
+        return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if booking.user.id != request.user.id and not request.user.is_staff:
+        return Response({"error": "You don't have permission to access these reviews"}, 
+                       status=status.HTTP_403_FORBIDDEN)
+    
+    if request.method == 'GET':
+        reviews = Reviews.objects.filter(booking=booking)
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    
+    elif request.method == 'POST':
+        if booking.status != 'checked_out':
+            return Response({
+                "error": "Reviews can only be submitted for checked-out bookings"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if Reviews.objects.filter(booking=booking, user=request.user).exists():
+            return Response({
+                "error": "You have already submitted a review for this booking"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = request.data.copy()
+        data['booking'] = booking_id
+        
+        serializer = ReviewSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Review submitted successfully",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_reviews(request):
+    reviews = Reviews.objects.filter(user=request.user).order_by('-created_at')
+    serializer = ReviewSerializer(reviews, many=True)
+    return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def review_detail(request, review_id):
+    try:
+        review = Reviews.objects.get(id=review_id)
+    except Reviews.DoesNotExist:
+        return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    if review.user.id != request.user.id and not request.user.is_staff:
+        return Response({"error": "You don't have permission to access this review"}, 
+                       status=status.HTTP_403_FORBIDDEN)
+    
+    if request.method == 'GET':
+        serializer = ReviewSerializer(review)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    
+    elif request.method == 'PUT':
+        serializer = ReviewSerializer(review, data=request.data, partial=True, 
+                                     context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        review.delete()
+        return Response({"message": "Review deleted successfully"}, 
+                       status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def room_reviews(request, room_id):
+    try:
+        room = Rooms.objects.get(id=room_id)
+        
+        bookings = Bookings.objects.filter(room=room, is_venue_booking=False)
+        booking_ids = [booking.id for booking in bookings]
+        
+        reviews = Reviews.objects.filter(booking_id__in=booking_ids).order_by('-created_at')
+        
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    
+    except Rooms.DoesNotExist:
+        return Response({"error": "Room not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def area_reviews(request, area_id):
+    try:
+        area = Areas.objects.get(id=area_id)
+        
+        bookings = Bookings.objects.filter(area=area, is_venue_booking=True)
+        booking_ids = [booking.id for booking in bookings]
+        
+        reviews = Reviews.objects.filter(booking_id__in=booking_ids).order_by('-created_at')
+        
+        serializer = ReviewSerializer(reviews, many=True)
+        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    
+    except Areas.DoesNotExist:
+        return Response({"error": "Area not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

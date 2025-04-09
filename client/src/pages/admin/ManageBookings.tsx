@@ -1,17 +1,23 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import {
+  AlertCircle,
+  Calendar,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Eye,
-  FileEdit,
   Filter,
+  IdCard,
   Search,
   X
 } from "lucide-react";
 import { FC, useState } from "react";
 import { toast } from "react-toastify";
 import CancellationModal from "../../components/bookings/CancellationModal";
+import Modal from "../../components/Modal";
 import EventLoader from "../../motions/loaders/EventLoader";
 import { getAllBookings, recordPayment, updateBookingStatus } from "../../services/Admin";
 import { BookingResponse } from "../../services/Booking";
@@ -51,7 +57,7 @@ const BookingStatusBadge: FC<{ status: string }> = ({ status }) => {
   }
 
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bgColor}`}>
+    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${bgColor}`}>
       {formattedStatus.replace("_", " ")}
     </span>
   );
@@ -147,97 +153,175 @@ const BookingDetailsModal: FC<{
   const isPaymentComplete = currentPayment === bookingPrice;
   const isReservedStatus = booking.status === "reserved";
 
+  const getLoadingText = () => {
+    if (booking.status === "pending") {
+      return "Reserving booking...";
+    } else if (booking.status === "reserved") {
+      return "Checking in guest...";
+    } else if (booking.status === "checked_in") {
+      return "Checking out guest...";
+    } else if (booking.status === "no_show") {
+      return "Marking as no-show...";
+    }
+    return "Processing booking...";
+  };
+
+  // Get appropriate loader type based on booking status
+  const getLoaderType = () => {
+    if (booking.status === "pending") {
+      return "reserve";
+    } else if (booking.status === "reserved") {
+      return "checkin";
+    } else if (booking.status === "checked_in") {
+      return "checkout";
+    } else if (booking.status === "no_show") {
+      return "noshow";
+    }
+    return "default";
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-auto p-4 sm:p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-red-500"
+      {isUpdating ? (
+        <div className="flex items-center justify-center w-full h-full">
+          <EventLoader
+            text={getLoadingText()}
+            size="150px"
+            type={getLoaderType() as "default" | "reserve" | "checkin" | "checkout" | "noshow"}
+          />
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          className="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-auto p-4 sm:p-6 relative overflow-hidden border border-gray-200"
         >
-          <X size={24} />
-        </button>
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-500 hover:text-red-500 transition-colors z-10"
+          >
+            <X size={24} />
+          </motion.button>
 
-        <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center pb-2 border-b">
-          User Booking Details
-        </h2>
+          <motion.h2
+            initial={{ y: -20 }}
+            animate={{ y: 0 }}
+            className="text-xl sm:text-2xl font-bold mb-4 text-center pb-2 border-b bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
+          >
+            User Booking Details
+          </motion.h2>
 
-        {isUpdating ? (
-          <div className="py-12">
-            <EventLoader text="Processing booking..." />
-          </div>
-        ) : (
-          <div className="space-y-3 overflow-y-auto max-h-[70vh]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Fullname:</span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-3 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-50 p-4 rounded-lg shadow-inner">
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Full Name:</span>
                 <span className="sm:text-right">{booking.user?.first_name} {booking.user?.last_name}</span>
-              </div>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Email:</span>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Email:</span>
                 <span className="sm:text-right break-words">{booking.user?.email}</span>
-              </div>
+              </motion.div>
 
               {booking.user?.address && (
-                <div className="flex flex-col sm:flex-row justify-between sm:col-span-2">
-                  <span className="font-semibold">Address:</span>
+                <motion.div
+                  className="flex flex-col sm:flex-row justify-between sm:col-span-2 p-2 rounded-md"
+                >
+                  <span className="font-semibold text-gray-700">Address:</span>
                   <span className="sm:text-right">{booking.user?.address}</span>
-                </div>
+                </motion.div>
               )}
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Property Type:</span>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Property Type:</span>
                 <span>
                   {isVenueBooking ? (
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Venue</span>
+                    <span className="bg-blue-100 text-blue-800 px-2 uppercase py-1 rounded-full text-md font-semibold">Venue</span>
                   ) : (
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Room</span>
+                    <span className="bg-green-100 text-green-800 px-2 uppercase py-1 rounded-full text-md font-semibold">Room</span>
                   )}
                 </span>
-              </div>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">{isVenueBooking ? "Venue:" : "Room:"}</span>
-                <span className="sm:text-right">{isVenueBooking
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">{isVenueBooking ? "Venue:" : "Room:"}</span>
+                <span className="sm:text-right font-medium">{isVenueBooking
                   ? (booking.area_details?.area_name || "Unknown Venue")
                   : (booking.room_details?.room_name || "Unknown Room")}
                 </span>
-              </div>
+              </motion.div>
 
               {isVenueBooking && booking.area_details?.capacity && (
-                <div className="flex flex-col sm:flex-row justify-between">
-                  <span className="font-semibold">Capacity:</span>
+                <motion.div
+                  className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+                >
+                  <span className="font-semibold text-gray-700">Capacity:</span>
                   <span>{booking.area_details.capacity} people</span>
-                </div>
+                </motion.div>
               )}
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Date of Reservation:</span>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Date of Reservation:</span>
                 <span>{formatDate(booking.created_at)}</span>
-              </div>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Check-in:</span>
-                <span>{formatDate(booking.check_in_date)}</span>
-              </div>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Check-in:</span>
+                <span>
+                  {isVenueBooking
+                    ? `${formatDate(booking.check_in_date)} 8:00 AM`
+                    : formatDate(booking.check_in_date)}
+                </span>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Check-out:</span>
-                <span>{formatDate(booking.check_out_date)}</span>
-              </div>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Check-out:</span>
+                <span>
+                  {isVenueBooking
+                    ? `${formatDate(booking.check_out_date)} 5:00 PM`
+                    : formatDate(booking.check_out_date)}
+                </span>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Price:</span>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Price:</span>
                 <span className="font-medium">
                   {isVenueBooking
                     ? booking.area_details?.price_per_hour
                     : booking.room_details?.room_price}
-                  {isVenueBooking ? '/hour' : '/night'}
+                  <span className="text-gray-500 text-sm">{isVenueBooking ? '/hour' : '/night'}</span>
                 </span>
-              </div>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Duration:</span>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Duration:</span>
                 <span className="font-medium">
                   {(() => {
                     try {
@@ -246,126 +330,195 @@ const BookingDetailsModal: FC<{
                       const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
 
                       if (isVenueBooking) {
-                        // For venues, show hours
+                        if (checkIn.toDateString() === checkOut.toDateString()) {
+                          return "9 hours (8AM - 5PM)";
+                        }
                         const hours = Math.max(Math.ceil(diffTime / (1000 * 60 * 60)), 1);
                         return `${hours} hour${hours !== 1 ? 's' : ''}`;
                       } else {
-                        // For rooms, show nights
                         const nights = Math.max(Math.ceil(diffTime / (1000 * 60 * 60 * 24)), 1);
                         return `${nights} night${nights !== 1 ? 's' : ''}`;
                       }
-                    } catch (e) {
-                      return isVenueBooking ? '1 hour' : '1 night';
+                    } catch (error) {
+                      console.error('Error calculating duration:', error);
+                      return isVenueBooking ? '9 hours (8AM - 5PM)' : '1 night';
                     }
                   })()}
                 </span>
-              </div>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Total Amount:</span>
-                <span className="font-medium">
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Total Amount:</span>
+                <span className="font-bold text-indigo-600">
                   ₱{bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-              </div>
+              </motion.div>
 
-              <div className="flex flex-col sm:flex-row justify-between">
-                <span className="font-semibold">Status:</span>
+              <motion.div
+                className="flex flex-col sm:flex-row justify-between p-2 rounded-md"
+              >
+                <span className="font-semibold text-gray-700">Status:</span>
                 <BookingStatusBadge status={booking.status} />
-              </div>
+              </motion.div>
             </div>
 
             {isReservedStatus && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold mb-2">Payment Details</h3>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 shadow-sm"
+              >
+                <h3 className="font-semibold mb-2 text-blue-800 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Payment Details
+                </h3>
                 <div className="flex flex-col sm:flex-row items-center gap-2">
                   <div className="relative flex-1 w-full">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                       <span className="text-gray-500">₱</span>
                     </div>
-                    <input
+                    <motion.input
+                      whileFocus={{ boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.3)" }}
                       type="number"
                       min="0"
                       step="0.01"
                       value={paymentAmount}
                       onChange={handlePaymentChange}
                       placeholder={`Enter amount (${bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
-                      className="w-full pl-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-10 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                   </div>
                 </div>
-                <div className="mt-2 text-sm">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-2 text-sm"
+                >
                   {currentPayment > 0 && (
-                    <p className={isPaymentComplete ? "text-green-600" : "text-red-600"}>
+                    <p className={isPaymentComplete ? "text-green-600 flex items-center" : "text-red-600 flex items-center"}>
                       {isPaymentComplete
-                        ? "✓ Payment amount matches the required total."
-                        : `Payment must be exactly ₱${bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to check in the guest.`}
+                        ? <><CheckCircle2 className="w-4 h-4 mr-1" /> Payment amount matches the required total.</>
+                        : <><AlertCircle className="w-4 h-4 mr-1" /> Payment must be exactly ₱{bookingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} to check in the guest.</>}
                     </p>
                   )}
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
 
             {/* Valid ID Section */}
-            <div className="mt-4">
-              <h3 className="font-semibold mb-2">Valid ID:</h3>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-4 bg-gray-50 p-4 rounded-lg border border-gray-200"
+            >
+              <h3 className="font-semibold mb-2 text-gray-700 flex items-center">
+                <IdCard className="w-4 h-4 mr-2" />
+                Valid ID:
+              </h3>
               {renderValidId()}
-            </div>
-          </div>
-        )}
+            </motion.div>
 
-        {!isUpdating && canManage && booking.status === "pending" && (
-          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
-            <button
-              onClick={onReject}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <X size={18} />
-              Reject Booking
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <Check size={18} />
-              Reserve Booking
-            </button>
-          </div>
-        )}
+            {isVenueBooking && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200 shadow-sm"
+              >
+                <h3 className="font-semibold mb-2 text-blue-800 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Venue Booking Note
+                </h3>
+                <p className="text-sm text-blue-700">
+                  Standard venue bookings are scheduled from 8:00 AM to 5:00 PM (9 hours) on the selected date.
+                  {booking.check_in_date !== booking.check_out_date && " This booking spans multiple days."}
+                </p>
+              </motion.div>
+            )}
+          </motion.div>
 
-        {!isUpdating && canManage && booking.status === "reserved" && (
-          <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6">
-            <button
-              onClick={onNoShow}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700"
+          {/* Action Buttons */}
+          {canManage && booking.status === "pending" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-col sm:flex-row justify-between gap-2 mt-6"
             >
-              Marked as No Show
-            </button>
-            <button
-              onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
-              className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 ${isPaymentComplete
-                ? 'bg-blue-600 hover:bg-blue-700'
-                : 'bg-gray-400 cursor-not-allowed'
-                }`}
-              disabled={!isPaymentComplete}
-            >
-              <Check size={18} />
-              Check In Guest
-            </button>
-          </div>
-        )}
+              <motion.button
+                whileHover={{ scale: 1.02, backgroundColor: "#dc2626" }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onReject}
+                className="px-4 py-2 bg-red-600 text-white rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <X size={18} />
+                Reject Booking
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={onConfirm}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Check size={18} />
+                Reserve Booking
+              </motion.button>
+            </motion.div>
+          )}
 
-        {!isUpdating && canManage && booking.status === "checked_in" && (
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={onCheckOut}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+          {canManage && booking.status === "reserved" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex flex-col sm:flex-row justify-between gap-2 mt-6"
             >
-              <Check size={18} />
-              Check Out Guest
-            </button>
-          </div>
-        )}
-      </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                onClick={onNoShow}
+                className="px-4 py-2 bg-amber-600 text-white rounded-md flex items-center justify-center gap-2 shadow-sm"
+              >
+                <X size={18} />
+                Mark as No Show
+              </motion.button>
+              <motion.button
+                whileTap={isPaymentComplete ? { scale: 0.98 } : {}}
+                onClick={() => onCheckIn && isPaymentComplete && onCheckIn(currentPayment)}
+                className={`px-4 py-2 text-white rounded-md flex items-center justify-center gap-2 shadow-sm ${isPaymentComplete
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : 'bg-gray-400 cursor-not-allowed'
+                  }`}
+                disabled={!isPaymentComplete}
+              >
+                <Check size={18} />
+                Check In Guest
+              </motion.button>
+            </motion.div>
+          )}
+
+          {canManage && booking.status === "checked_in" && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="flex justify-center mt-6"
+            >
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={onCheckOut}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-md transition-colors flex items-center justify-center gap-2 shadow-md"
+              >
+                <Check size={18} />
+                Check Out Guest
+              </motion.button>
+            </motion.div>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 };
@@ -376,10 +529,11 @@ const ManageBookings: FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<BookingResponse | null>(null);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [showNoShowModal, setShowNoShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageSize = 9; // Show 9 bookings per page
+  const pageSize = 9;
 
-  const { data: bookingsResponse, error, isLoading } = useQuery<{
+  const { data: bookingsResponse, error } = useQuery<{
     data: BookingResponse[],
     pagination?: {
       total_pages: number;
@@ -392,10 +546,9 @@ const ManageBookings: FC = () => {
     queryFn: async () => {
       try {
         const response = await getAllBookings({ page: currentPage, pageSize });
-        console.log('Admin bookings response:', response);
         return response;
       } catch (err) {
-        console.error('Error fetching admin bookings:', err);
+        console.error(`Error fetching admin bookings: ${err}`);
         throw err;
       }
     },
@@ -406,34 +559,41 @@ const ManageBookings: FC = () => {
       bookingId,
       status,
       reason,
-      paymentAmount
+      paymentAmount,
+      setRoomAvailable = false
     }: {
       bookingId: number;
       status: string;
       reason?: string;
       paymentAmount?: number;
+      setRoomAvailable?: boolean;
     }) => {
-      const result = await updateBookingStatus(bookingId, status, reason);
+      const data: Record<string, any> = {
+        status,
+        set_available: setRoomAvailable
+      };
 
-      // Create a transaction record when checking in
+      if ((status === 'cancelled' || status === 'rejected') && reason) {
+        data.reason = reason;
+      }
+
+      const result = await updateBookingStatus(bookingId, data);
+
       if (status === 'checked_in' && paymentAmount) {
         try {
           await recordPayment(bookingId, paymentAmount);
-          console.log('Payment recorded successfully');
         } catch (error) {
           console.error('Failed to record payment:', error);
-          // We don't throw an error here to not block the check-in process
         }
       }
 
-      return result;
+      return { result, status };
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-bookings"] });
-      // Also invalidate the stats query to update the revenue in dashboard
       queryClient.invalidateQueries({ queryKey: ["stats"] });
 
-      const { status } = variables;
+      const { status } = data;
 
       if (status === 'reserved') {
         toast.success("Booking has been reserved successfully! A confirmation email has been sent to the guest.");
@@ -444,7 +604,7 @@ const ManageBookings: FC = () => {
       } else if (status === 'checked_out') {
         toast.success("Guest has been checked out successfully.");
       } else if (status === 'no_show') {
-        toast.success("Booking has been marked as 'No Show'.");
+        toast.success("Booking has been marked as 'No Show' and the room/area has been made available again.");
       } else {
         toast.success(`Booking status updated to ${status.replace('_', ' ')}`);
       }
@@ -470,6 +630,7 @@ const ManageBookings: FC = () => {
     try {
       setSelectedBooking(booking);
     } catch (error) {
+      console.error(`Error fetching booking details: ${error}`);
       toast.error("Failed to fetch booking details");
     }
   };
@@ -479,6 +640,7 @@ const ManageBookings: FC = () => {
       updateBookingStatusMutation.mutate({
         bookingId: selectedBooking.id,
         status: "reserved",
+        setRoomAvailable: false
       });
     }
   };
@@ -503,17 +665,29 @@ const ManageBookings: FC = () => {
   };
 
   const handleNoShow = () => {
+    if (selectedBooking) setShowNoShowModal(true);
+  };
+
+  const confirmNoShow = () => {
     if (selectedBooking) {
-      updateBookingStatusMutation.mutate({
-        bookingId: selectedBooking.id,
-        status: "no_show",
-      });
+      try {
+        updateBookingStatusMutation.mutate({
+          bookingId: selectedBooking.id,
+          status: "no_show",
+          setRoomAvailable: true
+        });
+        setShowNoShowModal(false);
+      } catch (error) {
+        console.error("Error marking booking as no-show:", error);
+        toast.error("Failed to mark booking as no-show. Please try again.");
+        setShowNoShowModal(false);
+      }
     }
   };
 
-  const handleRejectInitiate = () => {
-    setShowRejectionModal(true);
-  };
+  const closeNoShowModal = () => setShowNoShowModal(false);
+
+  const handleRejectInitiate = () => setShowRejectionModal(true);
 
   const handleRejectConfirm = (reason: string) => {
     if (selectedBooking) {
@@ -522,27 +696,21 @@ const ManageBookings: FC = () => {
         status: "rejected",
         reason: reason
       });
+      setShowRejectionModal(false);
     }
   };
 
-  const closeModal = () => {
-    setSelectedBooking(null);
-  };
+  const closeModal = () => setSelectedBooking(null);
 
-  const closeRejectionModal = () => {
-    setShowRejectionModal(false);
-  };
+  const closeRejectionModal = () => setShowRejectionModal(false);
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
+  const handlePageChange = (newPage: number) => setCurrentPage(newPage);
 
   const totalPages = bookingsResponse?.pagination?.total_pages || 1;
   const filteredBookings = (bookingsResponse?.data || []).filter((booking) => {
     const guestName = `${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`.toLowerCase();
     const email = booking.user?.email?.toLowerCase() || '';
 
-    // Get property name based on if it's a venue booking or room booking
     const propertyName = booking.is_venue_booking
       ? booking.area_details?.area_name?.toLowerCase() || ''
       : booking.room_details?.room_name?.toLowerCase() || '';
@@ -560,12 +728,12 @@ const ManageBookings: FC = () => {
   });
 
   return (
-    <div className="h-[calc(100vh-25px)] p-3 overflow-y-auto container mx-auto">
-      <h1 className="text-3xl font-semibold mb-6">Manage Bookings</h1>
+    <div className="min-h-[calc(100vh-25px)] p-3 md:p-3 overflow-y-auto container mx-auto">
+      <h1 className="text-2xl md:text-3xl font-semibold mb-4 md:mb-6">Manage Bookings</h1>
 
-      {error && <div className="mb-4 text-red-600">{error.message}</div>}
+      {error && <div className="mb-4 text-red-600 p-3 bg-red-50 rounded-lg">{error.message}</div>}
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 md:mb-6 gap-3">
         <div className="relative w-full md:w-1/3">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search size={18} className="text-gray-500" />
@@ -601,162 +769,159 @@ const ManageBookings: FC = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/80 z-[500]">
-          <EventLoader size="80px" color="white" text="Loading bookings..." />
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto shadow-md rounded-lg">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date of Reservation
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Guest Name
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Property
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check-in
-                  </th>
-                  <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Check-out
-                  </th>
-                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                  <th className="py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+      <div className="overflow-x-auto shadow-md rounded-lg">
+        <div className="inline-block min-w-full align-middle">
+          <table className="min-w-full bg-white border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-2 md:py-3 px-2 md:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Guest
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Property
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Check-in
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Check-out
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="hidden md:table-cell py-3 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="py-2 md:py-3 px-2 md:px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredBookings.length > 0 ? (
+                filteredBookings.map((booking) => {
+                  const isVenueBooking = booking.is_venue_booking;
+                  const propertyName = isVenueBooking
+                    ? booking.area_details?.area_name || "Unknown Venue"
+                    : booking.room_details?.room_name || "Unknown Room";
+
+                  return (
+                    <tr key={booking.id} className="hover:bg-gray-50">
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.created_at)}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-base text-gray-700 whitespace-nowrap">
+                        {booking.user?.email || ''}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="truncate max-w-[120px] md:max-w-full">{propertyName}</span>
+                          {isVenueBooking ? (
+                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-base text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.check_in_date)}
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-base text-gray-700 whitespace-nowrap">
+                        {formatDate(booking.check_out_date)}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-center text-sm md:text-base text-gray-700 whitespace-nowrap">
+                        <BookingStatusBadge status={booking.status} />
+                      </td>
+                      <td className="hidden md:table-cell py-3 px-4 text-center text-base text-gray-700 whitespace-nowrap">
+                        ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-2 md:py-3 px-2 md:px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center">
+                          <button
+                            onClick={() => handleViewBooking(booking)}
+                            className="p-1 md:p-1.5 bg-blue-100 cursor-pointer text-blue-600 rounded-md hover:bg-blue-200"
+                            title="View Details"
+                          >
+                            <Eye size={20} className="md:w-6 md:h-6" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={9} className="py-6 text-center text-gray-500">
+                    No bookings found.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredBookings.length > 0 ? (
-                  filteredBookings.map((booking) => {
-                    const isVenueBooking = booking.is_venue_booking;
-                    const propertyName = isVenueBooking
-                      ? booking.area_details?.area_name || "Unknown Venue"
-                      : booking.room_details?.room_name || "Unknown Room";
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-                    return (
-                      <tr key={booking.id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {formatDate(booking.created_at)}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {`${booking.user?.first_name || ''} ${booking.user?.last_name || ''}`}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {booking.user?.email || ''}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <span>{propertyName}</span>
-                            {isVenueBooking ? (
-                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Venue</span>
-                            ) : (
-                              <span className="inline-block px-2 py-0.5 mt-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Room</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {formatDate(booking.check_in_date)}
-                        </td>
-                        <td className="py-3 px-4 text-lg text-gray-700 whitespace-nowrap">
-                          {formatDate(booking.check_out_date)}
-                        </td>
-                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                          <BookingStatusBadge status={booking.status} />
-                        </td>
-                        <td className="py-3 px-4 text-center text-lg text-gray-700 whitespace-nowrap">
-                          ₱ {getBookingPrice(booking).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </td>
-                        <td className="py-3 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center space-x-2">
-                            <button
-                              onClick={() => handleViewBooking(booking)}
-                              className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-200"
-                              title="View Details"
-                            >
-                              <Eye size={25} />
-                            </button>
-                            {booking.status !== "reserved" && booking.status !== "checked_in" && booking.status !== "checked_out" && (
-                              <button
-                                className="p-1.5 bg-green-100 text-green-600 rounded-md hover:bg-green-200"
-                                title="Edit Booking"
-                              >
-                                <FileEdit size={25} />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={9} className="py-6 text-center text-gray-500">
-                      No bookings found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-4 md:mt-6">
+          <nav className="flex items-center flex-wrap justify-center gap-1">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`px-2 md:px-3 py-1 rounded-l-md border ${currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-blue-600 hover:bg-blue-50'
+                }`}
+            >
+              <ChevronLeft size={18} />
+            </button>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-6">
-              <nav className="flex items-center">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-l-md border ${currentPage === 1
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-blue-600 hover:bg-blue-50'
-                    }`}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-
-                {/* Page number buttons */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => {
+                if (window.innerWidth < 768) {
+                  return Math.abs(page - currentPage) < 2 || page === 1 || page === totalPages;
+                }
+                return true;
+              })
+              .map((page, index, array) => (
+                <>
+                  {index > 0 && array[index - 1] !== page - 1 && (
+                    <span className="px-2 py-1 border-t border-b">...</span>
+                  )}
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
-                    className={`px-3 py-1 border-t border-b ${currentPage === page
+                    className={`px-2 md:px-3 py-1 border-t border-b ${currentPage === page
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-blue-600 hover:bg-blue-50'
                       }`}
                   >
                     {page}
                   </button>
-                ))}
+                </>
+              ))}
 
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-r-md border ${currentPage === totalPages
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-white text-blue-600 hover:bg-blue-50'
-                    }`}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </nav>
-            </div>
-          )}
-        </>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`px-2 md:px-3 py-1 rounded-r-md border ${currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-blue-600 hover:bg-blue-50'
+                }`}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </nav>
+        </div>
       )}
 
       {/* Booking Details Modal */}
@@ -789,6 +954,20 @@ const ManageBookings: FC = () => {
           showPolicyNote={false}
         />
       )}
+
+      {/* No Show Confirmation Modal */}
+      <Modal
+        isOpen={showNoShowModal}
+        title="Mark as No Show"
+        description={`Are you sure you want to mark this booking as 'No Show'? 
+        This will immediately make the ${selectedBooking?.is_venue_booking ? 'venue' : 'room'} available for new bookings.
+        This action cannot be undone.`}
+        confirmText="Mark as No Show"
+        cancelText="Cancel"
+        onConfirm={confirmNoShow}
+        cancel={closeNoShowModal}
+        className="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md font-bold transition-all duration-300 cursor-pointer"
+      />
     </div>
   );
 };

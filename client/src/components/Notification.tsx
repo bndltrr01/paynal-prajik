@@ -1,59 +1,86 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { FC, memo, useCallback, useEffect } from "react";
+import { FC, memo, useCallback, useEffect, useRef } from "react";
 
 interface NotificationProps {
   icon?: string;
   message: string;
   type?: 'success' | 'error' | 'info' | 'warning';
   onClose: () => void;
+  autoClose?: boolean;
+  duration?: number;
 }
 
-const notificationVariants = {
-  hidden: { opacity: 0, y: -50 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -50 }
-};
+const Notification: FC<NotificationProps> = memo(({
+  icon,
+  message,
+  type = 'info',
+  onClose,
+  autoClose = true,
+  duration = 5000
+}) => {
+  const timerRef = useRef<number | null>(null);
 
-const typeStyles: Record<string, string> = {
-  success: 'bg-green-500 text-white',
-  error: 'bg-red-500 text-white',
-  info: 'bg-blue-500 text-white',
-  warning: 'bg-yellow-500 text-gray-800'
-};
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
-const Notification: FC<NotificationProps> = ({ icon, message, type, onClose }) => {
   const handleClose = useCallback(() => {
+    clearTimer();
     onClose();
-  }, [onClose]);
+  }, [onClose, clearTimer]);
 
   useEffect(() => {
-    const timer = setTimeout(handleClose, 4000);
-    return () => clearTimeout(timer);
-  }, [handleClose]);
+    if (autoClose) {
+      timerRef.current = window.setTimeout(() => {
+        handleClose();
+      }, duration);
+    }
+
+    return clearTimer;
+  }, [autoClose, duration, handleClose, clearTimer]);
+
+  const getTypeStyles = () => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-50 text-green-800 border-green-200';
+      case 'error':
+        return 'bg-red-50 text-red-800 border-red-200';
+      case 'warning':
+        return 'bg-yellow-50 text-yellow-800 border-yellow-200';
+      case 'info':
+      default:
+        return 'bg-blue-50 text-blue-800 border-blue-200';
+    }
+  };
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence>
       <motion.div
-        className={`fixed bottom-4 right-4 z-[9999] w-full max-w-sm p-4 rounded-lg shadow-lg ${typeStyles[type || 'info']}`}
-        variants={notificationVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        transition={{ duration: 0.3 }}
+        className={`fixed z-50 top-4 right-4 p-4 rounded-lg shadow-md border ${getTypeStyles()} max-w-sm`}
+        initial={{ opacity: 0, y: -50, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.2 }}
       >
         <div className="flex items-start">
-          {icon && (
-            <div className="mr-2 flex-shrink-0">
-              <i className={`${icon} text-xl`}></i>
-            </div>
-          )}
-          <div className="flex-1">
-            <p className="text-sm">{message}</p>
-          </div>
+          {icon && <i className={`${icon} mr-3 text-lg`}></i>}
+          <div className="flex-1">{message}</div>
+          <button
+            onClick={handleClose}
+            className="ml-4 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close notification"
+          >
+            ✕
+          </button>
         </div>
       </motion.div>
     </AnimatePresence>
-  )
-}
+  );
+});
 
-export default memo(Notification);
+Notification.displayName = 'Notification';
+
+export default Notification;

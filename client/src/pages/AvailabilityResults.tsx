@@ -1,13 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
-import { Book, Eye } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import { Book, Calendar, Eye } from "lucide-react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import LoginModal from "../components/LoginModal";
+import SignupModal from "../components/SignupModal";
+import { useUserContext } from "../contexts/AuthContext";
 import { fetchAvailability } from "../services/Booking";
+import RoomAvailabilityCalendar from "../components/rooms/RoomAvailabilityCalendar";
 
 const AvailabilityResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-
+  const { isAuthenticated } = useUserContext();
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+  const [showSignupModal, setShowSignupModal] = useState<boolean>(false);
   const arrival = searchParams.get("arrival") || "";
   const departure = searchParams.get("departure") || "";
 
@@ -21,8 +30,16 @@ const AvailabilityResults = () => {
     enabled: !!arrival && !!departure,
   });
 
-  const arrivalLabel = arrival;
-  const departureLabel = departure;
+  const formatDisplayDate = (dateString: string) => {
+    try {
+      return format(parseISO(dateString), "MMM dd, yyyy");
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formattedArrival = formatDisplayDate(arrival);
+  const formattedDeparture = formatDisplayDate(departure);
 
   const handleViewVenueDetails = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
@@ -34,137 +51,331 @@ const AvailabilityResults = () => {
     navigate(`/venue-booking/${id}?arrival=${arrival}&departure=${departure}`);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
+  };
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5
+      }
+    }
+  };
+
+  const toggleLoginModal = useCallback(() => setShowLoginModal(prev => !prev), []);
+  const toggleSignupModal = useCallback(() => setShowSignupModal(prev => !prev), []);
+
+  const handleSuccessfulLogin = () => window.location.reload();
+
   return (
-    <div className="container min-h-screen mx-auto px-4 py-10 mt-[120px] pb-8">
-      {/* Page Header */}
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl md:text-3xl font-bold">Availability Results</h1>
-        <p className="text-gray-600 mt-2">
-          Showing availability from <span className="font-semibold"> {arrivalLabel} </span> to
-          <span className="font-semibold"> {departureLabel} </span>
-        </p>
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+        <div className="container mx-auto px-4 py-12 mt-[120px] pb-16">
+          <RoomAvailabilityCalendar />
+          {/* Page Header with Animation */}
+          <motion.div
+            className="mb-10 text-center"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Available Accommodations</h1>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 text-gray-600 mt-3">
+              <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full">
+                <Calendar className="text-blue-600 h-5 w-5" />
+                <span className="font-medium">
+                  {formattedArrival} <span className="mx-2">→</span> {formattedDeparture}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Loading State */}
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                className="flex justify-center items-center h-60"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin h-12 w-12 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+                  <p className="mt-4 text-lg text-gray-600">Finding perfect accommodations for you...</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error State */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-lg text-center max-w-2xl mx-auto"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <p className="text-lg font-medium">Unable to fetch availability</p>
+                <p className="mt-1">Please try different dates or contact our support team</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Results */}
+          {data && (
+            <div className="space-y-16">
+              {/* Rooms Section */}
+              <motion.section
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <div className="flex items-center mb-6">
+                  <div className="h-10 w-2 bg-blue-600 rounded-full mr-3"></div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Rooms & Suites</h2>
+                </div>
+
+                {data.rooms && data.rooms.length > 0 ? (
+                  <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {data.rooms.map((room: any) => (
+                      <motion.div
+                        key={room.id}
+                        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
+                        variants={itemVariants}
+                        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                      >
+                        <div className="relative">
+                          <img
+                            loading="lazy"
+                            src={room.room_image || '/default-room.jpg'}
+                            alt={room.room_name}
+                            className="w-full h-56 object-cover"
+                          />
+                        </div>
+
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">{room.room_name}</h3>
+
+                          <div className="flex justify-between items-end mt-3">
+                            <div>
+                              <p className="text-2xl font-bold text-blue-600">{room.room_price}</p>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Link
+                                to={`/rooms/${room.id}`}
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
+                              >
+                                <Eye size={16} /> <span>View</span>
+                              </Link>
+
+                              {isAuthenticated ? (
+                                <Link
+                                  to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
+                                >
+                                  <Book size={16} /> <span>Book</span>
+                                </Link>
+                              ) : (
+                                <button
+                                  disabled
+                                  className="bg-gray-400 text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed text-md"
+                                  title="Please login to book"
+                                >
+                                  <Book size={16} /> <span>Book</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center"
+                  >
+                    <p className="text-gray-600 text-lg">No rooms available for these dates.</p>
+                    <p className="text-gray-500 mt-2">Try selecting different dates for your stay.</p>
+                  </motion.div>
+                )}
+              </motion.section>
+
+              {/* Areas/Venues Section */}
+              <motion.section
+                variants={sectionVariants}
+                initial="hidden"
+                animate="visible"
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center mb-6">
+                  <div className="h-10 w-2 bg-green-600 rounded-full mr-3"></div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Venues & Event Spaces</h2>
+                </div>
+
+                {data.areas && data.areas.length > 0 ? (
+                  <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {data.areas.map((area: any) => (
+                      <motion.div
+                        key={area.id}
+                        className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
+                        variants={itemVariants}
+                        whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                      >
+                        <div className="relative">
+                          <img
+                            loading="lazy"
+                            src={area.area_image || '/default-venue.jpg'}
+                            alt={area.area_name}
+                            className="w-full h-56 object-cover"
+                          />
+                        </div>
+
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">{area.area_name}</h3>
+
+                          <div className="flex justify-between items-end mt-3">
+                            <div>
+                              <p className="text-2xl font-bold text-green-600">{area.price_per_hour}</p>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(e) => handleViewVenueDetails(e, area.id)}
+                                className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
+                              >
+                                <Eye size={16} /> <span>View</span>
+                              </button>
+
+                              {isAuthenticated ? (
+                                <button
+                                  onClick={(e) => handleBookVenue(e, area.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center gap-1 text-md uppercase font-semibold"
+                                >
+                                  <Book size={16} /> <span>Book</span>
+                                </button>
+                              ) : (
+                                <button
+                                  disabled
+                                  className="bg-gray-400 text-white px-3 py-2 rounded-lg flex items-center gap-1 cursor-not-allowed text-md"
+                                  title="Please login to book"
+                                >
+                                  <Book size={16} /> <span>Book</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center"
+                  >
+                    <p className="text-gray-600 text-lg">No venues available for these dates.</p>
+                    <p className="text-gray-500 mt-2">Try selecting different dates for your event.</p>
+                  </motion.div>
+                )}
+              </motion.section>
+
+              {/* Call to action footer */}
+              {(data.rooms?.length > 0 || data.areas?.length > 0) && (
+                <motion.div
+                  className="bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl p-6 text-center mt-12"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                >
+                  <h3 className="text-2xl font-bold mb-3">Found your perfect stay?</h3>
+                  <p className="text-gray-100 mb-6 min-w-2xl text-2xl mx-auto">
+                    Book now to secure your preferred accommodation for {formattedArrival} to {formattedDeparture}.
+                  </p>
+                  {!isAuthenticated && (
+                    <motion.button
+                      onClick={() => setShowLoginModal(true)}
+                      className="bg-white text-blue-600 hover:bg-blue-50 font-semibold px-6 py-3 rounded-lg shadow-md"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      Login to Book
+                    </motion.button>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
 
-      {isLoading && (
-        <div className="flex justify-center items-center h-40">
-          <p className="text-lg text-gray-600">Loading availability...</p>
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <LoginModal
+            toggleLoginModal={toggleLoginModal}
+            openSignupModal={() => {
+              setShowLoginModal(false);
+              setShowSignupModal(true);
+            }}
+            onSuccessfulLogin={handleSuccessfulLogin}
+            bookingInProgress={true}
+          />
         </div>
       )}
-      {error && (
-        <div className="text-center text-red-500 mb-4">
-          Error fetching availability.
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black/50 z-50">
+          <SignupModal
+            toggleRegisterModal={toggleSignupModal}
+            openLoginModal={() => {
+              setShowSignupModal(false);
+              setShowLoginModal(true);
+            }}
+            onSuccessfulSignup={handleSuccessfulLogin}
+          />
         </div>
       )}
-
-      {/* Results */}
-      {data && (
-        <div className="space-y-10">
-          {/* Rooms Section */}
-          <div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-4">
-              Available Rooms
-            </h2>
-            {data.rooms && data.rooms.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {data.rooms.map((room: any) => (
-                  <div
-                    key={room.id}
-                    className="bg-white rounded-lg shadow-md p-5 flex flex-col"
-                  >
-                    {/* Room Image (if available) */}
-                    {room.room_image && (
-                      <img
-                        loading="lazy"
-                        src={room.room_image}
-                        alt={room.room_name}
-                        className="w-full h-40 object-cover mb-3 rounded"
-                      />
-                    )}
-                    {/* Room Name & Basic Info */}
-                    <h3 className="text-xl font-semibold mb-1">{room.room_name}</h3>
-                    {/* Price & Action */}
-                    <p className="text-gray-900 font-semibold text-lg mb-3">
-                      {room.room_price}
-                    </p>
-                    <div className="mt-auto flex flex-wrap justify-start gap-2 font-montserrat">
-                      <Link
-                        to={`/rooms/${room.id}`}
-                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
-                      >
-                        <Eye size={16} /> <span>View</span>
-                      </Link>
-                      <Link
-                        to={`/confirm-booking?roomId=${room.id}&arrival=${arrival}&departure=${departure}`}
-                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition flex items-center gap-1"
-                      >
-                        <Book size={16} /> <span>Book</span>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600">
-                No rooms available for these dates.
-              </p>
-            )}
-          </div>
-
-          {/* Areas Section */}
-          <div>
-            <h2 className="text-xl md:text-2xl font-semibold mb-4">
-              Available Areas
-            </h2>
-            {data.areas && data.areas.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {data.areas.map((area: any) => (
-                  <div
-                    key={area.id}
-                    className="bg-white rounded-lg shadow-md p-5 flex flex-col"
-                  >
-                    {/* Area Image (if available) */}
-                    {area.area_image && (
-                      <img
-                        loading="lazy"
-                        src={area.area_image}
-                        alt={area.area_name}
-                        className="w-full h-40 object-cover mb-3 rounded"
-                      />
-                    )}
-
-                    {/* Area Name & Basic Info */}
-                    <h3 className="text-xl font-semibold mb-1">{area.area_name}</h3>
-
-                    {/* Price & Action */}
-                    <p className="text-gray-900 font-semibold text-lg mb-3">
-                      {area.price_per_hour}
-                    </p>
-                    <div className="mt-auto flex flex-wrap justify-start gap-2 font-montserrat">
-                      <button
-                        className="bg-blue-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition cursor-pointer flex items-center gap-1"
-                        onClick={(e) => handleViewVenueDetails(e, area.id)}
-                      >
-                        <Eye size={16} /> <span>View</span>
-                      </button>
-                      <button
-                        className="bg-green-600 text-sm text-white px-3 py-2 rounded-lg hover:bg-green-700 transition cursor-pointer flex items-center gap-1"
-                        onClick={(e) => handleBookVenue(e, area.id)}
-                      >
-                        <Book size={16} /> <span>Book</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600">
-                No areas available for these dates.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 
